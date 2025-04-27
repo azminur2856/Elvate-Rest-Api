@@ -3,8 +3,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateProductVariantDto } from './dto/create_product_variant';
 import { UpdateProductVariantDto } from './dto/update_product_variant.dto';
-import { ProductVariant } from './product_variant.entity';
-import { ProductImage } from './product_image.entity';
+import { ProductVariant } from './entities/product_variant.entity';
+import { ProductImage } from './entities/product_image.entity';
 
 @Injectable()
 export class ProductVariantService {

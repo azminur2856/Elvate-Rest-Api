@@ -5,7 +5,7 @@ import {
   IsOptional,
   IsDecimal,
 } from 'class-validator';
-import { ProductImage } from '../product_image.entity';
+import { ProductImage } from '../entities/product_image.entity';
 
 export class CreateProductVariantDto {
   @IsNumber()

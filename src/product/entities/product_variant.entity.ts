@@ -32,6 +32,6 @@ export class ProductVariant {
   @Column()
   sku: string;
 
-  //   @OneToMany(() => ProductImage, (image) => image.variant)
-  //   images: ProductImage[];
+  //   @ManyToOne(() => Product, (product) => product.variants)
+  //   product: Product;
 }

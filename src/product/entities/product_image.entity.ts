@@ -30,14 +30,18 @@ export class ProductImage {
   variant_id: number;
 
   @Column('text')
-  image_url: string[]; // Image file path or URL
+  image_url: string[];
 
   @Column({ default: false })
-  is_main: boolean; // Indicates if it's the main image for the product
+  is_main: boolean;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
   @Column({ type: 'timestamp', nullable: true })
   updated_at: Date;
+
+  // // product_image.entity.ts
+  // @ManyToOne(() => Product, (product) => product.images)
+  // product: Product;
 }
