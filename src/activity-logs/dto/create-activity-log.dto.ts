@@ -3,7 +3,7 @@ import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { Users } from 'src/users/entities/users.entity';
 
 export class CreateActivityLogDto {
-  @IsEnum(ActivityType, { message: 'Invalid action type.' })
+  @IsEnum(ActivityType, { message: 'Invalid activity type.' })
   @IsNotEmpty({ message: 'Activity type is required.' })
   activity: ActivityType;
 
