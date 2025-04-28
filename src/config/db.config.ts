@@ -10,4 +10,5 @@ export default (): PostgresConnectionOptions => ({
   database: process.env.dbName,
   entities: [path.resolve(__dirname, '..') + '/**/*.entity{.ts,.js}'],
   synchronize: true,
+  //dropSchema: false, // ALERT: This will drop the database schema on every application launch. Use with caution.
 });
