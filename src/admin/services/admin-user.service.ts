@@ -1,102 +1,159 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like, FindOptionsWhere } from 'typeorm';
+import { Repository, Between, ILike, FindOptionsWhere } from 'typeorm';
 import { Users } from 'src/users/entities/users.entity';
 import { Roles } from 'src/users/entities/roles.entity';
 import { AdminUpdateUserDto } from '../dto/admin-user.dto';
-import { AdminUserQueryDto } from '../dto/admin-user-query.dto';
+import { AdminUserQueryDto, PaginatedResponse } from '../dto/admin-user-query.dto';
 import { Role } from 'src/users/enums/roles.enum';
-import { PaginatedResponse } from '../interfaces/paginated-response.interface';
 
+/**
+ * Service for managing users from the admin perspective.
+ * @class AdminUserService
+ * @description Handles administrative operations for user management.
+ */
 @Injectable()
 export class AdminUserService {
   constructor(
     @InjectRepository(Users)
-    private readonly usersRepository: Repository<Users>,
+    private readonly userRepository: Repository<Users>,
     @InjectRepository(Roles)
     private readonly rolesRepository: Repository<Roles>,
   ) {}
 
+  /**
+   * Retrieves all users with optional filtering and pagination.
+   * @param query - Query parameters for filtering and pagination
+   * @returns Promise<PaginatedResponse<Users>> - Users and pagination metadata
+   */
   async findAll(queryDto: AdminUserQueryDto): Promise<PaginatedResponse<Users>> {
-    const { 
-      page, 
-      limit, 
-      search, 
-      order_by, 
-      order_direction, 
-      role, 
-      isActive,
-      isEmailVerified,
-      createdAfter,
-      createdBefore,
-      lastLoginAfter,
-      lastLoginBefore
-    } = queryDto;
+    try {
+      const {
+        page = 1,
+        limit = 10,
+        search,
+        role,
+        isActive,
+        isEmailVerified,
+        createdAfter,
+        createdBefore,
+        lastLoginAfter,
+        lastLoginBefore,
+        sortBy = 'createdAt',
+        sortOrder = 'desc',
+      } = queryDto;
 
-    const skip = (page - 1) * limit;
-    
-    // Build where conditions
-    const whereConditions: FindOptionsWhere<Users> = {};
+      // Validate pagination parameters
+      if (isNaN(page) || page < 1) {
+        throw new BadRequestException('Page must be a positive number');
+      }
+      if (isNaN(limit) || limit < 1) {
+        throw new BadRequestException('Limit must be a positive number');
+      }
 
-    if (search) {
-      whereConditions.firstName = Like(`%${search}%`);
-      // Add more search fields if needed
+      // Validate date ranges
+      if (createdAfter && createdBefore && new Date(createdAfter) > new Date(createdBefore)) {
+        throw new BadRequestException('Created after date cannot be later than created before date');
+      }
+      if (lastLoginAfter && lastLoginBefore && new Date(lastLoginAfter) > new Date(lastLoginBefore)) {
+        throw new BadRequestException('Last login after date cannot be later than last login before date');
+      }
+
+      const skip = (page - 1) * limit;
+      const queryBuilder = this.userRepository.createQueryBuilder('user');
+
+      // Apply filters
+      if (search) {
+        queryBuilder.andWhere(
+          '(user.firstName ILIKE :search OR user.lastName ILIKE :search OR user.email ILIKE :search)',
+          { search: `%${search}%` }
+        );
+      }
+
+      if (role) {
+        queryBuilder.andWhere('user.role = :role', { role });
+      }
+
+      if (isActive !== undefined) {
+        queryBuilder.andWhere('user.isActive = :isActive', { isActive });
+      }
+
+      if (isEmailVerified !== undefined) {
+        queryBuilder.andWhere('user.isEmailVerified = :isEmailVerified', { isEmailVerified });
+      }
+
+      if (createdAfter || createdBefore) {
+        queryBuilder.andWhere('user.createdAt BETWEEN :createdAfter AND :createdBefore', {
+          createdAfter: createdAfter || new Date(0),
+          createdBefore: createdBefore || new Date(),
+        });
+      }
+
+      if (lastLoginAfter || lastLoginBefore) {
+        queryBuilder.andWhere('user.lastLoginAt BETWEEN :lastLoginAfter AND :lastLoginBefore', {
+          lastLoginAfter: lastLoginAfter || new Date(0),
+          lastLoginBefore: lastLoginBefore || new Date(),
+        });
+      }
+
+      // Validate and apply sorting
+      const validSortFields = ['createdAt', 'lastLoginAt', 'firstName', 'lastName', 'email', 'role'];
+      const validSortOrder = ['asc', 'desc'];
+
+      const finalSortBy = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
+      const finalSortOrder = validSortOrder.includes(sortOrder.toLowerCase()) 
+        ? sortOrder.toLowerCase() 
+        : 'desc';
+
+      queryBuilder.orderBy(`user.${finalSortBy}`, finalSortOrder.toUpperCase() as 'ASC' | 'DESC');
+      queryBuilder.skip(skip).take(limit);
+
+      const [items, total] = await queryBuilder.getManyAndCount();
+
+      if (total === 0) {
+        return {
+          items: [],
+          meta: {
+            total: 0,
+            page,
+            limit,
+            totalPages: 0,
+            message: 'No users found matching the criteria'
+          },
+        };
+      }
+
+      return {
+        items,
+        meta: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new BadRequestException(`Error processing user query: ${error.message}`);
     }
-
-    if (isActive !== undefined) {
-      whereConditions.isActive = isActive;
-    }
-
-    if (isEmailVerified !== undefined) {
-      whereConditions.isEmailVerified = isEmailVerified;
-    }
-
-    // Date range filters
-    if (createdAfter || createdBefore) {
-      whereConditions.createdAt = Between(
-        createdAfter ? new Date(createdAfter) : new Date(0),
-        createdBefore ? new Date(createdBefore) : new Date(),
-      );
-    }
-
-    if (lastLoginAfter || lastLoginBefore) {
-      whereConditions.lastLoginAt = Between(
-        lastLoginAfter ? new Date(lastLoginAfter) : new Date(0),
-        lastLoginBefore ? new Date(lastLoginBefore) : new Date(),
-      );
-    }
-
-    const [users, total] = await this.usersRepository.findAndCount({
-      where: whereConditions,
-      relations: ['roles'],
-      order: { [order_by]: order_direction },
-      skip,
-      take: limit,
-    });
-
-    // If role filter is specified, filter results after retrieval
-    let filteredUsers = users;
-    if (role) {
-      filteredUsers = users.filter(user => 
-        user.roles.some(userRole => userRole.name === role)
-      );
-    }
-
-    return {
-      data: filteredUsers,
-      meta: {
-        page,
-        limit,
-        total: filteredUsers.length === users.length ? total : filteredUsers.length,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
   }
 
+  /**
+   * Retrieves a user by ID.
+   * @param id - User ID
+   * @returns Promise<Users> - The found user
+   * @throws NotFoundException - If user is not found
+   */
   async findOne(id: string): Promise<Users> {
-    const user = await this.usersRepository.findOne({ 
+    const user = await this.userRepository.findOne({
       where: { id },
-      relations: ['roles'] 
+      relations: ['roles'],
     });
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
@@ -104,69 +161,103 @@ export class AdminUserService {
     return user;
   }
 
+  /**
+   * Updates a user's information.
+   * @param id - User ID
+   * @param updateDto - Data for updating the user
+   * @returns Promise<Users> - The updated user
+   * @throws NotFoundException - If user is not found
+   */
   async update(id: string, updateDto: AdminUpdateUserDto): Promise<Users> {
     const user = await this.findOne(id);
-    
+
     // Update basic fields
     Object.assign(user, updateDto);
 
     // Handle role update if provided
     if (updateDto.role) {
       const role = await this.rolesRepository.findOne({
-        where: { name: updateDto.role }
+        where: { name: updateDto.role },
       });
-      
+
       if (!role) {
         throw new BadRequestException(`Role ${updateDto.role} not found`);
       }
-      
+
       // Set the new role
       user.roles = [role];
     }
 
-    return this.usersRepository.save(user);
+    return this.userRepository.save(user);
   }
 
+  /**
+   * Toggles a user's active status.
+   * @param id - User ID
+   * @returns Promise<Users> - The updated user
+   * @throws NotFoundException - If user is not found
+   */
   async toggleUserStatus(id: string, isActive: boolean): Promise<Users> {
     const user = await this.findOne(id);
     user.isActive = isActive;
-    return this.usersRepository.save(user);
+    return this.userRepository.save(user);
   }
 
   async getUserStats(): Promise<any> {
-    const totalUsers = await this.usersRepository.count();
-    const activeUsers = await this.usersRepository.count({ where: { isActive: true } });
-    const verifiedUsers = await this.usersRepository.count({ where: { isEmailVerified: true } });
-    
+    const totalUsers = await this.userRepository.count();
+    const activeUsers = await this.userRepository.count({
+      where: { isActive: true },
+    });
+    const verifiedUsers = await this.userRepository.count({
+      where: { isEmailVerified: true },
+    });
+
     // Count by role
     const roleCounts = {};
     const roles = Object.values(Role);
-    
+
     for (const role of roles) {
       const roleEntity = await this.rolesRepository.findOne({
         where: { name: role },
-        relations: ['users']
+        relations: ['users'],
       });
-      
+
       roleCounts[role] = roleEntity?.users?.length || 0;
     }
-    
+
     // Get new users in the last 30 days
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const newUsers = await this.usersRepository.count({
+
+    const newUsers = await this.userRepository.count({
       where: {
-        createdAt: Between(thirtyDaysAgo, new Date())
-      }
+        createdAt: Between(thirtyDaysAgo, new Date()),
+      },
     });
-    
+
     return {
       totalUsers,
       activeUsers,
       verifiedUsers,
       newUsers,
-      roleCounts
+      roleCounts,
     };
+  }
+
+  async getStats() {
+    const totalUsers = await this.userRepository.count();
+    const activeUsers = await this.userRepository.count({ where: { isActive: true } });
+    const inactiveUsers = await this.userRepository.count({ where: { isActive: false } });
+    
+    return {
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+    };
+  }
+
+  async setStatus(id: string, isActive: boolean) {
+    await this.userRepository.update(id, { isActive });
+    return this.findOne(id);
   }
 }

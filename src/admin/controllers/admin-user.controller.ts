@@ -18,9 +18,12 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard'; 
 import { Roles } from 'src/auth/decorators/roles.decorator'; 
 import { Role } from 'src/users/enums/roles.enum';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiSecurity, ApiParam, ApiBody, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 
-@ApiTags('Admin - Users')
+/**
+ * Controller handling admin user management operations.
+ */
+@ApiTags('D. Admin - User Management')
 @ApiBearerAuth()
 @Controller('admin/users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -28,31 +31,55 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagg
 export class AdminUserController {
   constructor(private readonly adminUserService: AdminUserService) {}
 
+  /**
+   * Retrieves all users with optional filtering and pagination.
+   * @param query - Query parameters for filtering and pagination
+   * @returns Promise<PaginatedResponse<Users>> - Users and pagination metadata
+   */
   @Get()
   @ApiOperation({ summary: 'Get all users with filtering and pagination' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Returns users list with pagination' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiResponse({ status: HttpStatus.OK, description: 'List of users retrieved successfully' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden' })
   async findAll(@Query() queryDto: AdminUserQueryDto) {
     return this.adminUserService.findAll(queryDto);
   }
 
   @Get('stats')
   @ApiOperation({ summary: 'Get user statistics' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Returns user statistics' })
-  async getUserStats() {
-    return this.adminUserService.getUserStats();
+  @ApiResponse({ status: HttpStatus.OK, description: 'User statistics retrieved successfully' })
+  async getStats() {
+    return this.adminUserService.getStats();
   }
 
+  /**
+   * Retrieves a user by ID.
+   * @param id - User ID
+   * @returns Promise<Users> - The found user
+   */
   @Get(':id')
   @ApiOperation({ summary: 'Get a user by ID' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Returns the user' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'User retrieved successfully' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.adminUserService.findOne(id);
   }
 
+  /**
+   * Updates a user's information.
+   * @param id - User ID
+   * @param updateUserDto - Data for updating the user
+   * @returns Promise<Users> - The updated user
+   */
   @Patch(':id')
   @ApiOperation({ summary: 'Update a user' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Returns the updated user' })
+  @ApiResponse({ status: HttpStatus.OK, description: 'User updated successfully' })
+  @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: 'Unauthorized' })
+  @ApiResponse({ status: HttpStatus.FORBIDDEN, description: 'Forbidden' })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
   async update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -62,13 +89,28 @@ export class AdminUserController {
   }
 
   @Patch(':id/status')
-  @ApiOperation({ summary: 'Activate or deactivate a user' })
-  @ApiResponse({ status: HttpStatus.OK, description: 'Returns the updated user' })
+  @ApiOperation({ summary: 'Set user active status' })
+  @ApiParam({ name: 'id', description: 'User ID', type: 'string', format: 'uuid' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        isActive: {
+          type: 'boolean',
+          description: 'Set to true to activate the user, false to deactivate',
+          example: true
+        }
+      },
+      required: ['isActive']
+    }
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'User status updated successfully' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
   @HttpCode(HttpStatus.OK)
-  async toggleStatus(
+  async setStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body('isActive') isActive: boolean,
   ) {
-    return this.adminUserService.toggleUserStatus(id, isActive);
+    return this.adminUserService.setStatus(id, isActive);
   }
 }

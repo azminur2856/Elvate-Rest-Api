@@ -1,0 +1,97 @@
+### Admin Authentication
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@example.com",
+  "password": "securePassword123"
+}
+
+### Admin User Endpoints
+
+### Get all users with filtering and pagination
+GET http://localhost:3000/admin/users
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+### Get user statistics
+GET http://localhost:3000/admin/users/stats
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+### Get a user by ID
+GET http://localhost:3000/admin/users/03d87f12-22af-4a0f-beb1-1d1d05b908a1
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+### Update a user
+PATCH http://localhost:3000/admin/users/03d87f12-22af-4a0f-beb1-1d1d05b908a1
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "firstName": "Updated",
+  "lastName": "User",
+  "email": "updated.user@example.com",
+  "phone": "+1234567890",
+  "role": "USER"
+}
+
+### Set user active status
+PATCH http://localhost:3000/admin/users/03d87f12-22af-4a0f-beb1-1d1d05b908a1/status
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "isActive": true
+}
+
+### Admin Product Endpoints
+
+### Create a new product
+POST http://localhost:3000/admin/products
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "name": "New Product",
+  "description": "This is a new product description",
+  "price": 99.99,
+  "stockQuantity": 100,
+  "category": "T_SHIRTS",
+  "sizes": ["S", "M", "L", "XL"],
+  "colors": ["Black", "White", "Navy"],
+  "images": ["https://example.com/image1.jpg", "https://example.com/image2.jpg"],
+  "brand": "Elevate Fashion",
+  "material": "100% Cotton",
+  "isFeatured": true,
+  "isNewArrival": true
+}
+
+### Update a product
+PATCH http://localhost:3000/admin/products/03d87f12-22af-4a0f-beb1-1d1d05b908a1
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "name": "Updated Product",
+  "price": 89.99,
+  "discountedPrice": 79.99,
+  "isOnSale": true
+}
+
+### Delete a product
+DELETE http://localhost:3000/admin/products/03d87f12-22af-4a0f-beb1-1d1d05b908a1
+Authorization: Bearer {{auth_token}}
+
+### Set product active status
+PATCH http://localhost:3000/admin/products/03d87f12-22af-4a0f-beb1-1d1d05b908a1/status
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+  "isActive": true
+}
+
+### Variables
+@auth_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFkbWluQGV4YW1wbGUuY29tIiwic3ViIjoiMDNkODdmMTItMjJhZi00YTBmLWJlYjEtMWQxZDA1YjkwOGExIiwicm9sZXMiOlt7ImlkIjoyLCJuYW1lIjoiQURNSU4ifV0sImlhdCI6MTc0NTg2NDQ0MiwiZXhwIjoxNzQ1OTUwODQyfQ.tnzBlgToTyDCNFoJTMblQqPpRgg_vi6zcZS8gcjvqWk 

@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/@compodoc/compodoc/schemas/config.schema.json",
+  "tsconfig": "./tsconfig.json",
+  "output": "./documentation",
+  "name": "Elvate REST API Documentation",
+  "includeOnly": ["src"],
+  "exclude": ["src/**/*.spec.ts", "src/**/*.test.ts", "src/**/*.e2e-spec.ts"],
+  "disableRoutesGraph": false,
+  "disableCoverage": true,
+  "disableInternal": false,
+  "silent": false,
+  "serve": false,
+  "port": 8080,
+  "theme": "material",
+  "customLogo": "./assets/logo.png",
+  "customFavicon": "./assets/favicon.ico",
+  "hideGenerator": false,
+  "elements": {
+    "content": {
+      "order": ["overview", "modules", "components", "injectables", "pipes", "classes", "interfaces", "miscellaneous"]
+    }
+  }
+} 
