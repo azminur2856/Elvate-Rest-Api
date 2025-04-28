@@ -8,7 +8,7 @@ import { Repository } from 'typeorm';
 import { CreatePromoCodeUsageDto } from '../dto/create_promo_code_usage.dto';
 import { PromoCodeUsage } from '../entities/promocode_usage.entity';
 import { UpdatePromoCodeUsageDto } from '../dto/update_promo_code_usage.dto';
-import { Coupon } from '../entities/coupon.entity'; // import Coupon entity
+import { Coupon } from '../entities/coupon.entity';
 
 @Injectable()
 export class PromoCodeUsageService {
@@ -17,15 +17,14 @@ export class PromoCodeUsageService {
     private readonly promoCodeUsageRepository: Repository<PromoCodeUsage>,
 
     @InjectRepository(Coupon)
-    private readonly couponRepository: Repository<Coupon>, // inject Coupon repository
+    private readonly couponRepository: Repository<Coupon>,
   ) {}
 
   async create(
     createPromoCodeUsageDto: CreatePromoCodeUsageDto,
   ): Promise<PromoCodeUsage> {
-    // Find the related coupon first
     const coupon = await this.couponRepository.findOne({
-      where: { id: createPromoCodeUsageDto.coupon_id }, // You must have coupon_id in DTO
+      where: { id: createPromoCodeUsageDto.coupon_id },
     });
 
     if (!coupon) {
@@ -38,11 +37,9 @@ export class PromoCodeUsageService {
       throw new BadRequestException('Coupon usage limit exceeded');
     }
 
-    // Increase usage_count
     coupon.usage_count += 1;
     await this.couponRepository.save(coupon);
 
-    // Create and save the usage
     const usage = this.promoCodeUsageRepository.create(createPromoCodeUsageDto);
     return this.promoCodeUsageRepository.save(usage);
   }

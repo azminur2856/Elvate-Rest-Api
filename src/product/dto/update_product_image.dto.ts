@@ -9,17 +9,17 @@ import {
 export class UpdateProductImageDto {
   @IsOptional()
   @IsString()
-  image_url?: string[]; // Optional, if you want to update the image URL
+  image_url?: string[];
 
   @IsOptional()
   @IsBoolean()
-  is_main?: boolean; // Optional, if you want to update whether the image is the main image
+  is_main?: boolean;
 
   @IsOptional()
   @IsNumber()
-  product_id?: number; // Optional, if you want to update the associated product ID
+  product_id?: number;
 
   @IsOptional()
   @IsNumber()
-  variant_id?: number; // Optional, if you want to update the associated variant ID
+  variant_id?: number;
 }

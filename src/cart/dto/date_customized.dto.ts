@@ -1,15 +1,12 @@
-// src/dto/date_customized.dto.ts
 import { ValueTransformer } from 'typeorm';
 
 export class CustomDateTransformer implements ValueTransformer {
-  // Convert to database format (no change needed)
   to(value: string | Date | null): Date | null {
     if (value instanceof Date) return value;
     if (!value) return null;
-    return new Date(value); // Convert string back to Date for DB
+    return new Date(value);
   }
 
-  // Format when reading from DB
   from(value: Date | string | null): string | null {
     if (!value) return null;
     const date = new Date(value);

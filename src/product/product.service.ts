@@ -17,14 +17,10 @@ export class ProductService {
   }
 
   async findAllProduct(): Promise<Product[]> {
-    return this.productRepository.find();
+    return this.productRepository.find({
+      relations: ['variants', 'images', 'category'],
+    });
   }
-
-  // async findAllProduct(): Promise<Product[]> {
-  //   return this.productRepository.find({
-  //     relations: ['variants', 'images'],
-  //   });
-  // }
   async findOneProduct(id: number): Promise<Product> {
     const product = await this.productRepository.findOne({ where: { id } });
     if (!product) {

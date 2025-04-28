@@ -14,11 +14,12 @@ export class ProductVariant {
   @PrimaryGeneratedColumn()
   id: number;
 
-  //   @ManyToOne(() => Product, (product) => product.variants)
-  //   @JoinColumn({ name: 'product_id' })
-  //   product: Product;
   @Column()
   product_id: number;
+
+  @ManyToOne(() => Product, (product) => product.variants)
+  @JoinColumn({ name: 'product_id' })
+  product: Product;
 
   @Column()
   variant_name: string;
@@ -32,6 +33,6 @@ export class ProductVariant {
   @Column()
   sku: string;
 
-  //   @ManyToOne(() => Product, (product) => product.variants)
-  //   product: Product;
+  @OneToMany(() => ProductImage, (image) => image.variant)
+  images: ProductImage[];
 }

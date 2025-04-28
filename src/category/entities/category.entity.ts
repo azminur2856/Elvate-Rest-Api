@@ -1,3 +1,4 @@
+import { Product } from 'src/product/entities/product.entity';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -6,6 +7,7 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 
 @Entity()
@@ -23,6 +25,12 @@ export class Category {
   @Column({ type: 'int', nullable: true })
   parent_id: number;
 
+  //   @Column()
+  //   product_id: number;
+
+  @OneToMany(() => Product, (product) => product.category)
+  product: Product[];
+
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamp',
@@ -39,5 +47,5 @@ export class Category {
   updated_at: Date;
 
   @Column({ type: 'int', nullable: true })
-  updated_by: number; // This could store the user ID who performed the update
+  updated_by: number;
 }

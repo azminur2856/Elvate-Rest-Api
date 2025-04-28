@@ -1,6 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  ManyToOne,
+  JoinColumn,
+} from 'typeorm';
 import { ProductVariant } from './product_variant.entity';
 import { ProductImage } from './product_image.entity';
+import { Category } from 'src/category/entities/category.entity';
 
 @Entity()
 export class Product {
@@ -19,6 +27,10 @@ export class Product {
   @Column()
   brand_id: number;
 
+  @ManyToOne(() => Category, (category) => category.product)
+  @JoinColumn({ name: 'category_id' })
+  category: Category;
+
   @Column()
   category_id: number;
 
@@ -28,9 +40,9 @@ export class Product {
   @Column({ type: 'uuid', nullable: true })
   updated_by: string;
 
-  // @OneToMany(() => ProductVariant, (variant) => variant.product)
-  // variants: ProductVariant[];
+  @OneToMany(() => ProductVariant, (variant) => variant.product)
+  variants: ProductVariant[];
 
-  // @OneToMany(() => ProductImage, (image) => image.product)
-  // images: ProductImage[];
+  @OneToMany(() => ProductImage, (image) => image.product)
+  images: ProductImage[];
 }

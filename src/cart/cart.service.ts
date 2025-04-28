@@ -20,13 +20,11 @@ export class CartService {
     private productVariantRepository: Repository<ProductVariant>,
   ) {}
 
-  // Add or update cart item using the DTO
   async addOrUpdateCartItem(
     createUserCartDto: CreateUserCartDto,
   ): Promise<UserCart> {
     const { user_id, variant_id, quantity } = createUserCartDto;
 
-    // Check if the product variant exists
     const variant = await this.productVariantRepository.findOne({
       where: { id: variant_id },
     });
@@ -36,18 +34,15 @@ export class CartService {
       );
     }
 
-    // Check if the item already exists in the cart for the user
     let cartItem = await this.userCartRepository.findOne({
       where: { user_id, variant_id },
     });
 
     if (cartItem) {
-      // If it exists, update the quantity
       cartItem.quantity += quantity;
       return this.userCartRepository.save(cartItem);
     }
 
-    // If it doesn't exist, create a new cart item
     cartItem = this.userCartRepository.create({
       user_id,
       variant_id,
@@ -57,7 +52,6 @@ export class CartService {
     return this.userCartRepository.save(cartItem);
   }
 
-  // Update cart item quantity
   async updateCartItem(
     id: number,
     updateUserCartDto: UpdateUserCartDto,
@@ -71,7 +65,6 @@ export class CartService {
     return this.userCartRepository.save(cartItem);
   }
 
-  // Remove cart item
   async removeCartItem(id: number): Promise<{ message: string }> {
     const cartItem = await this.userCartRepository.findOne({ where: { id } });
     if (!cartItem) {
@@ -82,20 +75,19 @@ export class CartService {
     return { message: `Cart item with ID ${id} successfully deleted` };
   }
 
-  // View cart with item details
   async getCartItems(userId: number): Promise<any> {
     const cartItems = await this.userCartRepository.find({
       where: { user_id: userId },
-      relations: ['variant'], // Include variant details
+      relations: ['variant'],
     });
 
     let totalCost = 0;
     const cartDetails = cartItems.map((item) => {
-      const cost = item.variant.price * item.quantity; // Assuming variant has a price field
+      const cost = item.variant.price * item.quantity;
       totalCost += cost;
 
       return {
-        product: item.variant.product_id, // Assuming the ProductVariant entity has a reference to Product
+        product: item.variant.product_id,
         variant: item.variant,
         quantity: item.quantity,
         totalCost: cost,
@@ -108,7 +100,6 @@ export class CartService {
     };
   }
 
-  // Increase cart item quantity by 1
   async increaseCartItemQuantity(
     id: number,
   ): Promise<{ cartItem: UserCart; message: string }> {

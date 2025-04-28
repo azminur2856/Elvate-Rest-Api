@@ -26,32 +26,9 @@ export class UserCart {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
-  // Use @UpdateDateColumn() for auto-updating the timestamp when the entity is updated
   @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updated_at: Date;
 
-  // @Column({
-  //   type: 'timestamp',
-  //   default: () => 'CURRENT_TIMESTAMP',
-  //   transformer: new CustomDateTransformer(),
-  //   update: false, // Prevent updates
-  // })
-  // created_at: string;
-
-  // @Column({
-  //   type: 'timestamp',
-  //   default: () => 'CURRENT_TIMESTAMP',
-  //   onUpdate: 'CURRENT_TIMESTAMP',
-  //   transformer: new CustomDateTransformer(),
-  // })
-  // updated_at: string;
-
-  //   // Set up FK relationship with User
-  //   @ManyToOne(() => User)
-  //   @JoinColumn({ name: 'user_id' })
-  //   user: User;
-
-  // Set up FK relationship with ProductVariant
   @ManyToOne(() => ProductVariant)
   @JoinColumn({ name: 'variant_id' })
   variant: ProductVariant;

@@ -10,21 +10,21 @@ import {
 export class UpdateProductVariantDto {
   @IsOptional()
   @IsNumber()
-  product_id?: string; // Optional, if you want to update the associated product ID
+  product_id?: string;
 
   @IsOptional()
   @IsString()
-  variant_name?: string; // Optional, if you want to update the variant name
+  variant_name?: string;
 
   @IsOptional()
   @IsDecimal()
-  price?: number; // Optional, if you want to update the price
+  price?: number;
 
   @IsOptional()
   @IsInt()
-  stock?: number; // Optional, if you want to update the stock
+  stock?: number;
 
   @IsOptional()
   @IsString()
-  sku?: string; // Optional, if you want to update the SKU
+  sku?: string;
 }

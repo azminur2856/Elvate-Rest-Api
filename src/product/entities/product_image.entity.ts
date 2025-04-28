@@ -6,27 +6,29 @@ import {
   JoinColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { Product } from './product.entity';
+import { ProductVariant } from './product_variant.entity';
 
 @Entity()
 export class ProductImage {
   @PrimaryGeneratedColumn()
   id: number;
 
-  //   @ManyToOne(() => Product, (product) => product.images)
-  //   @JoinColumn({ name: 'product_id' })
-  //   product: Product;
-
-  //   @ManyToOne(() => ProductVariant, (variant) => variant.images, {
-  //     nullable: true,
-  //   })
-  //   @JoinColumn({ name: 'variant_id' })
-  //   variant: ProductVariant;
-
   @Column()
   product_id: number;
 
+  @ManyToOne(() => Product, (product) => product.images)
+  @JoinColumn({ name: 'product_id' })
+  product: Product;
+
   @Column()
   variant_id: number;
+
+  @ManyToOne(() => ProductVariant, (variant) => variant.images, {
+    nullable: true,
+  })
+  @JoinColumn({ name: 'variant_id' })
+  variant: ProductVariant;
 
   @Column('text')
   image_url: string[];
@@ -37,11 +39,6 @@ export class ProductImage {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
-  // Use @UpdateDateColumn() for auto-updating the timestamp when the entity is updated
   @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updated_at: Date;
-
-  // // product_image.entity.ts
-  // @ManyToOne(() => Product, (product) => product.images)
-  // product: Product;
 }

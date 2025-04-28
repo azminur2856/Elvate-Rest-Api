@@ -12,7 +12,7 @@ export class UserRewards {
   balance: number;
 
   @Column()
-  points: number; // positive or negative change
+  points: number;
 
   @Column()
   reason: string;

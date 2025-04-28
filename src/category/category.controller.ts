@@ -16,7 +16,6 @@ import { UpdateCategoryDto } from './dto/update_category.dto';
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
-  // Create a category
   @Post()
   async createCategory(
     @Body() createCategoryDto: CreateCategoryDto,
@@ -24,24 +23,21 @@ export class CategoryController {
     return this.categoryService.createCategory(createCategoryDto);
   }
 
-  // Get all categories
   @Get()
   async getCategories() {
     return this.categoryService.getCategories();
   }
 
-  // Get category by ID
   @Get(':id')
   async getCategoryById(@Param('id') id: number) {
     return this.categoryService.getCategoryById(id);
   }
 
-  // Update a category
   @Put(':id')
   async updateCategory(
     @Param('id') id: number,
     @Body() updateCategoryDto: UpdateCategoryDto,
-    @Body('updatedBy') updatedBy: number, // Assuming you pass the user ID here
+    @Body('updatedBy') updatedBy: number,
   ) {
     return this.categoryService.updateCategory(
       id,
@@ -50,7 +46,6 @@ export class CategoryController {
     );
   }
 
-  // Delete a category
   @Delete(':id')
   async deleteCategory(@Param('id') id: number) {
     return this.categoryService.deleteCategory(id);

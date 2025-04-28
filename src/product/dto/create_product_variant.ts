@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsDecimal,
 } from 'class-validator';
-import { ProductImage } from '../entities/product_image.entity';
 
 export class CreateProductVariantDto {
   @IsNumber()
@@ -24,5 +23,5 @@ export class CreateProductVariantDto {
   sku: string;
 
   // @IsOptional()
-  // images: ProductImage[]; // Optional array of image URLs or image IDs if you need to send images alongside variant creation
+  // images: ProductImage[];
 }

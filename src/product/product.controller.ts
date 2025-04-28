@@ -37,7 +37,6 @@ export class ProductController {
     // return 'hello';
   }
 
-  // Get all product variants
   @Get('variant')
   async showAllProductVariant() {
     return this.productVariantService.showAllProductVariant();
@@ -63,20 +62,16 @@ export class ProductController {
     return this.productService.removeProduct(id);
   }
 
-  // Get a specific product variant by ID
   @Get('variant/:id')
   async findOneProductVariant(@Param('id') id: number) {
     return await this.productVariantService.findOneProductVariant(id);
   }
 
-  // Endpoint to create a product variant
   @Post('variant')
   async createProductVariant(@Body() body: CreateProductVariantDto) {
     return await this.productVariantService.createProductVariant(body);
-    // return 'this is variant route';
   }
 
-  // Update a product variant
   @Put('variant/:id')
   async updateProductVariant(
     @Param('id') id: number,
@@ -85,19 +80,16 @@ export class ProductController {
     return await this.productVariantService.updateProductVariant(id, body);
   }
 
-  // Create a new product image
   @Post('image')
   async createProductImage(@Body() body: CreateProductImageDto) {
     return await this.productImageService.createProductImage(body);
   }
 
-  // Get a single product image by ID
   @Get('image/:id')
   async findOneProductImage(@Param('id') id: number) {
     return await this.productImageService.findOneProductImage(id);
   }
 
-  // Update a product image
   @Put('image/:id')
   async updateProductImage(
     @Param('id') id: number,
@@ -106,7 +98,6 @@ export class ProductController {
     return await this.productImageService.updateProductImage(id, body);
   }
 
-  // Delete a product image
   @Delete('image/:id')
   async removeProductImage(@Param('id') id: number) {
     return await this.productImageService.removeProductImage(id);

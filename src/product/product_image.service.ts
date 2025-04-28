@@ -12,7 +12,6 @@ export class ProductImageService {
     private productImageRepository: Repository<ProductImage>,
   ) {}
 
-  // Create a new product image
   async createProductImage(
     createProductImageDto: CreateProductImageDto,
   ): Promise<ProductImage> {
@@ -23,12 +22,12 @@ export class ProductImageService {
     return this.productImageRepository.save(productImage);
   }
 
-  // Find all product images
   async showAllProductImages(): Promise<ProductImage[]> {
-    return this.productImageRepository.find();
+    return this.productImageRepository.find({
+      relations: ['product', 'variant'],
+    });
   }
 
-  // Find one product image by id
   async findOneProductImage(id: number): Promise<ProductImage> {
     const image = await this.productImageRepository.findOne({ where: { id } });
     if (!image) {
@@ -37,7 +36,6 @@ export class ProductImageService {
     return image;
   }
 
-  // Update a product image by id
   async updateProductImage(
     id: number,
     updateProductImageDto: UpdateProductImageDto,
@@ -57,7 +55,6 @@ export class ProductImageService {
     };
   }
 
-  // Delete a product image by id
   async removeProductImage(id: number): Promise<{ message: string }> {
     const image = await this.productImageRepository.findOneBy({ id });
 
