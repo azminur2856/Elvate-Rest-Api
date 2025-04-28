@@ -3,7 +3,7 @@ import { ReviewStatus } from '../enums/review-status.enum';
 
 export class CreateReviewDto {
   @IsInt()
-  userId: number;
+  userId: string;
 
   @IsInt()
   productId: number;

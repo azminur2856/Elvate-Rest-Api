@@ -10,7 +10,7 @@ import {
 import { Users } from 'src/users/entities/users.entity';
 import { ReviewStatus } from '../enums/review-status.enum';
 
-@Entity({ name: 'reviews' })
+@Entity()
 export class Review {
   @PrimaryGeneratedColumn()
   id: number;
