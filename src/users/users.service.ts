@@ -103,13 +103,13 @@ export class UsersService {
         'isEmailVerified',
         'isPhoneVerified',
         'profileImage',
+        'createdAt',
+        'updatedAt',
+        'lastLoginAt',
       ],
     });
     if (!user) throw new NotFoundException(`No data found for user ${id}`);
-    return {
-      message: 'User found!',
-      data: user,
-    };
+    return user;
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
@@ -320,5 +320,21 @@ export class UsersService {
     return await this.userRepository.update(id, {
       password: password,
     });
+  }
+
+  async getUserRefreshTokenFromDB(id: string) {
+    if (!id) {
+      throw new BadRequestException(`Id is required`);
+    }
+
+    const user = await this.userRepository.findOne({
+      where: { id },
+      select: ['id', 'refreshToken'],
+    });
+
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    return user;
   }
 }
