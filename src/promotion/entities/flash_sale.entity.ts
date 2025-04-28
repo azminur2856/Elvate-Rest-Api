@@ -12,6 +12,9 @@ export class FlashSale {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column()
+  product_id: number;
+
   @ManyToOne(() => Product)
   @JoinColumn({ name: 'product_id' })
   product: Product;

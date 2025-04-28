@@ -21,6 +21,9 @@ export class Coupon {
   @Column()
   usage_limit: number;
 
+  @Column({ default: 0 })
+  usage_count: number;
+
   @OneToMany(() => PromoCodeUsage, (usage) => usage.coupon)
   usages: PromoCodeUsage[];
 }

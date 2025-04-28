@@ -35,6 +35,8 @@ export class CouponService {
   }
 
   async findAll(): Promise<Coupon[]> {
-    return this.couponRepository.find();
+    return this.couponRepository.find({
+      relations: ['usages'],
+    });
   }
 }

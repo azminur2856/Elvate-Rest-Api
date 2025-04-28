@@ -6,7 +6,7 @@ export class UserRewards {
   id: number;
 
   @Column()
-  user_id: number; // or UUID
+  user_id: number;
 
   @Column()
   balance: number;
@@ -18,7 +18,7 @@ export class UserRewards {
   reason: string;
 
   @Column({ nullable: true })
-  order_id: number; // can be null if not linked to an order
+  order_id: number;
 
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;

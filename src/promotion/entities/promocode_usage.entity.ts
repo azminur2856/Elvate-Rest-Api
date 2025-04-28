@@ -13,7 +13,10 @@ export class PromoCodeUsage {
   id: number;
 
   @Column()
-  user_id: number; // or UUID if your User entity uses UUID
+  user_id: number;
+
+  @Column()
+  coupon_id: number;
 
   @ManyToOne(() => Coupon, (coupon) => coupon.usages)
   @JoinColumn({ name: 'coupon_id' })

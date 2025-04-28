@@ -15,5 +15,5 @@ export class CreateUserRewardsDto {
 
   @IsOptional()
   @IsNumber()
-  order_id?: number; // optional
+  order_id?: number;
 }

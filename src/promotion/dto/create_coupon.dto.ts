@@ -1,4 +1,4 @@
-import { IsString, IsNumber, IsDateString, IsIn } from 'class-validator';
+import { IsString, IsNumber, IsDateString, IsIn, Min } from 'class-validator';
 
 export class CreateCouponDto {
   @IsString()
@@ -16,4 +16,8 @@ export class CreateCouponDto {
 
   @IsNumber()
   usage_limit: number;
+
+  @IsNumber()
+  @Min(0)
+  usage_count?: number;
 }

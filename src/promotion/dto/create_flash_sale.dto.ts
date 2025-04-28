@@ -13,5 +13,5 @@ export class CreateFlashSaleDto {
   @IsDateString()
   end_time: string;
 
-  is_active?: boolean; // optional, default true if not provided
+  is_active?: boolean;
 }

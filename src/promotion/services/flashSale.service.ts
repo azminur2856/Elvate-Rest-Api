@@ -35,6 +35,8 @@ export class FlashSaleService {
   }
 
   async findAll(): Promise<FlashSale[]> {
-    return this.flashSaleRepository.find();
+    return this.flashSaleRepository.find({
+      relations: ['product'],
+    });
   }
 }

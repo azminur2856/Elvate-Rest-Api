@@ -1,19 +1,49 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreatePromoCodeUsageDto } from '../dto/create_promo_code_usage.dto';
 import { PromoCodeUsage } from '../entities/promocode_usage.entity';
 import { UpdatePromoCodeUsageDto } from '../dto/update_promo_code_usage.dto';
+import { Coupon } from '../entities/coupon.entity'; // import Coupon entity
 
 @Injectable()
 export class PromoCodeUsageService {
   constructor(
     @InjectRepository(PromoCodeUsage)
     private readonly promoCodeUsageRepository: Repository<PromoCodeUsage>,
+
+    @InjectRepository(Coupon)
+    private readonly couponRepository: Repository<Coupon>, // inject Coupon repository
   ) {}
 
-  async create(dto: CreatePromoCodeUsageDto): Promise<PromoCodeUsage> {
-    const usage = this.promoCodeUsageRepository.create(dto);
+  async create(
+    createPromoCodeUsageDto: CreatePromoCodeUsageDto,
+  ): Promise<PromoCodeUsage> {
+    // Find the related coupon first
+    const coupon = await this.couponRepository.findOne({
+      where: { id: createPromoCodeUsageDto.coupon_id }, // You must have coupon_id in DTO
+    });
+
+    if (!coupon) {
+      throw new NotFoundException(
+        `Coupon with ID ${createPromoCodeUsageDto.coupon_id} not found`,
+      );
+    }
+
+    if (coupon.usage_count >= coupon.usage_limit) {
+      throw new BadRequestException('Coupon usage limit exceeded');
+    }
+
+    // Increase usage_count
+    coupon.usage_count += 1;
+    await this.couponRepository.save(coupon);
+
+    // Create and save the usage
+    const usage = this.promoCodeUsageRepository.create(createPromoCodeUsageDto);
     return this.promoCodeUsageRepository.save(usage);
   }
 
@@ -40,6 +70,8 @@ export class PromoCodeUsageService {
   }
 
   async findAll(): Promise<PromoCodeUsage[]> {
-    return this.promoCodeUsageRepository.find();
+    return this.promoCodeUsageRepository.find({
+      relations: ['coupon'],
+    });
   }
 }
