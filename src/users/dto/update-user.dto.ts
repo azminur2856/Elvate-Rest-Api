@@ -6,29 +6,7 @@ import {
   IsEnum,
   IsPhoneNumber,
 } from 'class-validator';
-import { Role } from 'src/users/enums/role.enum';
+import { CreateUserDto } from './create-user.dto';
+import { PartialType } from '@nestjs/swagger';
 
-export class UpdateUserDto {
-  @IsOptional()
-  @IsString()
-  firstName?: string;
-
-  @IsOptional()
-  @IsString()
-  lastName?: string;
-
-  @IsOptional()
-  @IsString()
-  @IsPhoneNumber('BD', {
-    message: 'Phone number must be a valid Bangladeshi phone number',
-  })
-  phone?: string;
-
-  @IsOptional()
-  @IsString()
-  password?: string;
-
-  @IsOptional()
-  @IsString()
-  profileImage?: string;
-}
+export class UpdateUserDto extends PartialType(CreateUserDto) {}

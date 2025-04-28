@@ -5,6 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import dbConfig from './config/db.config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AdminModule } from './admin/admin.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -15,6 +17,9 @@ import { AdminModule } from './admin/admin.module';
     }),
     TypeOrmModule.forRootAsync({ useFactory: dbConfig }),
     AdminModule,
+    UsersModule,
+    AuthModule,
+    AuthModule
   ],
   controllers: [AppController],
   providers: [AppService],

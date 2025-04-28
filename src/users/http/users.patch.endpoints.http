@@ -1,0 +1,8 @@
+## Update user information by ID:
+PATCH http://localhost:3000/users/7fe855ed-3fc4-4795-95cb-8d55b8681eb9
+
+{
+    "email": "new email@example.com",
+    "password": "newpassword123",
+    "profileImage": "newprofile.jpg"
+}

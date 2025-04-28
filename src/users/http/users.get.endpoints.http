@@ -1,0 +1,6 @@
+# Get all users with query parameters (search, page, limit, order_by, order_direction):
+GET http://localhost:3000/users?page=1&limit=10&search=example&order_by=created_at&order_direction=DESC
+
+
+# Get a single user by ID:
+GET http://localhost:3000/users/1

@@ -1,15 +1,13 @@
-import { Role } from 'src/users/enums/role.enum';
 import {
-  BeforeInsert,
-  BeforeUpdate,
-  Column,
-  CreateDateColumn,
   Entity,
-  OneToMany,
   PrimaryGeneratedColumn,
+  Column,
+  ManyToMany,
+  JoinTable,
+  CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import * as bcrypt from 'bcrypt';
+import { Roles } from './roles.entity';
 
 @Entity()
 export class Users {
@@ -34,8 +32,9 @@ export class Users {
   @Column({ type: 'varchar', length: 255 })
   password: string;
 
-  @Column({ type: 'enum', enum: Role, default: Role.BUYER })
-  role: Role;
+  @ManyToMany(() => Roles, (role) => role.users)
+  @JoinTable()
+  roles: Roles[];
 
   @Column({ type: 'boolean', default: false })
   isActive: boolean;
@@ -65,16 +64,4 @@ export class Users {
 
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt: Date;
-
-  /////// Before insert //////
-  @BeforeInsert()
-  emailToLowerCase() {
-    this.email = this.email.toLowerCase();
-  }
-
-  @BeforeInsert()
-  @BeforeUpdate()
-  async hashPassword() {
-    this.password = await bcrypt.hash(this.password, 10);
-  }
 }

@@ -1,253 +1,169 @@
 import {
-  BadGatewayException,
-  BadRequestException,
-  HttpException,
-  HttpStatus,
   Injectable,
   NotFoundException,
-  UnauthorizedException,
+  BadRequestException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, Like } from 'typeorm';
 import { Users } from './entities/users.entity';
-import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import * as fs from 'fs';
-import * as path from 'path';
+import * as bcrypt from 'bcrypt';
+import { UserQueryDto } from './dto/user-query.dto';
+import { Roles } from './entities/roles.entity';
+import { Role } from './enums/roles.enum';
 
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(Users) private userRepository: Repository<Users>,
+    @InjectRepository(Users)
+    private userRepository: Repository<Users>,
+
+    @InjectRepository(Roles)
+    private rolesRepository: Repository<Roles>, 
   ) {}
 
-  async createUser(createUserDto: CreateUserDto) {
-    if (
-      await this.userRepository.findOne({
-        where: { email: createUserDto.email },
-      })
-    ) {
-      throw new BadRequestException(
-        `User with this email ${createUserDto.email} already exists`,
-      );
-    }
-    if (
-      await this.userRepository.findOne({
-        where: { phone: createUserDto.phone },
-      })
-    ) {
-      throw new BadRequestException(
-        `User with this phone ${createUserDto.phone} already exists`,
-      );
-    }
-    const user = await this.userRepository.create(createUserDto);
-    const savedUser = await this.userRepository.save(user);
-    if (!savedUser) {
-      throw new NotFoundException('Faild to created user try again!');
+  // Create a new user
+  async createUser(createUserDto: CreateUserDto): Promise<Users> {
+    const { email, phone } = createUserDto;
+
+    const existingUser = await this.userRepository.findOne({
+      where: [{ email }, { phone }],
+    });
+
+    if (existingUser) {
+      throw new BadRequestException('Email or Phone number already in use.');
     }
 
-    const { password, refreshToken, ...result } = user;
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-    return result;
+    // Fetch the 'CUSTOMER' role by default
+    const customerRole = await this.rolesRepository.findOne({ where: { name: Role.CUSTOMER } });
+    if (!customerRole) {
+      throw new InternalServerErrorException('Customer role not found.');
+    }
+
+    const newUser = this.userRepository.create({
+      ...createUserDto,
+      password: hashedPassword,
+      profileImage: createUserDto.profileImage || 'profile.jpg',
+      roles: [customerRole], // Assign the default 'CUSTOMER' role
+    });
+
+    try {
+      return await this.userRepository.save(newUser);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to create user.');
+    }
   }
 
-  async getAllUsers() {
-    const users = await this.userRepository.find({
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        dob: true,
-        email: true,
-        phone: true,
-        role: true,
-        isActive: true,
-        isEmailVerified: true,
-        isPhoneVerified: true,
-        profileImage: true,
+  // Get a list of users
+  async getAllUsers(userQueryDto: UserQueryDto): Promise<Users[]> {
+    const {
+      search,
+      page = 1,
+      limit = 10,
+      order_by = 'id',
+      order_direction = 'ASC',
+    } = userQueryDto;
+
+    const whereCondition = search
+      ? [
+          { email: Like(`%${search}%`) },
+          { phone: Like(`%${search}%`) },
+          { firstName: Like(`%${search}%`) },
+          { lastName: Like(`%${search}%`) },
+        ]
+      : undefined;
+
+    const [users, total] = await this.userRepository.findAndCount({
+      where: whereCondition,
+      order: {
+        [order_by]: order_direction.toUpperCase() === 'DESC' ? 'DESC' : 'ASC',
       },
+      skip: (page - 1) * limit,
+      take: limit,
     });
-    if (!users) {
-      return 'No users found';
-    }
-    return {
-      message: 'Users fetched successfully',
-      data: users,
-    };
-  }
 
-  async getUserById(id: string) {
-    if (!id) throw new BadRequestException('User ID is required');
-    const user = await this.userRepository.findOne({
-      where: { id },
-      select: [
-        'id',
-        'firstName',
-        'lastName',
-        'dob',
-        'email',
-        'phone',
-        'role',
-        'isActive',
-        'isEmailVerified',
-        'isPhoneVerified',
-        'profileImage',
-      ],
-    });
-    if (!user) throw new NotFoundException(`No data found for user ${id}`);
-    return {
-      message: 'User found!',
-      data: user,
-    };
-  }
-
-  async updateUser(id: string, updateUserDto: UpdateUserDto) {
-    if (!id) {
-      throw new BadRequestException('User ID is required');
+    if (total === 0) {
+      throw new NotFoundException('No users found.');
     }
 
-    const user = await this.userRepository.findOne({ where: { id } });
+    return users;
+  }
+
+  // Get user by ID
+  async getUserById(id: string): Promise<Users> {
+    const user = await this.userRepository.findOne({ where: { id }, relations: ['roles'] });
+
     if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+      throw new NotFoundException(`User with ID ${id} not found.`);
     }
-    if (
-      await this.userRepository.findOne({
-        where: { phone: updateUserDto.phone },
-      })
-    ) {
-      throw new BadRequestException(
-        `User with this phone ${updateUserDto.phone} already exists`,
+
+    return user;
+  }
+
+  // Update user
+  async updateUser(id: string, updateUserDto: UpdateUserDto): Promise<Users> {
+    const user = await this.userRepository.findOne({ where: { id }, relations: ['roles'] });
+  
+    if (!user) {
+      throw new NotFoundException(
+        `Cannot update: User with ID ${id} not found.`,
+      );
+    }
+  
+    // Only hash password if provided
+    if (updateUserDto.password) {
+      updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+  
+    // Merge only provided fields
+    Object.assign(user, updateUserDto);
+  
+    try {
+      return await this.userRepository.save(user);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to update user.');
+    }
+  }
+
+  // Update profile image
+  async updateProfileImage(id: string, profileImage: string): Promise<Users> {
+    const user = await this.userRepository.findOne({ where: { id } });
+
+    if (!user) {
+      throw new NotFoundException(
+        `Cannot update image: User with ID ${id} not found.`,
       );
     }
 
-    const result = await this.userRepository.update(id, updateUserDto);
-    if (!result) {
-      throw new BadGatewayException('Failed to update user');
-    }
+    user.profileImage = profileImage;
 
-    return result;
+    try {
+      return await this.userRepository.save(user);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to update profile image.');
+    }
   }
 
-  async updateUserRole(
-    id: string,
-    updateUserRoleDto: UpdateUserRoleDto,
-    adminId: string,
-  ) {
+  // Change user password
+  async changePassword(id: string, password: string): Promise<Users> {
     const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-    if (user.role === 'ADMIN') {
-      throw new UnauthorizedException(`Unauthorized to change admin role`);
-    }
-
-    const result = await this.userRepository.update(id, {
-      role: updateUserRoleDto.role,
-    });
-
-  }
-
-  async deteteUser(id: string, adminId: string) {
-    const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-    if (user.role === 'ADMIN') {
-      throw new UnauthorizedException(`Unauthorized to delete admin account`);
-    }
-
-    const result = await this.userRepository.delete(id);
-    if (!result) {
-      throw new BadGatewayException('Failed to delete user');
-    }
-
-    return {
-      message: 'User deleted successfully',
-      userDeleted: result.affected,
-    };
-  }
-
-  async updateProfileImage(userId: string, profileImageFileName: string) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
 
     if (!user) {
-      throw new NotFoundException(`User not found`);
-    }
-
-    const result = await this.userRepository.update(userId, {
-      profileImage: profileImageFileName,
-    });
-
-    const uploadPath = path.join(
-      '..',
-      '..',
-      'assets',
-      'user_profile_image',
-      `user_${userId}`,
-    );
-  }
-
-  async getUserProfileImage(userId: string, res: any) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException(`User not found`);
-    }
-
-    let imagePath = path.join(
-      __dirname,
-      '..',
-      '..',
-      'assets',
-      'user_profile_image',
-      `user_${userId}`,
-      `${user.profileImage}`,
-    );
-
-    if (user.profileImage === 'avatar.jpg') {
-      imagePath = path.join(
-        __dirname,
-        '..',
-        '..',
-        'assets',
-        'user_profile_image',
-        `${user.profileImage}`,
+      throw new NotFoundException(
+        `Cannot change password: User with ID ${id} not found.`,
       );
     }
 
-    // Check if the image exists
-    if (!fs.existsSync(imagePath)) {
-      throw new NotFoundException(`Image file not found`);
+    user.password = await bcrypt.hash(password, 10);
+
+    try {
+      return await this.userRepository.save(user);
+    } catch (error) {
+      throw new InternalServerErrorException('Failed to change password.');
     }
-
-    // Stream the image file to the client
-    res.sendFile(imagePath, (err: any) => {
-      if (err) {
-        throw new HttpException(
-          'Unable to retrieve the profile image',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-    });
-    return {
-      message: `Profile Image Sent Successfully`,
-    };
-  }
-
-  async updateHashedRefreshToken(userId: string, hashedRefreshToken: string) {
-    return await this.userRepository.update(
-      { id: userId },
-      { refreshToken: hashedRefreshToken },
-    );
-  }
-
-  async updateLastLogin(id: string) {
-    await this.userRepository.update(id, { lastLoginAt: new Date() });
-  }
-
-  async changePassword(id: string, password: string) {
-    return await this.userRepository.update(id, {
-      password: password,
-    });
   }
 }
