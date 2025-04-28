@@ -25,6 +25,9 @@ export class UpdateUserDto {
   phone?: string;
 
   @IsOptional()
+  isPhoneVerified?: boolean;
+
+  @IsOptional()
   @IsString()
   password?: string;
 
