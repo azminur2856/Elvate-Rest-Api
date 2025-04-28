@@ -18,12 +18,13 @@ export class CreateUserDto {
   @IsString()
   lastName?: string;
 
+  @IsOptional()
   @IsNotEmpty()
   @IsDateString(
     {},
     { message: 'Date of Birth must be in ISO format (YYYY-MM-DD)' },
   )
-  dob: Date;
+  dob?: Date;
 
   @IsNotEmpty()
   @IsEmail()
@@ -47,4 +48,7 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
   profileImage?: string;
+
+  @IsOptional()
+  isEmailVerified?: boolean;
 }
