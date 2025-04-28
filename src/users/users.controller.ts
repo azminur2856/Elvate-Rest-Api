@@ -39,12 +39,12 @@ export class UsersController {
     return this.usersService.createUser(createUserDto);
   }
 
+  @Roles(Role.ADMIN)
   @Get('getAllUsers')
   getAllUsers() {
     return this.usersService.getAllUsers();
   }
 
-  @UseGuards(JwtAuthGuard)
   @Get('profile')
   getUserProfile(@Req() req: any) {
     return this.usersService.getUserById(req.user.id);
@@ -63,7 +63,7 @@ export class UsersController {
     return this.usersService.updateUser(req.user.id, updateUserDto);
   }
 
-  //add role deceroator to this endpoint admin only
+  @Roles(Role.ADMIN)
   @Patch('updateUserRole/:id')
   updateUserRole(
     @Param('id') id: string,
