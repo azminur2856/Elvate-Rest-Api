@@ -5,8 +5,6 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Product } from './product.entity'; // Assuming the Product entity is in the same directory
-import { ProductVariant } from './product_variant.entity'; // Assuming the ProductVariant entity is in the same directory
 
 @Entity()
 export class ProductImage {
