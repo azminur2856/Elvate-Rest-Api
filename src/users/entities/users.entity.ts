@@ -1,4 +1,3 @@
-import { Verification } from 'src/auth/entities/verification.entity';
 import { Role } from 'src/users/enums/role.enum';
 import {
   BeforeInsert,
@@ -11,7 +10,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-import { ActivityLog } from 'src/activity-logs/entities/activity-logs.entity';
 
 @Entity()
 export class Users {
@@ -67,15 +65,6 @@ export class Users {
 
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt: Date;
-
-  /////////// RELATIONSHIPS ////////////
-  @OneToMany(() => Verification, (verification) => verification.user, {
-    cascade: true,
-  })
-  verifications: Verification[];
-
-  @OneToMany(() => ActivityLog, (activityLogs) => activityLogs.user)
-  activityLogs: ActivityLog[];
 
   /////// Before insert //////
   @BeforeInsert()

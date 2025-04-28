@@ -11,19 +11,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from './entities/users.entity';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
-import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
-import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import * as fs from 'fs';
-import { deleteTempDirectory } from 'src/auth/utility/delete-directory.util';
 import * as path from 'path';
-import { clearDirectory } from 'src/auth/utility/clear-direttory.util';
 
 @Injectable()
 export class UsersService {
   constructor(
-    private activityLogsService: ActivityLogsService,
     @InjectRepository(Users) private userRepository: Repository<Users>,
   ) {}
 
@@ -53,12 +48,7 @@ export class UsersService {
     }
 
     const { password, refreshToken, ...result } = user;
-    const activityLog = {
-      activity: ActivityType.USER_REGISTER,
-      description: `New user registered with id ${user.id}`,
-      user: user,
-    };
-    await this.activityLogsService.createActivityLog(activityLog);
+
     return result;
   }
 
@@ -136,13 +126,6 @@ export class UsersService {
       throw new BadGatewayException('Failed to update user');
     }
 
-    const activityLog = {
-      activity: ActivityType.USER_UPDATE_PROFILE,
-      description: 'User Profile Information Updated',
-      user: user,
-    };
-
-    await this.activityLogsService.createActivityLog(activityLog);
     return result;
   }
 
@@ -163,12 +146,6 @@ export class UsersService {
       role: updateUserRoleDto.role,
     });
 
-    const activityLog = {
-      activity: ActivityType.ADMIN_UPDATE_USER_ROLE,
-      description: `Admin ${adminId} updated user ${id} role to ${updateUserRoleDto.role}`,
-      user: await this.userRepository.findOne({ where: { id: adminId } }),
-    };
-    await this.activityLogsService.createActivityLog(activityLog);
   }
 
   async deteteUser(id: string, adminId: string) {
@@ -184,20 +161,6 @@ export class UsersService {
     if (!result) {
       throw new BadGatewayException('Failed to delete user');
     }
-
-    if (result.affected) {
-      const userImageDirectory = `./assets/user_profile_image/user_${id}`;
-      if (fs.existsSync(userImageDirectory)) {
-        deleteTempDirectory(userImageDirectory);
-      }
-    }
-
-    const activityLog = {
-      activity: ActivityType.ADMIN_DELETE_USER,
-      description: `Admin ${adminId} deleted user ${id}`,
-      user: await this.userRepository.findOne({ where: { id: adminId } }),
-    };
-    await this.activityLogsService.createActivityLog(activityLog);
 
     return {
       message: 'User deleted successfully',
@@ -223,27 +186,6 @@ export class UsersService {
       'user_profile_image',
       `user_${userId}`,
     );
-
-    // Something went wrong while updating the user.
-    if (result.affected === 0) {
-      clearDirectory(uploadPath, user.profileImage, 'profileImage-');
-      throw new NotFoundException(`User not found`);
-    }
-
-    clearDirectory(uploadPath, profileImageFileName, 'profileImage-'); // Delete old files starting with "profileImage-" except the new file
-
-    // Update Action Log
-    const activityLog = {
-      activity: ActivityType.USER_UPDATE_PROFILE,
-      description: 'User Changed Profile Image',
-      user: user,
-    };
-    await this.activityLogsService.createActivityLog(activityLog);
-
-    return {
-      message: `Profile Image Updated Successfully`,
-      userAffected: result.affected,
-    };
   }
 
   async getUserProfileImage(userId: string, res: any) {
