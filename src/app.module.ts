@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import dbConfig from './config/db.config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       load: [dbConfig],
     }),
     TypeOrmModule.forRootAsync({ useFactory: dbConfig }),
+    AdminModule,
   ],
   controllers: [AppController],
   providers: [AppService],
