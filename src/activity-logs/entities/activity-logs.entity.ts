@@ -15,7 +15,7 @@ export class ActivityLog {
   id: number;
 
   @Column({ type: 'enum', enum: ActivityType, nullable: false })
-  action: ActivityType;
+  activity: ActivityType;
 
   @Column({ type: 'text', nullable: true })
   description?: string;
