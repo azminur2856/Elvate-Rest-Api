@@ -11,4 +11,7 @@ export enum ActivityType {
   REVIEW_ADD = 'REVIEW_ADD',
   REVIEW_UPDATE = 'REVIEW_UPDATE',
   REVIEW_DELETE = 'REVIEW_DELETE',
+
+  //Check functionality
+  CHECK_CREATE = 'CHECK_CREATE',
 }
