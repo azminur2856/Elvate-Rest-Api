@@ -11,6 +11,7 @@ import {
   Req,
   Res,
   UploadedFile,
+  UseGuards,
   UseInterceptors,
   ValidationPipe,
 } from '@nestjs/common';
@@ -25,6 +26,7 @@ import { CurrentUser } from 'src/auth/types/current-user';
 import * as path from 'path';
 import * as fs from 'fs';
 import { extname } from 'path';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth/jwt-auth.guard';
 
 @Controller('users')
 export class UsersController {
@@ -40,6 +42,7 @@ export class UsersController {
     return this.usersService.getAllUsers();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('profile')
   getUserProfile(@Req() req: any) {
     return this.usersService.getUserById(req.user.id);
