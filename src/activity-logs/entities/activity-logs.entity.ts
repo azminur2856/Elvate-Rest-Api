@@ -6,8 +6,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { Users } from 'src/users/users.entity';
-import { ActivityType } from 'src/auth/enums/activity-type.enum';
+import { Users } from 'src/users/entities/users.entity';
+import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 
 @Entity()
 export class ActivityLog {
