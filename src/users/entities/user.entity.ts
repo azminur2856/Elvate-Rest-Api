@@ -6,6 +6,12 @@ export class UserEntity {
     @PrimaryGeneratedColumn()
     id: number;
 
+    @Column()
+    name: string;
+
+    @OneToMany(() => OrderEntity, (order) => order.createdBy)
+    ordersCreatedBy: OrderEntity[];
+
     @OneToMany(() => OrderEntity, (order) => order.updatedBy)
-    ordersUpdateBy: OrderEntity[];
+    ordersUpdatedBy: OrderEntity[];
 }
