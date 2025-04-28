@@ -24,7 +24,7 @@ export class Users {
   @Column({ type: 'varchar', length: 255, nullable: true })
   lastName?: string;
 
-  @Column()
+  @Column({ type: 'date', nullable: true })
   dob: Date;
 
   @Column({ type: 'varchar', length: 255, unique: true })
