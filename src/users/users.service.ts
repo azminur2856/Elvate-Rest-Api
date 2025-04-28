@@ -337,4 +337,8 @@ export class UsersService {
     }
     return user;
   }
+
+  findOne(id: string) {
+    return this.userRepository.findOne({ where: { id } });
+  }
 }

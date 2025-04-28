@@ -8,6 +8,7 @@ import { ConfigType } from '@nestjs/config';
 import * as argon2 from 'argon2';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
+import { CurrentUser } from './types/current-user';
 
 @Injectable()
 export class AuthService {
@@ -123,5 +124,12 @@ export class AuthService {
     return {
       message: 'User logged out successfully',
     };
+  }
+
+  async validateJwtUser(userId: string) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+    const currentUser: CurrentUser = { id: user.id, role: user.role };
+    return currentUser;
   }
 }
