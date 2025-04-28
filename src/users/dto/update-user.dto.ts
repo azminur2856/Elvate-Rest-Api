@@ -5,7 +5,7 @@ import {
   IsDateString,
   IsEnum,
 } from 'class-validator';
-import { Role } from 'src/auth/enums/role.enum';
+import { Role } from 'src/users/enums/role.enum';
 
 export class UpdateUserDto {
   @IsOptional()
