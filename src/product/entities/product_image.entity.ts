@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   JoinColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 
 @Entity()
@@ -36,7 +37,8 @@ export class ProductImage {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
-  @Column({ type: 'timestamp', nullable: true })
+  // Use @UpdateDateColumn() for auto-updating the timestamp when the entity is updated
+  @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updated_at: Date;
 
   // // product_image.entity.ts

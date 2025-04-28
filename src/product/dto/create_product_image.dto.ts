@@ -22,11 +22,11 @@ export class CreateProductImageDto {
   @IsBoolean()
   is_main: boolean;
 
-  @IsDate()
-  @IsOptional() // Optional as it may be set on creation, but not required
-  created_at: Date;
+  // @IsDate()
+  // @IsOptional() // Optional as it may be set on creation, but not required
+  // created_at: Date;
 
-  @IsDate()
-  @IsOptional() // Optional for when the image is updated
-  updated_at: Date;
+  // @IsDate()
+  // @IsOptional() // Optional for when the image is updated
+  // updated_at: Date;
 }

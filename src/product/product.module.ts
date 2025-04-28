@@ -12,5 +12,6 @@ import { ProductImageService } from './product_image.service';
   imports: [TypeOrmModule.forFeature([Product, ProductImage, ProductVariant])],
   controllers: [ProductController],
   providers: [ProductService, ProductVariantService, ProductImageService],
+  exports: [TypeOrmModule.forFeature([ProductVariant])],
 })
 export class ProductModule {}
