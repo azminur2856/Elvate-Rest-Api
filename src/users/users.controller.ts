@@ -74,8 +74,6 @@ export class UsersController {
   }
 
   @Roles(Role.ADMIN)
-  @UseGuards(RolesGuard)
-  @UseGuards(JwtAuthGuard)
   @Delete('deleteUser/:id')
   deleteUser(@Param('id') id: string, @Req() req: any) {
     return this.usersService.deteteUser(id, req.user.id);
