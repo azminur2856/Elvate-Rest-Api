@@ -341,22 +341,4 @@ export class UsersService {
   findOne(id: string) {
     return this.userRepository.findOne({ where: { id } });
   }
-
-  async getUserByIdWithCredential(id: string) {
-    if (!id) {
-      throw new BadRequestException(`Id is required`);
-    }
-
-    return await this.userRepository.findOne({
-      where: { id },
-    });
-  }
-
-  async getUserByDynamicCredential(email: string) {
-    // Get user by email
-    const user = await this.userRepository.findOne({
-      where: { email },
-    });
-    return user;
-  }
 }

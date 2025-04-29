@@ -1,13 +1,6 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcrypt';
-import * as bcrypt from 'bcrypt';
 import { UsersService } from 'src/users/users.service';
 import { AuthJwtPayload } from './types/auth-jwtPayload';
 import refreshJwtConfig from './config/refresh-jwt.config';
@@ -17,32 +10,15 @@ import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { CurrentUser } from './types/current-user';
 import { CreateUserDto } from 'src/users/dto/create-user.dto';
-import { SmsService } from './services/sms.service';
-import { MailService } from './services/mail.services';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Verification } from './entities/verification.entity';
-import { Repository } from 'typeorm';
-import { ChangePasswordDto } from './dto/change-password.dto';
-import { ForgotPasswordDto } from './dto/forgot-password.dto';
-import { VerificationMethod } from './enums/verification-method.enum';
-import { nanoid } from 'nanoid';
-import { VerificationType } from './enums/verification-type.enum';
-import { maskEmail } from './utility/email-mask.util';
-import { generateOtp } from './utility/otp.util';
-import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private activityLogsService: ActivityLogsService,
     private usersService: UsersService,
-    private smsService: SmsService,
-    private mailService: MailService,
     private jwtService: JwtService,
     @Inject(refreshJwtConfig.KEY)
     private refreshTokenConfig: ConfigType<typeof refreshJwtConfig>,
-    @InjectRepository(Verification)
-    private verificationRepository: Repository<Verification>,
+    private activityLogsService: ActivityLogsService,
   ) {}
 
   async validateUser(email: string, password: string) {
@@ -162,220 +138,5 @@ export class AuthService {
     const user = await this.usersService.findByEmail(googleUser.email);
     if (user) return user;
     this.usersService.createUser(googleUser);
-  }
-
-  //ChangePassword
-  async changePassword(id: string, changePasswordDto: ChangePasswordDto) {
-    const user = await this.usersService.getUserByIdWithCredential(id);
-    if (!user) {
-      throw new NotFoundException(`User not found`);
-    }
-
-    if (!(await compare(changePasswordDto.oldPassword, user.password))) {
-      throw new UnauthorizedException('Old password does not match');
-    }
-
-    if (changePasswordDto.oldPassword === changePasswordDto.newPassword) {
-      throw new BadRequestException(
-        'New password cannot be same as old password',
-      );
-    }
-
-    const hashedPassword = bcrypt.hashSync(changePasswordDto.newPassword, 10);
-    const result = this.usersService.changePassword(id, hashedPassword);
-
-    // Update Action Log
-    const activityLog = {
-      activity: ActivityType.USER_CHANGE_PASSWORD,
-      description: 'User Changed Password',
-      user: user,
-    };
-    await this.activityLogsService.createActivityLog(activityLog);
-
-    return {
-      message: 'Password changed successfully',
-      generatedMaps: (await result).generatedMaps,
-      raw: (await result).raw,
-      affected: (await result).affected,
-    };
-  }
-
-  //Forgot password
-  /////////////////////////////// Forgot Password ///////////////////////////////
-  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-    const user = await this.usersService.getUserByDynamicCredential(
-      forgotPasswordDto.email,
-    );
-    if (!user) {
-      throw new NotFoundException(`User not found`);
-    }
-
-    /////////////////// Verification Method: EMAIL
-
-    if (forgotPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
-      const resetToken = nanoid(64);
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
-
-      // Check if user has same type of verification data saved in database. If yes, then delete it.
-      await this.verificationRepository.delete({
-        type: VerificationType.PASSWORD_RESET_TOKEN,
-        userId: user.id,
-      });
-
-      const verificationData = this.verificationRepository.create({
-        type: VerificationType.PASSWORD_RESET_TOKEN,
-        tokenOrOtp: resetToken,
-        user: user,
-        expiresAt: expiresAt,
-      });
-      await this.verificationRepository.save(verificationData);
-
-      const fullName = user.firstName + ' ' + user.lastName;
-
-      const response = await this.mailService.sendPasswordResetEmail(
-        user.email,
-        fullName,
-        resetToken,
-      );
-
-      const maskedEmail = maskEmail(user.email);
-      if (response.accepted.length > 0 && response.rejected.length === 0) {
-        return {
-          message: `Password reset link sent to your email ${maskedEmail}`,
-          resetToken: resetToken,
-        };
-      } else {
-        return {
-          message: `Failed to sent email to your email ${maskedEmail}`,
-        };
-      }
-    }
-
-    /////////////////// Verification Method: SMS
-    else if (forgotPasswordDto.verificationMethod === VerificationMethod.SMS) {
-      const otp = generateOtp();
-      const expiresAt = new Date();
-      expiresAt.setMinutes(expiresAt.getMinutes() + 2); // Expires in 2 minutes
-
-      // Check if user has same type of verification data saved in database. If yes, then delete it.
-      await this.verificationRepository.delete({
-        type: VerificationType.PASSWORD_RESET_OTP,
-        userId: user.id,
-      });
-
-      // Save new OTP verification data
-      const verificationData = this.verificationRepository.create({
-        type: VerificationType.PASSWORD_RESET_OTP,
-        tokenOrOtp: otp,
-        user: user,
-        expiresAt: expiresAt,
-      });
-      await this.verificationRepository.save(verificationData);
-
-      // If phone number is null or empty or undefined then throw error
-      if (!user.phone) {
-        throw new BadRequestException('Phone number not found');
-      }
-      const fullName = user.firstName + ' ' + user.lastName;
-      const response = await this.smsService.sendOtp(user.phone, otp, fullName); // Send OTP to user phone
-
-      const maskedPhone = `********${user.phone.slice(-3)}`;
-
-      if (response.success) {
-        return {
-          message: `OTP Successfully sent to your phone number ${maskedPhone}`,
-        };
-      } else {
-        return {
-          message: `Failed to send OTP to your phone number ${maskedPhone}`,
-        };
-      }
-    } else {
-      throw new BadRequestException('Invalid verification method');
-    }
-  }
-
-  //Reset Password
-  async resetPassword(resetPasswordDto: ResetPasswordDto) {
-    // Verification Method: EMAIL
-    if (resetPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
-      const verificationObj = await this.verificationRepository.findOne({
-        where: {
-          tokenOrOtp: resetPasswordDto.resetTokenOrOTP,
-          type: VerificationType.PASSWORD_RESET_TOKEN,
-        },
-        relations: ['user'], // It will include user object in the response. Access by verificationObj.user
-      });
-
-      if (!verificationObj) {
-        throw new UnauthorizedException('Password Reset Link Expired');
-      }
-
-      const user = verificationObj.user;
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      if (verificationObj.expiresAt < new Date()) {
-        throw new BadRequestException('Password reset Link expired');
-      }
-
-      const hashedPassword = bcrypt.hashSync(resetPasswordDto.newPassword, 10);
-      await this.usersService.changePassword(user.id, hashedPassword);
-
-      await this.verificationRepository.delete(verificationObj.id);
-
-      // Update Action Log
-      const activityLog = {
-        activity: ActivityType.USER_CHANGE_PASSWORD,
-        description: 'User Reset Password With EMAIL Verification',
-        user: user,
-      };
-      await this.activityLogsService.createActivityLog(activityLog);
-
-      return { message: 'Password reset successful' };
-    }
-
-    // Verification Method: SMS
-    else if (resetPasswordDto.verificationMethod === VerificationMethod.SMS) {
-      const verificationObj = await this.verificationRepository.findOne({
-        where: {
-          tokenOrOtp: resetPasswordDto.resetTokenOrOTP,
-          type: VerificationType.PASSWORD_RESET_OTP,
-        },
-        relations: ['user'], // It will include user object in the response. Access by verificationObj.user
-      });
-
-      if (!verificationObj) {
-        throw new UnauthorizedException('Invalid or Expired OTP');
-      }
-
-      const user = verificationObj.user;
-      if (!user) {
-        throw new NotFoundException('User not found');
-      }
-
-      if (verificationObj.expiresAt < new Date()) {
-        throw new BadRequestException('OTP expired');
-      }
-
-      const hashedPassword = bcrypt.hashSync(resetPasswordDto.newPassword, 10);
-      await this.usersService.changePassword(user.id, hashedPassword);
-
-      await this.verificationRepository.delete(verificationObj.id);
-
-      // Update Action Log
-      const activityLog = {
-        activity: ActivityType.USER_CHANGE_PASSWORD,
-        description: 'User Reset Password With SMS Verification',
-        user: user,
-      };
-      await this.activityLogsService.createActivityLog(activityLog);
-
-      return { message: 'Password reset successful' };
-    } else {
-      throw new BadRequestException('Invalid verification method');
-    }
   }
 }
