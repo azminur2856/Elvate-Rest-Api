@@ -1,0 +1,11 @@
+### Login
+POST http://localhost:3000/auth/login
+Content-Type: application/json
+
+{
+    "email": "admin@example.com",
+    "password": "admin123"
+}
+
+### Store the auth token from the login response
+@authToken = {{login.response.body.access_token}} 

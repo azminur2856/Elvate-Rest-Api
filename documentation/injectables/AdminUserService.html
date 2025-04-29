@@ -152,7 +152,15 @@
                             </li>
                             <li>
                                     <span class="modifier">Async</span>
+                                <a href="#getStats" >getStats</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
                                 <a href="#getUserStats" >getUserStats</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#setStatus" >setStatus</a>
                             </li>
                             <li>
                                     <span class="modifier">Async</span>
@@ -161,6 +169,10 @@
                             <li>
                                     <span class="modifier">Async</span>
                                 <a href="#update" >update</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#updateUserRole" >updateUserRole</a>
                             </li>
                         </ul>
                     </td>
@@ -180,7 +192,7 @@
             <tbody>
                 <tr>
                     <td class="col-md-4">
-<code>constructor(userRepository: <a href="../entitys/Users.html" target="_self">Repository&lt;Users&gt;</a>, rolesRepository: <a href="../entitys/Roles.html" target="_self">Repository&lt;Roles&gt;</a>)</code>
+<code>constructor(userRepository: Repository<Users>, rolesRepository: <a href="../entitys/Roles.html" target="_self">Repository&lt;Roles&gt;</a>)</code>
                     </td>
                 </tr>
                         <tr>
@@ -206,7 +218,7 @@
                                                         <td>userRepository</td>
                                                   
                                                         <td>
-                                                                        <code><a href="../entitys/Users.html" target="_self" >Repository&lt;Users&gt;</a></code>
+                                                                    <code>Repository&lt;Users&gt;</code>
                                                         </td>
                                                   
                                                     <td>
@@ -301,7 +313,7 @@
                                 </table>
                             </div>
                         <div class="io-description">
-                            <b>Returns : </b>        <code><a href="../entitys/Users.html" target="_self" >Promise&lt;PaginatedResponse&lt;Users&gt;&gt;</a></code>
+                            <b>Returns : </b>    <code>Promise&lt;PaginatedResponse&lt;Users&gt;&gt;</code>
 
                         </div>
                             <div class="io-description">
@@ -380,13 +392,52 @@
                                 </table>
                             </div>
                         <div class="io-description">
-                            <b>Returns : </b>        <code><a href="../entitys/Users.html" target="_self" >Promise&lt;Users&gt;</a></code>
+                            <b>Returns : </b>    <code>Promise&lt;Users&gt;</code>
 
                         </div>
                             <div class="io-description">
                                 <p>Promise<Users> - The found user</p>
 
                             </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getStats"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>getStats</b></span>
+                        <a href="#getStats"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>getStats()</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="247"
+                                    class="link-to-prism">src/admin/services/admin-user.service.ts:247</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
                 </td>
             </tr>
         </tbody>
@@ -426,6 +477,87 @@
                             <b>Returns : </b>    <code>Promise&lt;any&gt;</code>
 
                         </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="setStatus"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>setStatus</b></span>
+                        <a href="#setStatus"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>setStatus(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, isActive: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/boolean" target="_blank">boolean</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="259"
+                                    class="link-to-prism">src/admin/services/admin-user.service.ts:259</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>id</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>isActive</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/boolean" target="_blank" >boolean</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
                 </td>
             </tr>
         </tbody>
@@ -512,7 +644,7 @@
                                 </table>
                             </div>
                         <div class="io-description">
-                            <b>Returns : </b>        <code><a href="../entitys/Users.html" target="_self" >Promise&lt;Users&gt;</a></code>
+                            <b>Returns : </b>    <code>Promise&lt;Users&gt;</code>
 
                         </div>
                             <div class="io-description">
@@ -609,7 +741,104 @@
                                 </table>
                             </div>
                         <div class="io-description">
-                            <b>Returns : </b>        <code><a href="../entitys/Users.html" target="_self" >Promise&lt;Users&gt;</a></code>
+                            <b>Returns : </b>    <code>Promise&lt;Users&gt;</code>
+
+                        </div>
+                            <div class="io-description">
+                                <p>Promise<Users> - The updated user</p>
+
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="updateUserRole"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>updateUserRole</b></span>
+                        <a href="#updateUserRole"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>updateUserRole(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, role: <a href="../undefineds/Role.html" target="_self">Role</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="270"
+                                    class="link-to-prism">src/admin/services/admin-user.service.ts:270</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+                        <div class="io-description"><p>Updates a user&#39;s role.</p>
+</div>
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                                <td>Description</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>id</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                            <td>
+                                                    <ul>
+<li>User ID</li>
+</ul>
+
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                                <td>role</td>
+                                            <td>
+                                                            <code><a href="../miscellaneous/enumerations.html#Role" target="_self" >Role</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                            <td>
+                                                    <ul>
+<li>New role</li>
+</ul>
+
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>Promise&lt;Users&gt;</code>
 
                         </div>
                             <div class="io-description">
@@ -870,6 +1099,49 @@ export class AdminUserService {
       newUsers,
       roleCounts,
     };
+  }
+
+  async getStats() {
+    const totalUsers &#x3D; await this.userRepository.count();
+    const activeUsers &#x3D; await this.userRepository.count({ where: { isActive: true } });
+    const inactiveUsers &#x3D; await this.userRepository.count({ where: { isActive: false } });
+    
+    return {
+      totalUsers,
+      activeUsers,
+      inactiveUsers,
+    };
+  }
+
+  async setStatus(id: string, isActive: boolean) {
+    await this.userRepository.update(id, { isActive });
+    return this.findOne(id);
+  }
+
+  /**
+   * Updates a user&#x27;s role.
+   * @param id - User ID
+   * @param role - New role
+   * @returns Promise&lt;Users&gt; - The updated user
+   */
+  async updateUserRole(id: string, role: Role): Promise&lt;Users&gt; {
+    const user &#x3D; await this.findOne(id);
+    
+    const roleEntity &#x3D; await this.rolesRepository.findOne({
+      where: { name: role },
+    });
+
+    if (!roleEntity) {
+      throw new BadRequestException(&#x60;Role ${role} not found&#x60;);
+    }
+
+    // Update the user&#x27;s roles
+    user.roles &#x3D; [roleEntity];
+    
+    // Update email verification status
+    user.isEmailVerified &#x3D; true;
+
+    return this.userRepository.save(user);
   }
 }
 </code></pre>

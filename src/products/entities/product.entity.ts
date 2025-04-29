@@ -1,6 +1,21 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
-import { ProductCategory } from '../enums/product-category.enum';
 import { ApiProperty } from '@nestjs/swagger';
+
+export enum ProductCategory {
+  ELECTRONICS = 'ELECTRONICS',
+  CLOTHING = 'CLOTHING',
+  T_SHIRTS = 'T_SHIRTS',
+  SHIRTS = 'SHIRTS',
+  PANTS = 'PANTS',
+  SHOES = 'SHOES',
+  ACCESSORIES = 'ACCESSORIES',
+  BOOKS = 'BOOKS',
+  HOME = 'HOME',
+  SPORTS = 'SPORTS',
+  BEAUTY = 'BEAUTY',
+  FOOD = 'FOOD',
+  OTHER = 'OTHER'
+}
 
 /**
  * Product entity representing a product in the e-commerce system.
@@ -35,7 +50,11 @@ export class Product {
   stockQuantity: number;
 
   @ApiProperty({ description: 'The category of the product', enum: ProductCategory })
-  @Column({ type: 'enum', enum: ProductCategory })
+  @Column({
+    type: 'enum',
+    enum: ProductCategory,
+    nullable: true
+  })
   category: ProductCategory;
 
   @ApiProperty({ description: 'Available sizes for the product', type: [String], default: [] })

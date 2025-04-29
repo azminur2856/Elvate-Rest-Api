@@ -174,17 +174,11 @@
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
-                                    <span class="modifier"></span>
                                     <span class="modifier">Optional</span>
-                                <a href="#discountedPrice" >discountedPrice</a>
+                                <a href="#imageUrl" >imageUrl</a>
                             </li>
                             <li>
                                     <span class="modifier"></span>
-                                    <span class="modifier"></span>
-                                    <span class="modifier"></span>
-                                <a href="#images" >images</a>
-                            </li>
-                            <li>
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
@@ -199,6 +193,7 @@
                                 <a href="#isFeatured" >isFeatured</a>
                             </li>
                             <li>
+                                    <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
@@ -235,6 +230,14 @@
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier">Optional</span>
+                                <a href="#salePrice" >salePrice</a>
+                            </li>
+                            <li>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
                                 <a href="#sizes" >sizes</a>
                             </li>
                             <li>
@@ -248,7 +251,7 @@
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
-                                <a href="#stockQuantity" >stockQuantity</a>
+                                <a href="#stock" >stock</a>
                             </li>
                         </ul>
                     </td>
@@ -301,7 +304,7 @@
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="94" class="link-to-prism">src/products/dto/create-product.dto.ts:94</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="104" class="link-to-prism">src/products/dto/create-product.dto.ts:104</a></div>
                         </td>
                     </tr>
 
@@ -334,13 +337,13 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiPropertyOptional({description: &#x27;Care instructions&#x27;, example: &#x27;Machine wash cold, tumble dry low&#x27;})<br />@IsString()<br />@IsOptional()<br />
+                            @ApiPropertyOptional({description: &#x27;Care instructions&#x27;, example: &#x27;Machine wash cold, tumble dry low. Do not bleach. Iron on reverse side if needed.&#x27;})<br />@IsString()<br />@IsOptional()<br />
                         </code>
                     </td>
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="110" class="link-to-prism">src/products/dto/create-product.dto.ts:110</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="120" class="link-to-prism">src/products/dto/create-product.dto.ts:120</a></div>
                         </td>
                     </tr>
 
@@ -371,13 +374,13 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiProperty({description: &#x27;Product category&#x27;, enum: ProductCategory, example: undefined})<br />@IsEnum(ProductCategory)<br />
+                            @ApiProperty({description: &#x27;Category of the product&#x27;, enum: ProductCategory, example: undefined})<br />@IsEnum(ProductCategory)<br />
                         </code>
                     </td>
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="54" class="link-to-prism">src/products/dto/create-product.dto.ts:54</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="57" class="link-to-prism">src/products/dto/create-product.dto.ts:57</a></div>
                         </td>
                     </tr>
 
@@ -415,7 +418,7 @@
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="70" class="link-to-prism">src/products/dto/create-product.dto.ts:70</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="73" class="link-to-prism">src/products/dto/create-product.dto.ts:73</a></div>
                         </td>
                     </tr>
 
@@ -447,7 +450,7 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiProperty({description: &#x27;Product description&#x27;, example: &#x27;A comfortable and stylish cotton t-shirt perfect for everyday wear.&#x27;})<br />@IsString()<br />@IsNotEmpty()<br />
+                            @ApiProperty({description: &#x27;Description of the product&#x27;, example: &#x27;Premium quality cotton t-shirt with a comfortable classic fit. Perfect for everyday wear.&#x27;})<br />@IsString()<br />@IsNotEmpty()<br />
                         </code>
                     </td>
                 </tr>
@@ -464,21 +467,20 @@
         <tbody>
             <tr>
                 <td class="col-md-4">
-                    <a name="discountedPrice"></a>
+                    <a name="imageUrl"></a>
                     <span class="name">
-                            <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier">Optional</span>
-                        <span ><b>discountedPrice</b></span>
-                        <a href="#discountedPrice"><span class="icon ion-ios-link"></span></a>
+                        <span ><b>imageUrl</b></span>
+                        <a href="#imageUrl"><span class="icon ion-ios-link"></span></a>
                     </span>
                 </td>
             </tr>
                 <tr>
                     <td class="col-md-4">
-                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
 
                     </td>
                 </tr>
@@ -487,51 +489,13 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiPropertyOptional({description: &#x27;Discounted price (if on sale)&#x27;, example: 24.99})<br />@IsNumber()<br />@Min(0)<br />@IsOptional()<br />
+                            @ApiProperty({description: &#x27;URL of the product image&#x27;, example: &#x27;https://example.com/images/classic-fit-tshirt.jpg&#x27;, required: false})<br />@IsUrl()<br />@IsOptional()<br />
                         </code>
                     </td>
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="38" class="link-to-prism">src/products/dto/create-product.dto.ts:38</a></div>
-                        </td>
-                    </tr>
-
-
-        </tbody>
-    </table>
-    <table class="table table-sm table-bordered">
-        <tbody>
-            <tr>
-                <td class="col-md-4">
-                    <a name="images"></a>
-                    <span class="name">
-                            <span class="modifier"></span>
-                            <span class="modifier"></span>
-                            <span class="modifier"></span>
-                        <span ><b>images</b></span>
-                        <a href="#images"><span class="icon ion-ios-link"></span></a>
-                    </span>
-                </td>
-            </tr>
-                <tr>
-                    <td class="col-md-4">
-                        <i>Type : </i>    <code>string[]</code>
-
-                    </td>
-                </tr>
-                <tr>
-                    <td class="col-md-4">
-                        <b>Decorators : </b>
-                        <br />
-                        <code>
-                            @ApiProperty({description: &#x27;Product image URLs&#x27;, example: undefined})<br />@IsArray()<br />@IsUrl({}, {each: true})<br />
-                        </code>
-                    </td>
-                </tr>
-                    <tr>
-                        <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="78" class="link-to-prism">src/products/dto/create-product.dto.ts:78</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="82" class="link-to-prism">src/products/dto/create-product.dto.ts:82</a></div>
                         </td>
                     </tr>
 
@@ -544,6 +508,7 @@
                 <td class="col-md-4">
                     <a name="isBestSeller"></a>
                     <span class="name">
+                            <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
@@ -564,13 +529,13 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiPropertyOptional({description: &#x27;Whether the product is a best seller&#x27;, default: false})<br />@IsBoolean()<br />@IsOptional()<br />
+                            @ApiPropertyOptional({description: &#x27;Whether the product is a best seller&#x27;, default: false})<br />@IsBoolean()<br />@IsOptional()<br />@Transform( &#x3D;&gt; )<br />
                         </code>
                     </td>
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="134" class="link-to-prism">src/products/dto/create-product.dto.ts:134</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="147" class="link-to-prism">src/products/dto/create-product.dto.ts:147</a></div>
                         </td>
                     </tr>
 
@@ -603,13 +568,13 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiPropertyOptional({description: &#x27;Whether the product is featured&#x27;, default: false})<br />@IsBoolean()<br />@IsOptional()<br />
+                            @ApiPropertyOptional({description: &#x27;Whether the product is featured&#x27;, example: false, required: false})<br />@IsBoolean()<br />@IsOptional()<br />
                         </code>
                     </td>
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="118" class="link-to-prism">src/products/dto/create-product.dto.ts:118</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="129" class="link-to-prism">src/products/dto/create-product.dto.ts:129</a></div>
                         </td>
                     </tr>
 
@@ -622,6 +587,7 @@
                 <td class="col-md-4">
                     <a name="isNewArrival"></a>
                     <span class="name">
+                            <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
@@ -642,13 +608,13 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiPropertyOptional({description: &#x27;Whether the product is a new arrival&#x27;, default: false})<br />@IsBoolean()<br />@IsOptional()<br />
+                            @ApiPropertyOptional({description: &#x27;Whether the product is a new arrival&#x27;, default: false})<br />@IsBoolean()<br />@IsOptional()<br />@Transform( &#x3D;&gt; )<br />
                         </code>
                     </td>
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="126" class="link-to-prism">src/products/dto/create-product.dto.ts:126</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="138" class="link-to-prism">src/products/dto/create-product.dto.ts:138</a></div>
                         </td>
                     </tr>
 
@@ -681,13 +647,13 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiPropertyOptional({description: &#x27;Whether the product is on sale&#x27;, default: false})<br />@IsBoolean()<br />@IsOptional()<br />
+                            @ApiPropertyOptional({description: &#x27;Whether the product is on sale&#x27;, example: false, required: false})<br />@IsBoolean()<br />@IsOptional()<br />
                         </code>
                     </td>
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="142" class="link-to-prism">src/products/dto/create-product.dto.ts:142</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="156" class="link-to-prism">src/products/dto/create-product.dto.ts:156</a></div>
                         </td>
                     </tr>
 
@@ -720,13 +686,13 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiPropertyOptional({description: &#x27;Product material&#x27;, example: &#x27;100% Cotton&#x27;})<br />@IsString()<br />@IsOptional()<br />
+                            @ApiPropertyOptional({description: &#x27;Product material&#x27;, example: &#x27;100% Premium Cotton&#x27;})<br />@IsString()<br />@IsOptional()<br />
                         </code>
                     </td>
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="102" class="link-to-prism">src/products/dto/create-product.dto.ts:102</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="112" class="link-to-prism">src/products/dto/create-product.dto.ts:112</a></div>
                         </td>
                     </tr>
 
@@ -758,7 +724,7 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiProperty({description: &#x27;Product name&#x27;, example: &#x27;Classic Cotton T-Shirt&#x27;})<br />@IsString()<br />@IsNotEmpty()<br />
+                            @ApiProperty({description: &#x27;Name of the product&#x27;, example: &#x27;Classic Fit Cotton T-Shirt&#x27;})<br />@IsString()<br />@IsNotEmpty()<br />
                         </code>
                     </td>
                 </tr>
@@ -796,13 +762,53 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiProperty({description: &#x27;Product price&#x27;, example: 29.99})<br />@IsNumber()<br />@Min(0)<br />
+                            @ApiProperty({description: &#x27;Price of the product&#x27;, example: 29.99, minimum: 0})<br />@IsNumber()<br />@Min(0)<br />
                         </code>
                     </td>
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="29" class="link-to-prism">src/products/dto/create-product.dto.ts:29</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="30" class="link-to-prism">src/products/dto/create-product.dto.ts:30</a></div>
+                        </td>
+                    </tr>
+
+
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="salePrice"></a>
+                    <span class="name">
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier">Optional</span>
+                        <span ><b>salePrice</b></span>
+                        <a href="#salePrice"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Type : </i>        <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <b>Decorators : </b>
+                        <br />
+                        <code>
+                            @ApiProperty({description: &#x27;Sale price of the product (if on sale)&#x27;, example: 24.99, required: false})<br />@IsNumber()<br />@Min(0)<br />@IsOptional()<br />
+                        </code>
+                    </td>
+                </tr>
+                    <tr>
+                        <td class="col-md-4">
+                                <div class="io-line">Defined in <a href="" data-line="40" class="link-to-prism">src/products/dto/create-product.dto.ts:40</a></div>
                         </td>
                     </tr>
 
@@ -840,7 +846,7 @@
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="62" class="link-to-prism">src/products/dto/create-product.dto.ts:62</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="65" class="link-to-prism">src/products/dto/create-product.dto.ts:65</a></div>
                         </td>
                     </tr>
 
@@ -879,7 +885,7 @@
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="86" class="link-to-prism">src/products/dto/create-product.dto.ts:86</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="96" class="link-to-prism">src/products/dto/create-product.dto.ts:96</a></div>
                         </td>
                     </tr>
 
@@ -890,13 +896,13 @@
         <tbody>
             <tr>
                 <td class="col-md-4">
-                    <a name="stockQuantity"></a>
+                    <a name="stock"></a>
                     <span class="name">
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
-                        <span ><b>stockQuantity</b></span>
-                        <a href="#stockQuantity"><span class="icon ion-ios-link"></span></a>
+                        <span ><b>stock</b></span>
+                        <a href="#stock"><span class="icon ion-ios-link"></span></a>
                     </span>
                 </td>
             </tr>
@@ -911,13 +917,13 @@
                         <b>Decorators : </b>
                         <br />
                         <code>
-                            @ApiProperty({description: &#x27;Stock quantity&#x27;, example: 100})<br />@IsNumber()<br />@Min(0)<br />
+                            @ApiProperty({description: &#x27;Stock quantity of the product&#x27;, example: 100, minimum: 0})<br />@IsNumber()<br />@Min(0)<br />
                         </code>
                     </td>
                 </tr>
                     <tr>
                         <td class="col-md-4">
-                                <div class="io-line">Defined in <a href="" data-line="46" class="link-to-prism">src/products/dto/create-product.dto.ts:46</a></div>
+                                <div class="io-line">Defined in <a href="" data-line="49" class="link-to-prism">src/products/dto/create-product.dto.ts:49</a></div>
                         </td>
                     </tr>
 
@@ -937,54 +943,57 @@
 
     <div class="tab-pane fade  tab-source-code" id="source">
         <pre class="line-numbers compodoc-sourcecode"><code class="language-typescript">import { IsString, IsNotEmpty, IsNumber, IsEnum, IsArray, IsOptional, IsBoolean, IsUrl, Min, Max, IsObject, ValidateNested } from &#x27;class-validator&#x27;;
-import { Type } from &#x27;class-transformer&#x27;;
+import { Transform, Type } from &#x27;class-transformer&#x27;;
 import { ApiProperty, ApiPropertyOptional } from &#x27;@nestjs/swagger&#x27;;
-import { ProductCategory } from &#x27;../enums/product-category.enum&#x27;;
+import { ProductCategory } from &#x27;../entities/product.entity&#x27;;
 
 export class CreateProductDto {
   @ApiProperty({
-    description: &#x27;Product name&#x27;,
-    example: &#x27;Classic Cotton T-Shirt&#x27;
+    description: &#x27;Name of the product&#x27;,
+    example: &#x27;Classic Fit Cotton T-Shirt&#x27;
   })
   @IsString()
   @IsNotEmpty()
   name: string;
 
   @ApiProperty({
-    description: &#x27;Product description&#x27;,
-    example: &#x27;A comfortable and stylish cotton t-shirt perfect for everyday wear.&#x27;
+    description: &#x27;Description of the product&#x27;,
+    example: &#x27;Premium quality cotton t-shirt with a comfortable classic fit. Perfect for everyday wear.&#x27;
   })
   @IsString()
   @IsNotEmpty()
   description: string;
 
   @ApiProperty({
-    description: &#x27;Product price&#x27;,
-    example: 29.99
+    description: &#x27;Price of the product&#x27;,
+    example: 29.99,
+    minimum: 0
   })
   @IsNumber()
   @Min(0)
   price: number;
 
-  @ApiPropertyOptional({
-    description: &#x27;Discounted price (if on sale)&#x27;,
-    example: 24.99
+  @ApiProperty({
+    description: &#x27;Sale price of the product (if on sale)&#x27;,
+    example: 24.99,
+    required: false
   })
   @IsNumber()
   @Min(0)
   @IsOptional()
-  discountedPrice?: number;
+  salePrice?: number;
 
   @ApiProperty({
-    description: &#x27;Stock quantity&#x27;,
-    example: 100
+    description: &#x27;Stock quantity of the product&#x27;,
+    example: 100,
+    minimum: 0
   })
   @IsNumber()
   @Min(0)
-  stockQuantity: number;
+  stock: number;
 
   @ApiProperty({
-    description: &#x27;Product category&#x27;,
+    description: &#x27;Category of the product&#x27;,
     enum: ProductCategory,
     example: ProductCategory.T_SHIRTS
   })
@@ -993,7 +1002,7 @@ export class CreateProductDto {
 
   @ApiProperty({
     description: &#x27;Available sizes&#x27;,
-    example: [&#x27;S&#x27;, &#x27;M&#x27;, &#x27;L&#x27;, &#x27;XL&#x27;]
+    example: [&#x27;XS&#x27;, &#x27;S&#x27;, &#x27;M&#x27;, &#x27;L&#x27;, &#x27;XL&#x27;, &#x27;XXL&#x27;]
   })
   @IsArray()
   @IsString({ each: true })
@@ -1001,23 +1010,30 @@ export class CreateProductDto {
 
   @ApiProperty({
     description: &#x27;Available colors&#x27;,
-    example: [&#x27;Black&#x27;, &#x27;White&#x27;, &#x27;Navy&#x27;]
+    example: [&#x27;Black&#x27;, &#x27;White&#x27;, &#x27;Navy&#x27;, &#x27;Burgundy&#x27;, &#x27;Forest Green&#x27;]
   })
   @IsArray()
   @IsString({ each: true })
   colors: string[];
 
   @ApiProperty({
-    description: &#x27;Product image URLs&#x27;,
-    example: [&#x27;https://example.com/image1.jpg&#x27;, &#x27;https://example.com/image2.jpg&#x27;]
+    description: &#x27;URL of the product image&#x27;,
+    example: &#x27;https://example.com/images/classic-fit-tshirt.jpg&#x27;,
+    required: false
   })
-  @IsArray()
-  @IsUrl({}, { each: true })
-  images: string[];
+  @IsUrl()
+  @IsOptional()
+  imageUrl?: string;
 
   @ApiPropertyOptional({
     description: &#x27;Product specifications&#x27;,
-    example: { &#x27;Fabric&#x27;: &#x27;100% Cotton&#x27;, &#x27;Fit&#x27;: &#x27;Regular&#x27; }
+    example: { 
+      &#x27;Fabric&#x27;: &#x27;100% Premium Cotton&#x27;, 
+      &#x27;Fit&#x27;: &#x27;Classic Fit&#x27;,
+      &#x27;Weight&#x27;: &#x27;180 GSM&#x27;,
+      &#x27;Style&#x27;: &#x27;Casual&#x27;,
+      &#x27;Neck&#x27;: &#x27;Crew Neck&#x27;
+    }
   })
   @IsObject()
   @IsOptional()
@@ -1033,7 +1049,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: &#x27;Product material&#x27;,
-    example: &#x27;100% Cotton&#x27;
+    example: &#x27;100% Premium Cotton&#x27;
   })
   @IsString()
   @IsOptional()
@@ -1041,7 +1057,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: &#x27;Care instructions&#x27;,
-    example: &#x27;Machine wash cold, tumble dry low&#x27;
+    example: &#x27;Machine wash cold, tumble dry low. Do not bleach. Iron on reverse side if needed.&#x27;
   })
   @IsString()
   @IsOptional()
@@ -1049,7 +1065,8 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: &#x27;Whether the product is featured&#x27;,
-    default: false
+    example: false,
+    required: false
   })
   @IsBoolean()
   @IsOptional()
@@ -1061,6 +1078,7 @@ export class CreateProductDto {
   })
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) &#x3D;&gt; value &#x3D;&#x3D;&#x3D; &#x27;true&#x27;)
   isNewArrival?: boolean;
 
   @ApiPropertyOptional({
@@ -1069,11 +1087,13 @@ export class CreateProductDto {
   })
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) &#x3D;&gt; value &#x3D;&#x3D;&#x3D; &#x27;true&#x27;)
   isBestSeller?: boolean;
 
   @ApiPropertyOptional({
     description: &#x27;Whether the product is on sale&#x27;,
-    default: false
+    example: false,
+    required: false
   })
   @IsBoolean()
   @IsOptional()

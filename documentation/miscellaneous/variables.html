@@ -112,6 +112,9 @@
                 <td class="col-md-4">
                     <ul class="index-list">
                         <li>
+                            <a href="#CurrentUser" title="src/auth/decorators/current-user.decorator.ts" ><b>CurrentUser</b>&nbsp;&nbsp;&nbsp;(src/.../current-user.decorator.ts)</a>
+                        </li>
+                        <li>
                             <a href="#Roles" title="src/auth/decorators/roles.decorator.ts" ><b>Roles</b>&nbsp;&nbsp;&nbsp;(src/.../roles.decorator.ts)</a>
                         </li>
                         <li>
@@ -127,6 +130,34 @@
     </table>
 </section>
 
+    <h3>src/auth/decorators/current-user.decorator.ts</h3>
+    <section data-compodoc="block-properties">
+    <h3></h3>    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="CurrentUser"></a>
+                    <span class="name">
+                        <span ><b>CurrentUser</b></span>
+                        <a href="#CurrentUser"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <i>Default value : </i><code>createParamDecorator(
+  (data: unknown, ctx: ExecutionContext) &#x3D;&gt; {
+    const request &#x3D; ctx.switchToHttp().getRequest();
+    return request.user;
+  },
+)</code>
+                    </td>
+                </tr>
+
+
+        </tbody>
+    </table>
+</section>
     <h3>src/auth/decorators/roles.decorator.ts</h3>
     <section data-compodoc="block-properties">
     <h3></h3>    <table class="table table-sm table-bordered">

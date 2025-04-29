@@ -1,0 +1,73 @@
+### Variables
+@baseUrl = http://localhost:3000
+@authToken = {{login.response.body.access_token}}
+
+### Get all products (with pagination and filtering)
+GET {{baseUrl}}/products?page=1&limit=10&category=ELECTRONICS
+
+### Get featured products
+GET {{baseUrl}}/products/featured
+
+### Get new arrivals
+GET {{baseUrl}}/products/new-arrivals
+
+### Get best sellers
+GET {{baseUrl}}/products/best-sellers
+
+### Get products on sale
+GET {{baseUrl}}/products/on-sale
+
+### Get products by category
+GET {{baseUrl}}/products/category/ELECTRONICS
+
+### Get product by ID
+GET {{baseUrl}}/products/123
+
+### Admin: Create new product
+POST {{baseUrl}}/admin/products
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "name": "New Product",
+    "description": "Product description",
+    "price": 99.99,
+    "category": "ELECTRONICS",
+    "stock": 100,
+    "images": ["image1.jpg", "image2.jpg"]
+}
+
+### Admin: Update product
+PATCH {{baseUrl}}/admin/products/123
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "name": "Updated Product",
+    "price": 89.99,
+    "stock": 150
+}
+
+### Admin: Delete product
+DELETE {{baseUrl}}/admin/products/123
+Authorization: Bearer {{authToken}}
+
+### Admin: Toggle featured status
+PATCH {{baseUrl}}/admin/products/123/toggle-featured
+Authorization: Bearer {{authToken}}
+
+### Admin: Toggle new arrival status
+PATCH {{baseUrl}}/admin/products/123/toggle-new-arrival
+Authorization: Bearer {{authToken}}
+
+### Admin: Toggle best seller status
+PATCH {{baseUrl}}/admin/products/123/toggle-best-seller
+Authorization: Bearer {{authToken}}
+
+### Admin: Toggle on sale status
+PATCH {{baseUrl}}/admin/products/123/toggle-on-sale
+Authorization: Bearer {{authToken}}
+
+### Admin: Get product analytics
+GET {{baseUrl}}/admin/products/analytics
+Authorization: Bearer {{authToken}} 

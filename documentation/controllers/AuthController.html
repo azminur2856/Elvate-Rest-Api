@@ -127,7 +127,7 @@
                 <h3>Description</h3>
             </p>
             <p class="comment">
-                <p>Controller handling authentication endpoints.</p>
+                <p>Controller handling authentication routes including login.</p>
 
             </p>
 
@@ -148,6 +148,7 @@
                     <td class="col-md-4">
                         <ul class="index-list">
                             <li>
+                                    <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
@@ -184,6 +185,7 @@
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
+                            <span class="modifier"></span>
                             <span class="modifier">Async</span>
                         <span ><b>login</b></span>
                         <a href="#login"><span class="icon ion-ios-link"></span></a>
@@ -201,14 +203,14 @@
                 <td class="col-md-4">
                     <b>Decorators : </b>
                     <br />
-                    <code>@Post(&#x27;login&#x27;)<br />@HttpCode(HttpStatus.OK)<br />@ApiOperation({summary: &#x27;User login&#x27;, description: &#x27;Authenticate user and return JWT token&#x27;})<br />@ApiResponse({status: 200, description: &#x27;Successfully authenticated&#x27;})<br />@ApiResponse({status: 401, description: &#x27;Unauthorized&#x27;})<br /></code>
+                    <code>@Post(&#x27;login&#x27;)<br />@HttpCode(HttpStatus.OK)<br />@ApiOperation({summary: &#x27;User login&#x27;})<br />@ApiBody({type: LoginDto})<br />@ApiResponse({status: 200, description: &#x27;Login successful, returns JWT token&#x27;, schema: undefined})<br />@ApiResponse({status: 401, description: &#x27;Invalid credentials&#x27;})<br /></code>
                 </td>
             </tr>
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="27"
-                                    class="link-to-prism">src/auth/auth.controller.ts:27</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="35"
+                                    class="link-to-prism">src/auth/auth.controller.ts:35</a></div>
                         </td>
                     </tr>
 
@@ -269,17 +271,15 @@
 
     <div class="tab-pane fade  tab-source-code" id="source">
         <pre class="line-numbers compodoc-sourcecode"><code class="language-typescript">// src/auth/auth.controller.ts
-import { Controller, Post, Body, HttpCode, HttpStatus } from &#x27;@nestjs/common&#x27;;
+import { Controller, Post, Body, HttpCode, HttpStatus, UnauthorizedException } from &#x27;@nestjs/common&#x27;;
 import { AuthService } from &#x27;./auth.service&#x27;;
 import { LoginDto } from &#x27;./dto/login.dto&#x27;;
-import { ApiTags, ApiOperation, ApiResponse } from &#x27;@nestjs/swagger&#x27;;
+import { ApiTags, ApiOperation, ApiResponse, ApiBody } from &#x27;@nestjs/swagger&#x27;;
 
 /**
- * Controller handling authentication endpoints.
- * @class AuthController
- * @description Manages user authentication routes including login.
+ * Controller handling authentication routes including login.
  */
-@ApiTags(&#x27;Authentication&#x27;)
+@ApiTags(&#x27;A. Authentication&#x27;)
 @Controller(&#x27;auth&#x27;)
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
@@ -291,9 +291,19 @@ export class AuthController {
    */
   @Post(&#x27;login&#x27;)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: &#x27;User login&#x27;, description: &#x27;Authenticate user and return JWT token&#x27; })
-  @ApiResponse({ status: 200, description: &#x27;Successfully authenticated&#x27; })
-  @ApiResponse({ status: 401, description: &#x27;Unauthorized&#x27; })
+  @ApiOperation({ summary: &#x27;User login&#x27; })
+  @ApiBody({ type: LoginDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: &#x27;Login successful, returns JWT token&#x27;,
+    schema: {
+      type: &#x27;object&#x27;,
+      properties: {
+        access_token: { type: &#x27;string&#x27; }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: &#x27;Invalid credentials&#x27; })
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }

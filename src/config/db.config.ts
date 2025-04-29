@@ -9,5 +9,10 @@ export default (): PostgresConnectionOptions => ({
   password: process.env.dbPassword,
   database: process.env.dbName,
   entities: [path.resolve(__dirname, '..') + '/**/*.entity{.ts,.js}'],
-  synchronize: true,
+  synchronize: process.env.NODE_ENV !== 'production', // Enable synchronize in development
+  logging: process.env.NODE_ENV !== 'production',
+  dropSchema: false,
+  extra: {
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  },
 });

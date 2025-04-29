@@ -1,52 +1,55 @@
 import { IsString, IsNotEmpty, IsNumber, IsEnum, IsArray, IsOptional, IsBoolean, IsUrl, Min, Max, IsObject, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ProductCategory } from '../enums/product-category.enum';
+import { ProductCategory } from '../entities/product.entity';
 
 export class CreateProductDto {
   @ApiProperty({
-    description: 'Product name',
-    example: 'Classic Cotton T-Shirt'
+    description: 'Name of the product',
+    example: 'Classic Fit Cotton T-Shirt'
   })
   @IsString()
   @IsNotEmpty()
   name: string;
 
   @ApiProperty({
-    description: 'Product description',
-    example: 'A comfortable and stylish cotton t-shirt perfect for everyday wear.'
+    description: 'Description of the product',
+    example: 'Premium quality cotton t-shirt with a comfortable classic fit. Perfect for everyday wear.'
   })
   @IsString()
   @IsNotEmpty()
   description: string;
 
   @ApiProperty({
-    description: 'Product price',
-    example: 29.99
+    description: 'Price of the product',
+    example: 29.99,
+    minimum: 0
   })
   @IsNumber()
   @Min(0)
   price: number;
 
-  @ApiPropertyOptional({
-    description: 'Discounted price (if on sale)',
-    example: 24.99
+  @ApiProperty({
+    description: 'Sale price of the product (if on sale)',
+    example: 24.99,
+    required: false
   })
   @IsNumber()
   @Min(0)
   @IsOptional()
-  discountedPrice?: number;
+  salePrice?: number;
 
   @ApiProperty({
-    description: 'Stock quantity',
-    example: 100
+    description: 'Stock quantity of the product',
+    example: 100,
+    minimum: 0
   })
   @IsNumber()
   @Min(0)
-  stockQuantity: number;
+  stock: number;
 
   @ApiProperty({
-    description: 'Product category',
+    description: 'Category of the product',
     enum: ProductCategory,
     example: ProductCategory.T_SHIRTS
   })
@@ -55,7 +58,7 @@ export class CreateProductDto {
 
   @ApiProperty({
     description: 'Available sizes',
-    example: ['S', 'M', 'L', 'XL']
+    example: ['XS', 'S', 'M', 'L', 'XL', 'XXL']
   })
   @IsArray()
   @IsString({ each: true })
@@ -63,23 +66,30 @@ export class CreateProductDto {
 
   @ApiProperty({
     description: 'Available colors',
-    example: ['Black', 'White', 'Navy']
+    example: ['Black', 'White', 'Navy', 'Burgundy', 'Forest Green']
   })
   @IsArray()
   @IsString({ each: true })
   colors: string[];
 
   @ApiProperty({
-    description: 'Product image URLs',
-    example: ['https://example.com/image1.jpg', 'https://example.com/image2.jpg']
+    description: 'URL of the product image',
+    example: 'https://example.com/images/classic-fit-tshirt.jpg',
+    required: false
   })
-  @IsArray()
-  @IsUrl({}, { each: true })
-  images: string[];
+  @IsUrl()
+  @IsOptional()
+  imageUrl?: string;
 
   @ApiPropertyOptional({
     description: 'Product specifications',
-    example: { 'Fabric': '100% Cotton', 'Fit': 'Regular' }
+    example: { 
+      'Fabric': '100% Premium Cotton', 
+      'Fit': 'Classic Fit',
+      'Weight': '180 GSM',
+      'Style': 'Casual',
+      'Neck': 'Crew Neck'
+    }
   })
   @IsObject()
   @IsOptional()
@@ -95,7 +105,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Product material',
-    example: '100% Cotton'
+    example: '100% Premium Cotton'
   })
   @IsString()
   @IsOptional()
@@ -103,7 +113,7 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Care instructions',
-    example: 'Machine wash cold, tumble dry low'
+    example: 'Machine wash cold, tumble dry low. Do not bleach. Iron on reverse side if needed.'
   })
   @IsString()
   @IsOptional()
@@ -111,7 +121,8 @@ export class CreateProductDto {
 
   @ApiPropertyOptional({
     description: 'Whether the product is featured',
-    default: false
+    example: false,
+    required: false
   })
   @IsBoolean()
   @IsOptional()
@@ -123,6 +134,7 @@ export class CreateProductDto {
   })
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => value === 'true')
   isNewArrival?: boolean;
 
   @ApiPropertyOptional({
@@ -131,11 +143,13 @@ export class CreateProductDto {
   })
   @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => value === 'true')
   isBestSeller?: boolean;
 
   @ApiPropertyOptional({
     description: 'Whether the product is on sale',
-    default: false
+    example: false,
+    required: false
   })
   @IsBoolean()
   @IsOptional()

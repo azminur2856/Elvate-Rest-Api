@@ -123,6 +123,13 @@
             </p>
 
 
+            <p class="comment">
+                <h3>Description</h3>
+            </p>
+            <p class="comment">
+                <p>Controller handling public user management operations.</p>
+
+            </p>
 
 
 
@@ -146,7 +153,17 @@
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier">Async</span>
-                                <a href="#createUser" >createUser</a>
+                                <a href="#create" >create</a>
+                            </li>
+                            <li>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier">Async</span>
+                                <a href="#findAll" >findAll</a>
                             </li>
                             <li>
                                     <span class="modifier"></span>
@@ -155,7 +172,7 @@
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier">Async</span>
-                                <a href="#getAllUsers" >getAllUsers</a>
+                                <a href="#findOne" >findOne</a>
                             </li>
                             <li>
                                     <span class="modifier"></span>
@@ -164,16 +181,7 @@
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier">Async</span>
-                                <a href="#getUserById" >getUserById</a>
-                            </li>
-                            <li>
-                                    <span class="modifier"></span>
-                                    <span class="modifier"></span>
-                                    <span class="modifier"></span>
-                                    <span class="modifier"></span>
-                                    <span class="modifier"></span>
-                                    <span class="modifier">Async</span>
-                                <a href="#updateUser" >updateUser</a>
+                                <a href="#update" >update</a>
                             </li>
                         </ul>
                     </td>
@@ -196,22 +204,22 @@
         <tbody>
             <tr>
                 <td class="col-md-4">
-                    <a name="createUser"></a>
+                    <a name="create"></a>
                     <span class="name">
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier">Async</span>
-                        <span ><b>createUser</b></span>
-                        <a href="#createUser"><span class="icon ion-ios-link"></span></a>
+                        <span ><b>create</b></span>
+                        <a href="#create"><span class="icon ion-ios-link"></span></a>
                     </span>
                 </td>
             </tr>
             <tr>
                 <td class="col-md-4">
                         <span class="modifier-icon icon ion-ios-reset"></span>
-                    <code>createUser(createUserDto: <a href="../classes/CreateUserDto.html" target="_self">CreateUserDto</a>)</code>
+                    <code>create(createUserDto: <a href="../classes/CreateUserDto.html" target="_self">CreateUserDto</a>)</code>
                 </td>
             </tr>
 
@@ -219,14 +227,14 @@
                 <td class="col-md-4">
                     <b>Decorators : </b>
                     <br />
-                    <code>@Post()<br />@ApiOperation({summary: &#x27;Create a new user&#x27;})<br />@ApiResponse({status: 201, description: &#x27;User successfully created&#x27;})<br />@ApiResponse({status: 400, description: &#x27;Bad request&#x27;})<br /></code>
+                    <code>@Post()<br />@ApiOperation({summary: &#x27;Create a new user&#x27;})<br />@ApiResponse({status: 201, description: &#x27;User created successfully&#x27;})<br />@ApiResponse({status: 400, description: &#x27;Bad request&#x27;})<br /></code>
                 </td>
             </tr>
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="29"
-                                    class="link-to-prism">src/users/users.controller.ts:29</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="33"
+                                    class="link-to-prism">src/users/users.controller.ts:33</a></div>
                         </td>
                     </tr>
 
@@ -276,23 +284,24 @@
         <tbody>
             <tr>
                 <td class="col-md-4">
-                    <a name="getAllUsers"></a>
+                    <a name="findAll"></a>
                     <span class="name">
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
+                            <span class="modifier"></span>
                             <span class="modifier">Async</span>
-                        <span ><b>getAllUsers</b></span>
-                        <a href="#getAllUsers"><span class="icon ion-ios-link"></span></a>
+                        <span ><b>findAll</b></span>
+                        <a href="#findAll"><span class="icon ion-ios-link"></span></a>
                     </span>
                 </td>
             </tr>
             <tr>
                 <td class="col-md-4">
                         <span class="modifier-icon icon ion-ios-reset"></span>
-                    <code>getAllUsers(userQueryDto: <a href="../classes/UserQueryDto.html" target="_self">UserQueryDto</a>)</code>
+                    <code>findAll(page?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, limit?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
                 </td>
             </tr>
 
@@ -300,14 +309,14 @@
                 <td class="col-md-4">
                     <b>Decorators : </b>
                     <br />
-                    <code>@Get()<br />@ApiOperation({summary: &#x27;Get all users&#x27;})<br />@ApiResponse({status: 200, description: &#x27;Return all users&#x27;})<br />@ApiQuery({name: &#x27;page&#x27;, required: false, description: &#x27;Page number&#x27;})<br />@ApiQuery({name: &#x27;limit&#x27;, required: false, description: &#x27;Number of items per page&#x27;})<br /></code>
+                    <code>@Get()<br />@UseGuards(JwtAuthGuard)<br />@ApiOperation({summary: &#x27;Get all users&#x27;})<br />@ApiQuery({name: &#x27;page&#x27;, required: false, type: Number})<br />@ApiQuery({name: &#x27;limit&#x27;, required: false, type: Number})<br />@ApiResponse({status: 200, description: &#x27;List of users retrieved successfully&#x27;})<br /></code>
                 </td>
             </tr>
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="39"
-                                    class="link-to-prism">src/users/users.controller.ts:39</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="44"
+                                    class="link-to-prism">src/users/users.controller.ts:44</a></div>
                         </td>
                     </tr>
 
@@ -328,13 +337,25 @@
                                     </thead>
                                     <tbody>
                                         <tr>
-                                                <td>userQueryDto</td>
+                                                <td>page</td>
                                             <td>
-                                                            <code><a href="../classes/UserQueryDto.html" target="_self" >UserQueryDto</a></code>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
                                             </td>
 
                                             <td>
-                                                    No
+                                                    Yes
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>limit</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    Yes
                                             </td>
 
 
@@ -357,7 +378,7 @@
         <tbody>
             <tr>
                 <td class="col-md-4">
-                    <a name="getUserById"></a>
+                    <a name="findOne"></a>
                     <span class="name">
                             <span class="modifier"></span>
                             <span class="modifier"></span>
@@ -365,15 +386,15 @@
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier">Async</span>
-                        <span ><b>getUserById</b></span>
-                        <a href="#getUserById"><span class="icon ion-ios-link"></span></a>
+                        <span ><b>findOne</b></span>
+                        <a href="#findOne"><span class="icon ion-ios-link"></span></a>
                     </span>
                 </td>
             </tr>
             <tr>
                 <td class="col-md-4">
                         <span class="modifier-icon icon ion-ios-reset"></span>
-                    <code>getUserById(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
+                    <code>findOne(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>)</code>
                 </td>
             </tr>
 
@@ -381,14 +402,14 @@
                 <td class="col-md-4">
                     <b>Decorators : </b>
                     <br />
-                    <code>@Get(&#x27;:id&#x27;)<br />@ApiOperation({summary: &#x27;Get user by ID&#x27;})<br />@ApiParam({name: &#x27;id&#x27;, description: &#x27;User ID&#x27;})<br />@ApiResponse({status: 200, description: &#x27;Return the user&#x27;})<br />@ApiResponse({status: 404, description: &#x27;User not found&#x27;})<br /></code>
+                    <code>@Get(&#x27;:id&#x27;)<br />@UseGuards(JwtAuthGuard)<br />@ApiOperation({summary: &#x27;Get user by ID&#x27;})<br />@ApiResponse({status: 200, description: &#x27;User retrieved successfully&#x27;})<br />@ApiResponse({status: 404, description: &#x27;User not found&#x27;})<br /></code>
                 </td>
             </tr>
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="49"
-                                    class="link-to-prism">src/users/users.controller.ts:49</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="54"
+                                    class="link-to-prism">src/users/users.controller.ts:54</a></div>
                         </td>
                     </tr>
 
@@ -438,7 +459,7 @@
         <tbody>
             <tr>
                 <td class="col-md-4">
-                    <a name="updateUser"></a>
+                    <a name="update"></a>
                     <span class="name">
                             <span class="modifier"></span>
                             <span class="modifier"></span>
@@ -446,15 +467,15 @@
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier">Async</span>
-                        <span ><b>updateUser</b></span>
-                        <a href="#updateUser"><span class="icon ion-ios-link"></span></a>
+                        <span ><b>update</b></span>
+                        <a href="#update"><span class="icon ion-ios-link"></span></a>
                     </span>
                 </td>
             </tr>
             <tr>
                 <td class="col-md-4">
                         <span class="modifier-icon icon ion-ios-reset"></span>
-                    <code>updateUser(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, updateUserDto: <a href="../classes/UpdateUserDto.html" target="_self">UpdateUserDto</a>)</code>
+                    <code>update(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, updateUserDto: <a href="../classes/UpdateUserDto.html" target="_self">UpdateUserDto</a>)</code>
                 </td>
             </tr>
 
@@ -462,14 +483,14 @@
                 <td class="col-md-4">
                     <b>Decorators : </b>
                     <br />
-                    <code>@Patch(&#x27;:id&#x27;)<br />@ApiOperation({summary: &#x27;Update user information&#x27;})<br />@ApiParam({name: &#x27;id&#x27;, description: &#x27;User ID&#x27;})<br />@ApiResponse({status: 200, description: &#x27;User successfully updated&#x27;})<br />@ApiResponse({status: 404, description: &#x27;User not found&#x27;})<br /></code>
+                    <code>@Patch(&#x27;:id&#x27;)<br />@UseGuards(JwtAuthGuard)<br />@ApiOperation({summary: &#x27;Update user information&#x27;})<br />@ApiResponse({status: 200, description: &#x27;User updated successfully&#x27;})<br />@ApiResponse({status: 404, description: &#x27;User not found&#x27;})<br /></code>
                 </td>
             </tr>
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="59"
-                                    class="link-to-prism">src/users/users.controller.ts:59</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="64"
+                                    class="link-to-prism">src/users/users.controller.ts:64</a></div>
                         </td>
                     </tr>
 
@@ -548,8 +569,12 @@ import { CreateUserDto } from &#x27;./dto/create-user.dto&#x27;;
 import { UpdateUserDto } from &#x27;./dto/update-user.dto&#x27;;
 import { UserQueryDto } from &#x27;./dto/user-query.dto&#x27;;
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from &#x27;@nestjs/swagger&#x27;;
+import { JwtAuthGuard } from &#x27;../auth/guards/jwt-auth.guard&#x27;;
 
-@ApiTags(&#x27;D. Public - User Management&#x27;)
+/**
+ * Controller handling public user management operations.
+ */
+@ApiTags(&#x27;B. Public - User Profile&#x27;)
 @Controller(&#x27;users&#x27;)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -557,43 +582,41 @@ export class UsersController {
   // Route to create a new user
   @Post()
   @ApiOperation({ summary: &#x27;Create a new user&#x27; })
-  @ApiResponse({ status: 201, description: &#x27;User successfully created&#x27; })
+  @ApiResponse({ status: 201, description: &#x27;User created successfully&#x27; })
   @ApiResponse({ status: 400, description: &#x27;Bad request&#x27; })
-  async createUser(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.createUser(createUserDto);
+  async create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
   }
 
   // Route to get a list of all users
   @Get()
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: &#x27;Get all users&#x27; })
-  @ApiResponse({ status: 200, description: &#x27;Return all users&#x27; })
-  @ApiQuery({ name: &#x27;page&#x27;, required: false, description: &#x27;Page number&#x27; })
-  @ApiQuery({ name: &#x27;limit&#x27;, required: false, description: &#x27;Number of items per page&#x27; })
-  async getAllUsers(@Query() userQueryDto: UserQueryDto) {
-    return this.usersService.getAllUsers(userQueryDto);
+  @ApiQuery({ name: &#x27;page&#x27;, required: false, type: Number })
+  @ApiQuery({ name: &#x27;limit&#x27;, required: false, type: Number })
+  @ApiResponse({ status: 200, description: &#x27;List of users retrieved successfully&#x27; })
+  async findAll(@Query(&#x27;page&#x27;) page?: number, @Query(&#x27;limit&#x27;) limit?: number) {
+    return this.usersService.findAll(page, limit);
   }
 
   // Route to get a single user by ID
   @Get(&#x27;:id&#x27;)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: &#x27;Get user by ID&#x27; })
-  @ApiParam({ name: &#x27;id&#x27;, description: &#x27;User ID&#x27; })
-  @ApiResponse({ status: 200, description: &#x27;Return the user&#x27; })
+  @ApiResponse({ status: 200, description: &#x27;User retrieved successfully&#x27; })
   @ApiResponse({ status: 404, description: &#x27;User not found&#x27; })
-  async getUserById(@Param(&#x27;id&#x27;) id: string) {
-    return this.usersService.getUserById(id);
+  async findOne(@Param(&#x27;id&#x27;) id: string) {
+    return this.usersService.findOne(+id);
   }
 
   // Route to update user information
   @Patch(&#x27;:id&#x27;)
+  @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: &#x27;Update user information&#x27; })
-  @ApiParam({ name: &#x27;id&#x27;, description: &#x27;User ID&#x27; })
-  @ApiResponse({ status: 200, description: &#x27;User successfully updated&#x27; })
+  @ApiResponse({ status: 200, description: &#x27;User updated successfully&#x27; })
   @ApiResponse({ status: 404, description: &#x27;User not found&#x27; })
-  async updateUser(
-    @Param(&#x27;id&#x27;) id: string,
-    @Body() updateUserDto: UpdateUserDto,
-  ) {
-    return this.usersService.updateUser(id, updateUserDto);
+  async update(@Param(&#x27;id&#x27;) id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(+id, updateUserDto);
   }
 }
 </code></pre>

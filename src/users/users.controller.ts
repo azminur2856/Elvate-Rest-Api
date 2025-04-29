@@ -20,7 +20,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 /**
  * Controller handling public user management operations.
  */
-@ApiTags('B. Public - User Management')
+@ApiTags('B. Public - User Profile')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}

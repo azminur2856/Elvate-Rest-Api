@@ -33,11 +33,34 @@ async function bootstrap() {
   const document = SwaggerModule.createDocument(app, config);
   
   document.tags = [
-    { name: 'A. Authentication', description: 'User authentication endpoints' },
-    { name: 'B. Public - User Management', description: 'Public user management endpoints' },
-    { name: 'C. Public - Product Catalog', description: 'Public product catalog endpoints' },
-    { name: 'D. Admin - User Management', description: 'Admin user management endpoints' },
-    { name: 'E. Admin - Products', description: 'Admin product management endpoints' },
+    { 
+      name: 'A. Authentication', 
+      description: 'User authentication endpoints' 
+    },
+    { 
+      name: 'B. Public - User Profile', 
+      description: 'Public user profile management endpoints' 
+    },
+    { 
+      name: 'C. Public - Product Catalog', 
+      description: 'Public product catalog endpoints' 
+    },
+    { 
+      name: 'D. Public - Orders', 
+      description: 'Customer order management endpoints' 
+    },
+    { 
+      name: 'E. Admin - User Management', 
+      description: 'Admin user management endpoints' 
+    },
+    { 
+      name: 'F. Admin - Products', 
+      description: 'Admin product management endpoints' 
+    },
+    { 
+      name: 'G. Admin - Orders', 
+      description: 'Admin order management endpoints' 
+    }
   ];
 
   Object.keys(document.paths).forEach(path => {
@@ -46,12 +69,17 @@ async function bootstrap() {
       const operation = pathItem[method];
       if (operation.tags) {
         operation.tags = operation.tags.map(tag => {
-          if (tag === 'Authentication') return 'A. Authentication';
-          if (tag === 'Public - User Management') return 'B. Public - User Management';
-          if (tag === 'Public - Product Catalog') return 'C. Public - Product Catalog';
-          if (tag === 'Admin - User Management') return 'D. Admin - User Management';
-          if (tag === 'Admin - Products') return 'E. Admin - Products';
-          return tag;
+          switch (tag) {
+            case 'auth': return 'A. Authentication';
+            case 'users': return 'B. Public - User Profile';
+            case 'products': return 'C. Public - Product Catalog';
+            case 'orders': return 'D. Public - Orders';
+            case 'admin-users': return 'E. Admin - User Management';
+            case 'admin-products': return 'F. Admin - Products';
+            case 'admin-orders': return 'G. Admin - Orders';
+            case 'delivery-orders': return 'H. Delivery - Orders';
+            default: return tag;
+          }
         });
       }
     });

@@ -6,8 +6,11 @@ import {
   JoinTable,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { Roles } from './roles.entity';
+import { Order } from '../../orders/entities/order.entity';
+import { Address } from './address.entity';
 
 @Entity()
 export class Users {
@@ -20,10 +23,15 @@ export class Users {
   @Column({ type: 'varchar', length: 255, nullable: true })
   lastName?: string;
 
-  @Column()
+  @Column({ nullable: true })
   dob: Date;
 
-  @Column({ type: 'varchar', length: 255, unique: true })
+  @Column({ 
+    type: 'varchar', 
+    length: 255, 
+    unique: true,
+    comment: 'User email address'
+  })
   email: string;
 
   @Column({ type: 'varchar', length: 255, unique: true, nullable: true })
@@ -35,6 +43,12 @@ export class Users {
   @ManyToMany(() => Roles, (role) => role.users)
   @JoinTable()
   roles: Roles[];
+
+  @OneToMany(() => Order, (order) => order.user)
+  orders: Order[];
+
+  @OneToMany(() => Address, (address) => address.user)
+  addresses: Address[];
 
   @Column({ type: 'boolean', default: false })
   isActive: boolean;

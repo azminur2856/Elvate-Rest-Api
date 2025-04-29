@@ -313,7 +313,7 @@ Protects routes by requiring a valid JWT token in the request.</p>
             </tr>
             <tr>
                 <td class="col-md-4">
-<code>handleRequest(err, user, info)</code>
+<code>handleRequest(err: <a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank">any</a>, user: <a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank">any</a>, info: <a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank">any</a>)</code>
                 </td>
             </tr>
 
@@ -336,12 +336,16 @@ Protects routes by requiring a valid JWT token in the request.</p>
                                     <thead>
                                         <tr>
                                             <td>Name</td>
+                                                <td>Type</td>
                                             <td>Optional</td>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <tr>
                                                 <td>err</td>
+                                            <td>
+                                                            <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+                                            </td>
 
                                             <td>
                                                     No
@@ -351,6 +355,9 @@ Protects routes by requiring a valid JWT token in the request.</p>
                                         </tr>
                                         <tr>
                                                 <td>user</td>
+                                            <td>
+                                                            <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+                                            </td>
 
                                             <td>
                                                     No
@@ -360,6 +367,9 @@ Protects routes by requiring a valid JWT token in the request.</p>
                                         </tr>
                                         <tr>
                                                 <td>info</td>
+                                            <td>
+                                                            <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+                                            </td>
 
                                             <td>
                                                     No
@@ -426,10 +436,9 @@ export class JwtAuthGuard extends AuthGuard(&#x27;jwt&#x27;) {
     return super.canActivate(context);
   }
 
-  handleRequest(err, user, info) {
-    // You can throw custom exceptions based on different scenarios
+  handleRequest(err: any, user: any, info: any) {
     if (err || !user) {
-      throw err || new UnauthorizedException(&#x27;Invalid token or token expired&#x27;);
+      throw new UnauthorizedException(&#x27;Insufficient authority. Please log in with appropriate credentials.&#x27;);
     }
     return user;
   }

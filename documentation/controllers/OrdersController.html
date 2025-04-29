@@ -1,0 +1,1286 @@
+<!doctype html>
+<html class="no-js" lang="">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="x-ua-compatible" content="ie=edge">
+        <title>Elvate-Rest-Api documentation</title>
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+	   <link rel="stylesheet" href="../styles/style.css">
+        <link rel="stylesheet" href="../styles/dark.css">
+    </head>
+    <body>
+          <script>
+               // Blocking script to avoid flickering dark mode
+               // Dark mode toggle button
+               var useDark = window.matchMedia('(prefers-color-scheme: dark)');
+               var darkModeState = useDark.matches;
+               var $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               var $darkModeToggles = document.querySelectorAll('.dark-mode-switch');
+               var darkModeStateLocal = localStorage.getItem('compodoc_darkmode-state');
+
+               function checkToggle(check) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].checked = check;
+                    }
+               }
+
+               function toggleDarkMode(state) {
+                    if (window.localStorage) {
+                         localStorage.setItem('compodoc_darkmode-state', state);
+                    }
+
+                    checkToggle(state);
+
+                    const hasClass = document.body.classList.contains('dark');
+
+                    if (state) {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.add('dark');
+                         }
+                         if (!hasClass) {
+                              document.body.classList.add('dark');
+                         }
+                    } else {
+                         for (var i = 0; i < $darkModeToggles.length; i++) {
+                              $darkModeToggles[i].classList.remove('dark');
+                         }
+                         if (hasClass) {
+                              document.body.classList.remove('dark');
+                         }
+                    }
+               }
+
+               useDark.addEventListener('change', function (evt) {
+                    toggleDarkMode(evt.matches);
+               });
+               if (darkModeStateLocal) {
+                    darkModeState = darkModeStateLocal === 'true';
+               }
+               toggleDarkMode(darkModeState);
+          </script>
+
+        <div class="navbar navbar-default navbar-fixed-top d-md-none p-0">
+               <div class="d-flex">
+                    <a href="../" class="navbar-brand">Elvate-Rest-Api documentation</a>
+                    <button type="button" class="btn btn-default btn-menu ion-ios-menu" id="btn-menu"></button>
+               </div>
+        </div>
+
+        <div class="xs-menu menu" id="mobile-menu">
+                <div id="book-search-input" role="search"><input type="text" placeholder="Type to search"></div>            <compodoc-menu></compodoc-menu>
+        </div>
+
+        <div class="container-fluid main">
+           <div class="row main">
+               <div class="d-none d-md-block menu">
+                   <compodoc-menu mode="normal"></compodoc-menu>
+               </div>
+               <!-- START CONTENT -->
+               <div class="content controller">
+                   <div class="content-data">
+
+
+
+
+
+<ol class="breadcrumb">
+  <li class="breadcrumb-item">Controllers</li>
+  <li class="breadcrumb-item" >OrdersController</li>
+</ol>
+
+<ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a href="#info" 
+                class="nav-link"
+                class="nav-link active"
+                role="tab" id="info-tab" data-bs-toggle="tab" data-link="info">Info</a>
+        </li>
+        <li class="nav-item">
+            <a href="#source" 
+                class="nav-link"
+                
+                role="tab" id="source-tab" data-bs-toggle="tab" data-link="source">Source</a>
+        </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade active in" id="info">
+        <p class="comment">
+            <h3>File</h3>
+        </p>
+        <p class="comment">
+            <code>src/orders/orders.controller.ts</code>
+        </p>
+
+            <p class="comment">
+                <h3>Prefix</h3>
+            </p>
+            <p class="comment">
+                <code>orders</code>
+            </p>
+
+
+
+
+
+
+            <section data-compodoc="block-index">
+    <h3 id="index">Index</h3>
+    <table class="table table-sm table-bordered index-table">
+        <tbody>
+
+                <tr>
+                    <td class="col-md-4">
+                        <h6><b>Methods</b></h6>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="col-md-4">
+                        <ul class="index-list">
+                            <li>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                <a href="#create" >create</a>
+                            </li>
+                            <li>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                <a href="#findAll" >findAll</a>
+                            </li>
+                            <li>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier">Async</span>
+                                <a href="#findOne" >findOne</a>
+                            </li>
+                            <li>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                <a href="#getAnalytics" >getAnalytics</a>
+                            </li>
+                            <li>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                <a href="#getSalesTrends" >getSalesTrends</a>
+                            </li>
+                            <li>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier">Async</span>
+                                <a href="#update" >update</a>
+                            </li>
+                        </ul>
+                    </td>
+                </tr>
+
+
+
+
+
+        </tbody>
+    </table>
+</section>
+
+            <section data-compodoc="block-methods">
+    
+    <h3 id="methods">
+        Methods
+    </h3>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="create"></a>
+                    <span class="name">
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                        <span ><b>create</b></span>
+                        <a href="#create"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>create(createOrderDto: <a href="../classes/CreateOrderDto.html" target="_self">CreateOrderDto</a>, user: <a href="../entitys/User.html" target="_self">User</a>)</code>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="col-md-4">
+                    <b>Decorators : </b>
+                    <br />
+                    <code>@Post()<br />@ApiOperation({summary: &#x27;Create a new order&#x27;, description: &#x27;Creates a new order with the specified items and payment details.&#x27;})<br />@ApiBody({type: CreateOrderDto})<br />@ApiResponse({status: 201, description: &#x27;Order created successfully&#x27;, schema: undefined})<br />@ApiResponse({status: 400, description: &#x27;Invalid input data&#x27;, schema: undefined})<br /></code>
+                </td>
+            </tr>
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="60"
+                                    class="link-to-prism">src/orders/orders.controller.ts:60</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>createOrderDto</td>
+                                            <td>
+                                                            <code><a href="../classes/CreateOrderDto.html" target="_self" >CreateOrderDto</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>user</td>
+                                            <td>
+                                                            <code><a href="../entitys/User.html" target="_self" >User</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="findAll"></a>
+                    <span class="name">
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                        <span ><b>findAll</b></span>
+                        <a href="#findAll"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>findAll(user: <a href="../entitys/User.html" target="_self">User</a>, page?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, limit?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, status?: <a href="../undefineds/OrderStatus.html" target="_self">OrderStatus</a>, startDate?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank">Date</a>, endDate?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank">Date</a>)</code>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="col-md-4">
+                    <b>Decorators : </b>
+                    <br />
+                    <code>@Get()<br />@ApiOperation({summary: &#x27;Get current user orders&#x27;, description: &#x27;Retrieves a paginated list of orders for the current user with optional filtering.&#x27;})<br />@ApiQuery({name: &#x27;page&#x27;, required: false, type: Number, description: &#x27;Page number for pagination (default: 1)&#x27;})<br />@ApiQuery({name: &#x27;limit&#x27;, required: false, type: Number, description: &#x27;Number of items per page (default: 10)&#x27;})<br />@ApiQuery({name: &#x27;status&#x27;, required: false, enum: OrderStatus, description: &#x27;Filter orders by status&#x27;})<br />@ApiQuery({name: &#x27;startDate&#x27;, required: false, type: Date, description: &#x27;Filter orders created after this date&#x27;})<br />@ApiQuery({name: &#x27;endDate&#x27;, required: false, type: Date, description: &#x27;Filter orders created before this date&#x27;})<br />@ApiResponse({status: 200, description: &#x27;List of orders retrieved successfully&#x27;, schema: undefined})<br /></code>
+                </td>
+            </tr>
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="130"
+                                    class="link-to-prism">src/orders/orders.controller.ts:130</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>user</td>
+                                            <td>
+                                                            <code><a href="../entitys/User.html" target="_self" >User</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>page</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    Yes
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>limit</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    Yes
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>status</td>
+                                            <td>
+                                                            <code><a href="../miscellaneous/enumerations.html#OrderStatus" target="_self" >OrderStatus</a></code>
+                                            </td>
+
+                                            <td>
+                                                    Yes
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>startDate</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank" >Date</a></code>
+                                            </td>
+
+                                            <td>
+                                                    Yes
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>endDate</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank" >Date</a></code>
+                                            </td>
+
+                                            <td>
+                                                    Yes
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="findOne"></a>
+                    <span class="name">
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier">Async</span>
+                        <span ><b>findOne</b></span>
+                        <a href="#findOne"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>findOne(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, user: <a href="../entitys/User.html" target="_self">User</a>)</code>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="col-md-4">
+                    <b>Decorators : </b>
+                    <br />
+                    <code>@Get(&#x27;:id&#x27;)<br />@ApiOperation({summary: &#x27;Get order by ID&#x27;, description: &#x27;Retrieves detailed information about a specific order. Users can only access their own orders.&#x27;})<br />@ApiResponse({status: 200, description: &#x27;Order found successfully&#x27;, schema: undefined})<br />@ApiResponse({status: 404, description: &#x27;Order not found&#x27;, schema: undefined})<br />@ApiResponse({status: 403, description: &#x27;Forbidden - Cannot access another user&#x27;s order&#x27;, schema: undefined})<br /></code>
+                </td>
+            </tr>
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="189"
+                                    class="link-to-prism">src/orders/orders.controller.ts:189</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>id</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>user</td>
+                                            <td>
+                                                            <code><a href="../entitys/User.html" target="_self" >User</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getAnalytics"></a>
+                    <span class="name">
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                        <span ><b>getAnalytics</b></span>
+                        <a href="#getAnalytics"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>getAnalytics(startDate?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank">Date</a>, endDate?: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank">Date</a>)</code>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="col-md-4">
+                    <b>Decorators : </b>
+                    <br />
+                    <code>@Get(&#x27;analytics/summary&#x27;)<br />@ApiOperation({summary: &#x27;Get order analytics summary&#x27;, description: &#x27;Retrieves summary statistics about orders.&#x27;})<br />@ApiQuery({name: &#x27;startDate&#x27;, required: false, type: Date, description: &#x27;Start date for analytics period&#x27;})<br />@ApiQuery({name: &#x27;endDate&#x27;, required: false, type: Date, description: &#x27;End date for analytics period&#x27;})<br />@ApiResponse({status: 200, description: &#x27;Analytics summary retrieved successfully&#x27;, schema: undefined})<br /></code>
+                </td>
+            </tr>
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="281"
+                                    class="link-to-prism">src/orders/orders.controller.ts:281</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>startDate</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank" >Date</a></code>
+                                            </td>
+
+                                            <td>
+                                                    Yes
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>endDate</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank" >Date</a></code>
+                                            </td>
+
+                                            <td>
+                                                    Yes
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="getSalesTrends"></a>
+                    <span class="name">
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                        <span ><b>getSalesTrends</b></span>
+                        <a href="#getSalesTrends"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>getSalesTrends(startDate: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank">Date</a>, endDate: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank">Date</a>, interval: "day" | "week" | "month")</code>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="col-md-4">
+                    <b>Decorators : </b>
+                    <br />
+                    <code>@Get(&#x27;analytics/trends&#x27;)<br />@ApiOperation({summary: &#x27;Get sales trends&#x27;, description: &#x27;Retrieves sales trends over a specified time period.&#x27;})<br />@ApiQuery({name: &#x27;startDate&#x27;, required: true, type: Date, description: &#x27;Start date for trend analysis&#x27;})<br />@ApiQuery({name: &#x27;endDate&#x27;, required: true, type: Date, description: &#x27;End date for trend analysis&#x27;})<br />@ApiQuery({name: &#x27;interval&#x27;, required: false, enum: undefined, description: &#x27;Time interval for trend data (default: day)&#x27;})<br />@ApiResponse({status: 200, description: &#x27;Sales trends retrieved successfully&#x27;, schema: undefined})<br /></code>
+                </td>
+            </tr>
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="333"
+                                    class="link-to-prism">src/orders/orders.controller.ts:333</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                                <td>Default value</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>startDate</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank" >Date</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                            </td>
+
+                                        </tr>
+                                        <tr>
+                                                <td>endDate</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date" target="_blank" >Date</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                            </td>
+
+                                        </tr>
+                                        <tr>
+                                                <td>interval</td>
+                                            <td>
+                                                        <code>&quot;day&quot; | &quot;week&quot; | &quot;month&quot;</code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                                    <code>&#x27;day&#x27;</code>
+                                            </td>
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>        <code><a href="https://www.typescriptlang.org/docs/handbook/basic-types.html" target="_blank" >any</a></code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="update"></a>
+                    <span class="name">
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier">Async</span>
+                        <span ><b>update</b></span>
+                        <a href="#update"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>update(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, updateOrderDto: <a href="../classes/UpdateOrderDto.html" target="_self">UpdateOrderDto</a>, user: <a href="../entitys/User.html" target="_self">User</a>)</code>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="col-md-4">
+                    <b>Decorators : </b>
+                    <br />
+                    <code>@Patch(&#x27;:id&#x27;)<br />@ApiOperation({summary: &#x27;Update order&#x27;, description: &#x27;Updates the status or notes of an existing order. Users can only update their own orders.&#x27;})<br />@ApiBody({type: UpdateOrderDto})<br />@ApiResponse({status: 200, description: &#x27;Order updated successfully&#x27;, schema: undefined})<br />@ApiResponse({status: 404, description: &#x27;Order not found&#x27;, schema: undefined})<br />@ApiResponse({status: 403, description: &#x27;Forbidden - Cannot update another user&#x27;s order&#x27;, schema: undefined})<br /></code>
+                </td>
+            </tr>
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="237"
+                                    class="link-to-prism">src/orders/orders.controller.ts:237</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>id</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>updateOrderDto</td>
+                                            <td>
+                                                            <code><a href="../classes/UpdateOrderDto.html" target="_self" >UpdateOrderDto</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>user</td>
+                                            <td>
+                                                            <code><a href="../entitys/User.html" target="_self" >User</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+</section>    </div>
+
+
+    <div class="tab-pane fade  tab-source-code" id="source">
+        <pre class="line-numbers compodoc-sourcecode"><code class="language-typescript">import { Controller, Get, Post, Body, Patch, Param, Query, UseGuards, ForbiddenException } from &#x27;@nestjs/common&#x27;;
+import { OrdersService } from &#x27;./orders.service&#x27;;
+import { CreateOrderDto } from &#x27;./dto/create-order.dto&#x27;;
+import { UpdateOrderDto } from &#x27;./dto/update-order.dto&#x27;;
+import { JwtAuthGuard } from &#x27;../auth/guards/jwt-auth.guard&#x27;;
+import { RolesGuard } from &#x27;../auth/guards/roles.guard&#x27;;
+import { Roles } from &#x27;../auth/decorators/roles.decorator&#x27;;
+import { Role } from &#x27;../users/enums/roles.enum&#x27;;
+import { Users } from &#x27;../users/entities/users.entity&#x27;;
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth, ApiBody } from &#x27;@nestjs/swagger&#x27;;
+import { CurrentUser } from &#x27;../auth/decorators/current-user.decorator&#x27;;
+import { User } from &#x27;../users/entities/user.entity&#x27;;
+import { OrderStatus } from &#x27;./enums/order-status.enum&#x27;;
+
+@ApiTags(&#x27;D. Public - Orders&#x27;)
+@ApiBearerAuth()
+@Controller(&#x27;orders&#x27;)
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class OrdersController {
+  constructor(private readonly ordersService: OrdersService) {}
+
+  @Post()
+  @ApiOperation({ 
+    summary: &#x27;Create a new order&#x27;,
+    description: &#x27;Creates a new order with the specified items and payment details.&#x27;
+  })
+  @ApiBody({ type: CreateOrderDto })
+  @ApiResponse({ 
+    status: 201, 
+    description: &#x27;Order created successfully&#x27;,
+    schema: {
+      example: {
+        id: &#x27;123e4567-e89b-12d3-a456-426614174000&#x27;,
+        userId: &#x27;123e4567-e89b-12d3-a456-426614174000&#x27;,
+        status: &#x27;PENDING&#x27;,
+        totalAmount: 99.99,
+        items: [
+          {
+            productId: &#x27;123e4567-e89b-12d3-a456-426614174000&#x27;,
+            quantity: 2,
+            price: 49.99,
+            total: 99.98
+          }
+        ],
+        createdAt: &#x27;2024-04-29T09:00:00.000Z&#x27;
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 400, 
+    description: &#x27;Invalid input data&#x27;,
+    schema: {
+      example: {
+        statusCode: 400,
+        message: &#x27;Invalid input data&#x27;,
+        error: &#x27;Bad Request&#x27;
+      }
+    }
+  })
+  create(@Body() createOrderDto: CreateOrderDto, @CurrentUser() user: User) {
+    return this.ordersService.create(createOrderDto, user.id);
+  }
+
+  @Get()
+  @ApiOperation({ 
+    summary: &#x27;Get current user orders&#x27;,
+    description: &#x27;Retrieves a paginated list of orders for the current user with optional filtering.&#x27;
+  })
+  @ApiQuery({ 
+    name: &#x27;page&#x27;, 
+    required: false, 
+    type: Number,
+    description: &#x27;Page number for pagination (default: 1)&#x27;
+  })
+  @ApiQuery({ 
+    name: &#x27;limit&#x27;, 
+    required: false, 
+    type: Number,
+    description: &#x27;Number of items per page (default: 10)&#x27;
+  })
+  @ApiQuery({ 
+    name: &#x27;status&#x27;, 
+    required: false, 
+    enum: OrderStatus,
+    description: &#x27;Filter orders by status&#x27;
+  })
+  @ApiQuery({ 
+    name: &#x27;startDate&#x27;, 
+    required: false, 
+    type: Date,
+    description: &#x27;Filter orders created after this date&#x27;
+  })
+  @ApiQuery({ 
+    name: &#x27;endDate&#x27;, 
+    required: false, 
+    type: Date,
+    description: &#x27;Filter orders created before this date&#x27;
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: &#x27;List of orders retrieved successfully&#x27;,
+    schema: {
+      example: {
+        data: [
+          {
+            id: &#x27;123e4567-e89b-12d3-a456-426614174000&#x27;,
+            userId: &#x27;123e4567-e89b-12d3-a456-426614174000&#x27;,
+            status: &#x27;PENDING&#x27;,
+            totalAmount: 99.99,
+            items: [
+              {
+                productId: &#x27;123e4567-e89b-12d3-a456-426614174000&#x27;,
+                quantity: 2,
+                price: 49.99,
+                total: 99.98
+              }
+            ],
+            createdAt: &#x27;2024-04-29T09:00:00.000Z&#x27;
+          }
+        ],
+        meta: {
+          total: 100,
+          page: 1,
+          limit: 10,
+          totalPages: 10
+        }
+      }
+    }
+  })
+  findAll(
+    @CurrentUser() user: User,
+    @Query(&#x27;page&#x27;) page?: number,
+    @Query(&#x27;limit&#x27;) limit?: number,
+    @Query(&#x27;status&#x27;) status?: OrderStatus,
+    @Query(&#x27;startDate&#x27;) startDate?: Date,
+    @Query(&#x27;endDate&#x27;) endDate?: Date,
+  ) {
+    return this.ordersService.findAll(page, limit, status, startDate, endDate, user.id);
+  }
+
+  @Get(&#x27;:id&#x27;)
+  @ApiOperation({ 
+    summary: &#x27;Get order by ID&#x27;,
+    description: &#x27;Retrieves detailed information about a specific order. Users can only access their own orders.&#x27;
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: &#x27;Order found successfully&#x27;,
+    schema: {
+      example: {
+        id: &#x27;123e4567-e89b-12d3-a456-426614174000&#x27;,
+        userId: &#x27;123e4567-e89b-12d3-a456-426614174000&#x27;,
+        status: &#x27;PENDING&#x27;,
+        totalAmount: 99.99,
+        items: [
+          {
+            productId: &#x27;123e4567-e89b-12d3-a456-426614174000&#x27;,
+            quantity: 2,
+            price: 49.99,
+            total: 99.98
+          }
+        ],
+        createdAt: &#x27;2024-04-29T09:00:00.000Z&#x27;
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: &#x27;Order not found&#x27;,
+    schema: {
+      example: {
+        statusCode: 404,
+        message: &#x27;Order not found&#x27;,
+        error: &#x27;Not Found&#x27;
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: &#x27;Forbidden - Cannot access another user\&#x27;s order&#x27;,
+    schema: {
+      example: {
+        statusCode: 403,
+        message: &#x27;You do not have permission to access this order&#x27;,
+        error: &#x27;Forbidden&#x27;
+      }
+    }
+  })
+  async findOne(@Param(&#x27;id&#x27;) id: string, @CurrentUser() user: User) {
+    const order &#x3D; await this.ordersService.findOne(id);
+    if (order.userId !&#x3D;&#x3D; user.id) {
+      throw new ForbiddenException(&#x27;You do not have permission to access this order&#x27;);
+    }
+    return order;
+  }
+
+  @Patch(&#x27;:id&#x27;)
+  @ApiOperation({ 
+    summary: &#x27;Update order&#x27;,
+    description: &#x27;Updates the status or notes of an existing order. Users can only update their own orders.&#x27;
+  })
+  @ApiBody({ type: UpdateOrderDto })
+  @ApiResponse({ 
+    status: 200, 
+    description: &#x27;Order updated successfully&#x27;,
+    schema: {
+      example: {
+        id: &#x27;123e4567-e89b-12d3-a456-426614174000&#x27;,
+        status: &#x27;PROCESSING&#x27;,
+        notes: &#x27;Order is being processed&#x27;,
+        updatedAt: &#x27;2024-04-29T09:30:00.000Z&#x27;
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 404, 
+    description: &#x27;Order not found&#x27;,
+    schema: {
+      example: {
+        statusCode: 404,
+        message: &#x27;Order not found&#x27;,
+        error: &#x27;Not Found&#x27;
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 403, 
+    description: &#x27;Forbidden - Cannot update another user\&#x27;s order&#x27;,
+    schema: {
+      example: {
+        statusCode: 403,
+        message: &#x27;You do not have permission to update this order&#x27;,
+        error: &#x27;Forbidden&#x27;
+      }
+    }
+  })
+  async update(@Param(&#x27;id&#x27;) id: string, @Body() updateOrderDto: UpdateOrderDto, @CurrentUser() user: User) {
+    const order &#x3D; await this.ordersService.findOne(id);
+    if (order.userId !&#x3D;&#x3D; user.id) {
+      throw new ForbiddenException(&#x27;You do not have permission to update this order&#x27;);
+    }
+    return this.ordersService.update(id, updateOrderDto);
+  }
+
+  @Get(&#x27;analytics/summary&#x27;)
+  @ApiOperation({ 
+    summary: &#x27;Get order analytics summary&#x27;,
+    description: &#x27;Retrieves summary statistics about orders.&#x27;
+  })
+  @ApiQuery({ 
+    name: &#x27;startDate&#x27;, 
+    required: false, 
+    type: Date,
+    description: &#x27;Start date for analytics period&#x27;
+  })
+  @ApiQuery({ 
+    name: &#x27;endDate&#x27;, 
+    required: false, 
+    type: Date,
+    description: &#x27;End date for analytics period&#x27;
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: &#x27;Analytics summary retrieved successfully&#x27;,
+    schema: {
+      example: {
+        totalOrders: 100,
+        totalRevenue: 9999.99,
+        averageOrderValue: 99.99,
+        ordersByStatus: {
+          PENDING: 20,
+          PROCESSING: 30,
+          SHIPPED: 25,
+          DELIVERED: 15,
+          CANCELLED: 5,
+          REFUNDED: 5
+        }
+      }
+    }
+  })
+  getAnalytics(
+    @Query(&#x27;startDate&#x27;) startDate?: Date,
+    @Query(&#x27;endDate&#x27;) endDate?: Date,
+  ) {
+    return this.ordersService.getOrderAnalytics(startDate, endDate);
+  }
+
+  @Get(&#x27;analytics/trends&#x27;)
+  @ApiOperation({ 
+    summary: &#x27;Get sales trends&#x27;,
+    description: &#x27;Retrieves sales trends over a specified time period.&#x27;
+  })
+  @ApiQuery({ 
+    name: &#x27;startDate&#x27;, 
+    required: true, 
+    type: Date,
+    description: &#x27;Start date for trend analysis&#x27;
+  })
+  @ApiQuery({ 
+    name: &#x27;endDate&#x27;, 
+    required: true, 
+    type: Date,
+    description: &#x27;End date for trend analysis&#x27;
+  })
+  @ApiQuery({ 
+    name: &#x27;interval&#x27;, 
+    required: false, 
+    enum: [&#x27;day&#x27;, &#x27;week&#x27;, &#x27;month&#x27;],
+    description: &#x27;Time interval for trend data (default: day)&#x27;
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: &#x27;Sales trends retrieved successfully&#x27;,
+    schema: {
+      example: {
+        trends: [
+          {
+            period: &#x27;2024-04-01&#x27;,
+            revenue: 999.99,
+            orderCount: 10,
+            averageOrderValue: 99.99
+          },
+          {
+            period: &#x27;2024-04-02&#x27;,
+            revenue: 1499.99,
+            orderCount: 15,
+            averageOrderValue: 99.99
+          }
+        ]
+      }
+    }
+  })
+  getSalesTrends(
+    @Query(&#x27;startDate&#x27;) startDate: Date,
+    @Query(&#x27;endDate&#x27;) endDate: Date,
+    @Query(&#x27;interval&#x27;) interval: &#x27;day&#x27; | &#x27;week&#x27; | &#x27;month&#x27; &#x3D; &#x27;day&#x27;,
+  ) {
+    return this.ordersService.getSalesTrends(startDate, endDate, interval);
+  }
+} </code></pre>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+                   </div><div class="search-results">
+    <div class="has-results">
+        <h1 class="search-results-title"><span class='search-results-count'></span> results matching "<span class='search-query'></span>"</h1>
+        <ul class="search-results-list"></ul>
+    </div>
+    <div class="no-results">
+        <h1 class="search-results-title">No results matching "<span class='search-query'></span>"</h1>
+    </div>
+</div>
+</div>
+               <!-- END CONTENT -->
+           </div>
+       </div>
+
+          <label class="dark-mode-switch">
+               <input type="checkbox">
+               <span class="slider">
+                    <svg class="slider-icon" viewBox="0 0 24 24" fill="none" height="20" stroke="#000" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" width="20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                    </svg>
+               </span>
+          </label>
+
+       <script>
+            var COMPODOC_CURRENT_PAGE_DEPTH = 1;
+            var COMPODOC_CURRENT_PAGE_CONTEXT = 'controller';
+            var COMPODOC_CURRENT_PAGE_URL = 'OrdersController.html';
+            var MAX_SEARCH_RESULTS = 15;
+       </script>
+
+       <script>
+               $darkModeToggleSwitchers = document.querySelectorAll('.dark-mode-switch input');
+               checkToggle(darkModeState);
+               if ($darkModeToggleSwitchers.length > 0) {
+                    for (var i = 0; i < $darkModeToggleSwitchers.length; i++) {
+                         $darkModeToggleSwitchers[i].addEventListener('change', function (event) {
+                              darkModeState = !darkModeState;
+                              toggleDarkMode(darkModeState);
+                         });
+                    }
+               }
+          </script>
+
+       <script src="../js/libs/custom-elements.min.js"></script>
+       <script src="../js/libs/lit-html.js"></script>
+
+       <script src="../js/menu-wc.js" defer></script>
+       <script nomodule src="../js/menu-wc_es5.js" defer></script>
+
+       <script src="../js/libs/bootstrap-native.js"></script>
+
+       <script src="../js/libs/es6-shim.min.js"></script>
+       <script src="../js/libs/EventDispatcher.js"></script>
+       <script src="../js/libs/promise.min.js"></script>
+
+       <script src="../js/compodoc.js"></script>
+
+       <script src="../js/tabs.js"></script>
+       <script src="../js/menu.js"></script>
+       <script src="../js/libs/clipboard.min.js"></script>
+       <script src="../js/libs/prism.js"></script>
+       <script src="../js/sourceCode.js"></script>
+          <script src="../js/search/search.js"></script>
+          <script src="../js/search/lunr.min.js"></script>
+          <script src="../js/search/search-lunr.js"></script>
+          <script src="../js/search/search_index.js"></script>
+       <script src="../js/lazy-load-graphs.js"></script>
+
+
+    </body>
+</html>

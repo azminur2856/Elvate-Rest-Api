@@ -127,7 +127,7 @@
                 <h3>Description</h3>
             </p>
             <p class="comment">
-                <p>Controller for managing users from the admin perspective.</p>
+                <p>Controller handling admin user management operations.</p>
 
             </p>
 
@@ -153,6 +153,8 @@
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
                                     <span class="modifier">Async</span>
                                 <a href="#findAll" >findAll</a>
                             </li>
@@ -171,7 +173,7 @@
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier">Async</span>
-                                <a href="#getUserStats" >getUserStats</a>
+                                <a href="#getStats" >getStats</a>
                             </li>
                             <li>
                                     <span class="modifier"></span>
@@ -182,7 +184,7 @@
                                     <span class="modifier"></span>
                                     <span class="modifier"></span>
                                     <span class="modifier">Async</span>
-                                <a href="#setUserStatus" >setUserStatus</a>
+                                <a href="#setStatus" >setStatus</a>
                             </li>
                             <li>
                                     <span class="modifier"></span>
@@ -193,6 +195,17 @@
                                     <span class="modifier"></span>
                                     <span class="modifier">Async</span>
                                 <a href="#update" >update</a>
+                            </li>
+                            <li>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier"></span>
+                                    <span class="modifier">Async</span>
+                                <a href="#updateRole" >updateRole</a>
                             </li>
                         </ul>
                     </td>
@@ -222,6 +235,8 @@
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
                             <span class="modifier">Async</span>
                         <span ><b>findAll</b></span>
                         <a href="#findAll"><span class="icon ion-ios-link"></span></a>
@@ -239,14 +254,14 @@
                 <td class="col-md-4">
                     <b>Decorators : </b>
                     <br />
-                    <code>@Get()<br />@ApiOperation({summary: &#x27;Get all users with filtering and pagination&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Returns users list with pagination&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Unauthorized&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Forbidden&#x27;})<br /></code>
+                    <code>@Get()<br />@ApiOperation({summary: &#x27;Get all users with filtering and pagination&#x27;})<br />@ApiQuery({name: &#x27;page&#x27;, required: false, type: Number})<br />@ApiQuery({name: &#x27;limit&#x27;, required: false, type: Number})<br />@ApiResponse({status: undefined, description: &#x27;List of users retrieved successfully&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Unauthorized&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Forbidden&#x27;})<br /></code>
                 </td>
             </tr>
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="47"
-                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:47</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="46"
+                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:46</a></div>
                         </td>
                     </tr>
 
@@ -324,14 +339,14 @@
                 <td class="col-md-4">
                     <b>Decorators : </b>
                     <br />
-                    <code>@Get(&#x27;:id&#x27;)<br />@ApiOperation({summary: &#x27;Get a user by ID&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Returns the user&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Unauthorized&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Forbidden&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;User not found&#x27;})<br /></code>
+                    <code>@Get(&#x27;:id&#x27;)<br />@ApiOperation({summary: &#x27;Get a user by ID&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;User retrieved successfully&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Unauthorized&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Forbidden&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;User not found&#x27;})<br /></code>
                 </td>
             </tr>
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="69"
-                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:69</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="68"
+                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:68</a></div>
                         </td>
                     </tr>
 
@@ -391,21 +406,21 @@
         <tbody>
             <tr>
                 <td class="col-md-4">
-                    <a name="getUserStats"></a>
+                    <a name="getStats"></a>
                     <span class="name">
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier">Async</span>
-                        <span ><b>getUserStats</b></span>
-                        <a href="#getUserStats"><span class="icon ion-ios-link"></span></a>
+                        <span ><b>getStats</b></span>
+                        <a href="#getStats"><span class="icon ion-ios-link"></span></a>
                     </span>
                 </td>
             </tr>
             <tr>
                 <td class="col-md-4">
                         <span class="modifier-icon icon ion-ios-reset"></span>
-                    <code>getUserStats()</code>
+                    <code>getStats()</code>
                 </td>
             </tr>
 
@@ -413,14 +428,14 @@
                 <td class="col-md-4">
                     <b>Decorators : </b>
                     <br />
-                    <code>@Get(&#x27;stats&#x27;)<br />@ApiOperation({summary: &#x27;Get user statistics&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Returns user statistics&#x27;})<br /></code>
+                    <code>@Get(&#x27;stats&#x27;)<br />@ApiOperation({summary: &#x27;Get user statistics&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;User statistics retrieved successfully&#x27;})<br /></code>
                 </td>
             </tr>
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="54"
-                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:54</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="53"
+                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:53</a></div>
                         </td>
                     </tr>
 
@@ -440,7 +455,7 @@
         <tbody>
             <tr>
                 <td class="col-md-4">
-                    <a name="setUserStatus"></a>
+                    <a name="setStatus"></a>
                     <span class="name">
                             <span class="modifier"></span>
                             <span class="modifier"></span>
@@ -450,15 +465,15 @@
                             <span class="modifier"></span>
                             <span class="modifier"></span>
                             <span class="modifier">Async</span>
-                        <span ><b>setUserStatus</b></span>
-                        <a href="#setUserStatus"><span class="icon ion-ios-link"></span></a>
+                        <span ><b>setStatus</b></span>
+                        <a href="#setStatus"><span class="icon ion-ios-link"></span></a>
                     </span>
                 </td>
             </tr>
             <tr>
                 <td class="col-md-4">
                         <span class="modifier-icon icon ion-ios-reset"></span>
-                    <code>setUserStatus(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, isActive: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/boolean" target="_blank">boolean</a>)</code>
+                    <code>setStatus(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, isActive: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/boolean" target="_blank">boolean</a>)</code>
                 </td>
             </tr>
 
@@ -472,8 +487,8 @@
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="111"
-                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:111</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="110"
+                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:110</a></div>
                         </td>
                     </tr>
 
@@ -560,14 +575,14 @@
                 <td class="col-md-4">
                     <b>Decorators : </b>
                     <br />
-                    <code>@Patch(&#x27;:id&#x27;)<br />@ApiOperation({summary: &#x27;Update a user&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Returns the updated user&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Unauthorized&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Forbidden&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;User not found&#x27;})<br /></code>
+                    <code>@Patch(&#x27;:id&#x27;)<br />@ApiOperation({summary: &#x27;Update a user&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;User updated successfully&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Unauthorized&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;Forbidden&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;User not found&#x27;})<br /></code>
                 </td>
             </tr>
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="85"
-                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:85</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="84"
+                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:84</a></div>
                         </td>
                     </tr>
 
@@ -637,6 +652,101 @@
             </tr>
         </tbody>
     </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="updateRole"></a>
+                    <span class="name">
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier"></span>
+                            <span class="modifier">Async</span>
+                        <span ><b>updateRole</b></span>
+                        <a href="#updateRole"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>updateRole(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, role: <a href="../undefineds/Role.html" target="_self">Role</a>)</code>
+                </td>
+            </tr>
+
+            <tr>
+                <td class="col-md-4">
+                    <b>Decorators : </b>
+                    <br />
+                    <code>@Patch(&#x27;:id/role&#x27;)<br />@ApiOperation({summary: &#x27;Update user role&#x27;})<br />@ApiParam({name: &#x27;id&#x27;, description: &#x27;User ID&#x27;, type: &#x27;string&#x27;, format: &#x27;uuid&#x27;})<br />@ApiBody({schema: undefined})<br />@ApiResponse({status: undefined, description: &#x27;User role updated successfully&#x27;})<br />@ApiResponse({status: undefined, description: &#x27;User not found&#x27;})<br />@HttpCode(HttpStatus.OK)<br /></code>
+                </td>
+            </tr>
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="137"
+                                    class="link-to-prism">src/admin/controllers/admin-user.controller.ts:137</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>id</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>role</td>
+                                            <td>
+                                                            <code><a href="../miscellaneous/enumerations.html#Role" target="_self" >Role</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
 </section>    </div>
 
 
@@ -661,19 +771,16 @@ import { JwtAuthGuard } from &#x27;src/auth/guards/jwt-auth.guard&#x27;;
 import { RolesGuard } from &#x27;src/auth/guards/roles.guard&#x27;; 
 import { Roles } from &#x27;src/auth/decorators/roles.decorator&#x27;; 
 import { Role } from &#x27;src/users/enums/roles.enum&#x27;;
-import { ApiTags, ApiOperation, ApiResponse, ApiSecurity, ApiParam, ApiBody, ApiBearerAuth } from &#x27;@nestjs/swagger&#x27;;
+import { ApiTags, ApiOperation, ApiResponse, ApiSecurity, ApiParam, ApiBody, ApiQuery, ApiBearerAuth } from &#x27;@nestjs/swagger&#x27;;
 
 /**
- * Controller for managing users from the admin perspective.
- * @class AdminUserController
- * @description Handles administrative operations for user management.
+ * Controller handling admin user management operations.
  */
-@ApiTags(&#x27;Admin - Users&#x27;)
-@ApiSecurity(&#x27;bearer&#x27;)
+@ApiTags(&#x27;E. Admin - User Management&#x27;)
+@ApiBearerAuth()
 @Controller(&#x27;admin/users&#x27;)
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN)
-@ApiBearerAuth()
 export class AdminUserController {
   constructor(private readonly adminUserService: AdminUserService) {}
 
@@ -684,7 +791,9 @@ export class AdminUserController {
    */
   @Get()
   @ApiOperation({ summary: &#x27;Get all users with filtering and pagination&#x27; })
-  @ApiResponse({ status: HttpStatus.OK, description: &#x27;Returns users list with pagination&#x27; })
+  @ApiQuery({ name: &#x27;page&#x27;, required: false, type: Number })
+  @ApiQuery({ name: &#x27;limit&#x27;, required: false, type: Number })
+  @ApiResponse({ status: HttpStatus.OK, description: &#x27;List of users retrieved successfully&#x27; })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: &#x27;Unauthorized&#x27; })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: &#x27;Forbidden&#x27; })
   async findAll(@Query() queryDto: AdminUserQueryDto) {
@@ -693,9 +802,9 @@ export class AdminUserController {
 
   @Get(&#x27;stats&#x27;)
   @ApiOperation({ summary: &#x27;Get user statistics&#x27; })
-  @ApiResponse({ status: HttpStatus.OK, description: &#x27;Returns user statistics&#x27; })
-  async getUserStats() {
-    return this.adminUserService.getUserStats();
+  @ApiResponse({ status: HttpStatus.OK, description: &#x27;User statistics retrieved successfully&#x27; })
+  async getStats() {
+    return this.adminUserService.getStats();
   }
 
   /**
@@ -705,7 +814,7 @@ export class AdminUserController {
    */
   @Get(&#x27;:id&#x27;)
   @ApiOperation({ summary: &#x27;Get a user by ID&#x27; })
-  @ApiResponse({ status: HttpStatus.OK, description: &#x27;Returns the user&#x27; })
+  @ApiResponse({ status: HttpStatus.OK, description: &#x27;User retrieved successfully&#x27; })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: &#x27;Unauthorized&#x27; })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: &#x27;Forbidden&#x27; })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: &#x27;User not found&#x27; })
@@ -721,7 +830,7 @@ export class AdminUserController {
    */
   @Patch(&#x27;:id&#x27;)
   @ApiOperation({ summary: &#x27;Update a user&#x27; })
-  @ApiResponse({ status: HttpStatus.OK, description: &#x27;Returns the updated user&#x27; })
+  @ApiResponse({ status: HttpStatus.OK, description: &#x27;User updated successfully&#x27; })
   @ApiResponse({ status: HttpStatus.UNAUTHORIZED, description: &#x27;Unauthorized&#x27; })
   @ApiResponse({ status: HttpStatus.FORBIDDEN, description: &#x27;Forbidden&#x27; })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: &#x27;User not found&#x27; })
@@ -751,11 +860,38 @@ export class AdminUserController {
   @ApiResponse({ status: HttpStatus.OK, description: &#x27;User status updated successfully&#x27; })
   @ApiResponse({ status: HttpStatus.NOT_FOUND, description: &#x27;User not found&#x27; })
   @HttpCode(HttpStatus.OK)
-  async setUserStatus(
+  async setStatus(
     @Param(&#x27;id&#x27;, ParseUUIDPipe) id: string,
     @Body(&#x27;isActive&#x27;) isActive: boolean,
   ) {
-    return this.adminUserService.toggleUserStatus(id, isActive);
+    return this.adminUserService.setStatus(id, isActive);
+  }
+
+  @Patch(&#x27;:id/role&#x27;)
+  @ApiOperation({ summary: &#x27;Update user role&#x27; })
+  @ApiParam({ name: &#x27;id&#x27;, description: &#x27;User ID&#x27;, type: &#x27;string&#x27;, format: &#x27;uuid&#x27; })
+  @ApiBody({
+    schema: {
+      type: &#x27;object&#x27;,
+      properties: {
+        role: {
+          type: &#x27;string&#x27;,
+          enum: Object.values(Role),
+          description: &#x27;New role for the user&#x27;,
+          example: &#x27;ADMIN&#x27;
+        }
+      },
+      required: [&#x27;role&#x27;]
+    }
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: &#x27;User role updated successfully&#x27; })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: &#x27;User not found&#x27; })
+  @HttpCode(HttpStatus.OK)
+  async updateRole(
+    @Param(&#x27;id&#x27;, ParseUUIDPipe) id: string,
+    @Body(&#x27;role&#x27;) role: Role,
+  ) {
+    return this.adminUserService.updateUserRole(id, role);
   }
 }</code></pre>
     </div>

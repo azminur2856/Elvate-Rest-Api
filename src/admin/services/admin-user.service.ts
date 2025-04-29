@@ -260,4 +260,30 @@ export class AdminUserService {
     await this.userRepository.update(id, { isActive });
     return this.findOne(id);
   }
+
+  /**
+   * Updates a user's role.
+   * @param id - User ID
+   * @param role - New role
+   * @returns Promise<Users> - The updated user
+   */
+  async updateUserRole(id: string, role: Role): Promise<Users> {
+    const user = await this.findOne(id);
+    
+    const roleEntity = await this.rolesRepository.findOne({
+      where: { name: role },
+    });
+
+    if (!roleEntity) {
+      throw new BadRequestException(`Role ${role} not found`);
+    }
+
+    // Update the user's roles
+    user.roles = [roleEntity];
+    
+    // Update email verification status
+    user.isEmailVerified = true;
+
+    return this.userRepository.save(user);
+  }
 }

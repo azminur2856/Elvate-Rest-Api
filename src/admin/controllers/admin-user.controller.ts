@@ -23,7 +23,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiSecurity, ApiParam, ApiBody, Api
 /**
  * Controller handling admin user management operations.
  */
-@ApiTags('D. Admin - User Management')
+@ApiTags('E. Admin - User Management')
 @ApiBearerAuth()
 @Controller('admin/users')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -112,5 +112,32 @@ export class AdminUserController {
     @Body('isActive') isActive: boolean,
   ) {
     return this.adminUserService.setStatus(id, isActive);
+  }
+
+  @Patch(':id/role')
+  @ApiOperation({ summary: 'Update user role' })
+  @ApiParam({ name: 'id', description: 'User ID', type: 'string', format: 'uuid' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        role: {
+          type: 'string',
+          enum: Object.values(Role),
+          description: 'New role for the user',
+          example: 'ADMIN'
+        }
+      },
+      required: ['role']
+    }
+  })
+  @ApiResponse({ status: HttpStatus.OK, description: 'User role updated successfully' })
+  @ApiResponse({ status: HttpStatus.NOT_FOUND, description: 'User not found' })
+  @HttpCode(HttpStatus.OK)
+  async updateRole(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('role') role: Role,
+  ) {
+    return this.adminUserService.updateUserRole(id, role);
   }
 }

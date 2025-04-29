@@ -141,7 +141,15 @@
                             </li>
                             <li>
                                     <span class="modifier">Async</span>
-                                <a href="#createUser" >createUser</a>
+                                <a href="#create" >create</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#findAll" >findAll</a>
+                            </li>
+                            <li>
+                                    <span class="modifier">Async</span>
+                                <a href="#findOne" >findOne</a>
                             </li>
                             <li>
                                     <span class="modifier">Async</span>
@@ -153,11 +161,11 @@
                             </li>
                             <li>
                                     <span class="modifier">Async</span>
-                                <a href="#updateProfileImage" >updateProfileImage</a>
+                                <a href="#update" >update</a>
                             </li>
                             <li>
                                     <span class="modifier">Async</span>
-                                <a href="#updateUser" >updateUser</a>
+                                <a href="#updateProfileImage" >updateProfileImage</a>
                             </li>
                         </ul>
                     </td>
@@ -177,7 +185,7 @@
             <tbody>
                 <tr>
                     <td class="col-md-4">
-<code>constructor(userRepository: <a href="../entitys/Users.html" target="_self">Repository&lt;Users&gt;</a>, rolesRepository: <a href="../entitys/Roles.html" target="_self">Repository&lt;Roles&gt;</a>)</code>
+<code>constructor(usersRepository: Repository<Users>, rolesRepository: <a href="../entitys/Roles.html" target="_self">Repository&lt;Roles&gt;</a>)</code>
                     </td>
                 </tr>
                         <tr>
@@ -200,10 +208,10 @@
                                         </thead>
                                         <tbody>
                                                 <tr>
-                                                        <td>userRepository</td>
+                                                        <td>usersRepository</td>
                                                   
                                                         <td>
-                                                                        <code><a href="../entitys/Users.html" target="_self" >Repository&lt;Users&gt;</a></code>
+                                                                    <code>Repository&lt;Users&gt;</code>
                                                         </td>
                                                   
                                                     <td>
@@ -259,8 +267,8 @@
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="160"
-                                    class="link-to-prism">src/users/users.service.ts:160</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="139"
+                                    class="link-to-prism">src/users/users.service.ts:139</a></div>
                         </td>
                     </tr>
 
@@ -308,7 +316,7 @@
                                 </table>
                             </div>
                         <div class="io-description">
-                            <b>Returns : </b>        <code><a href="../entitys/Users.html" target="_self" >Promise&lt;Users&gt;</a></code>
+                            <b>Returns : </b>    <code>Promise&lt;Users&gt;</code>
 
                         </div>
                             <div class="io-description">
@@ -322,18 +330,18 @@
         <tbody>
             <tr>
                 <td class="col-md-4">
-                    <a name="createUser"></a>
+                    <a name="create"></a>
                     <span class="name">
                             <span class="modifier">Async</span>
-                        <span ><b>createUser</b></span>
-                        <a href="#createUser"><span class="icon ion-ios-link"></span></a>
+                        <span ><b>create</b></span>
+                        <a href="#create"><span class="icon ion-ios-link"></span></a>
                     </span>
                 </td>
             </tr>
             <tr>
                 <td class="col-md-4">
                         <span class="modifier-icon icon ion-ios-reset"></span>
-                    <code>createUser(createUserDto: <a href="../classes/CreateUserDto.html" target="_self">CreateUserDto</a>)</code>
+                    <code>create(createUserDto: <a href="../classes/CreateUserDto.html" target="_self">CreateUserDto</a>)</code>
                 </td>
             </tr>
 
@@ -377,7 +385,164 @@
                                 </table>
                             </div>
                         <div class="io-description">
-                            <b>Returns : </b>        <code><a href="../entitys/Users.html" target="_self" >Promise&lt;Users&gt;</a></code>
+                            <b>Returns : </b>    <code>Promise&lt;Users&gt;</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="findAll"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>findAll</b></span>
+                        <a href="#findAll"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>findAll(page: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, limit: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="157"
+                                    class="link-to-prism">src/users/users.service.ts:157</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                                <td>Default value</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>page</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                                    <code>1</code>
+                                            </td>
+
+                                        </tr>
+                                        <tr>
+                                                <td>limit</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+                                            <td>
+                                                    <code>10</code>
+                                            </td>
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>unknown</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="findOne"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>findOne</b></span>
+                        <a href="#findOne"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>findOne(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="176"
+                                    class="link-to-prism">src/users/users.service.ts:176</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>id</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>Promise&lt;Users&gt;</code>
 
                         </div>
                             <div class="io-description">
@@ -446,7 +611,7 @@
                                 </table>
                             </div>
                         <div class="io-description">
-                            <b>Returns : </b>        <code><a href="../entitys/Users.html" target="_self" >Promise&lt;Users[]&gt;</a></code>
+                            <b>Returns : </b>    <code>Promise&lt;Users[]&gt;</code>
 
                         </div>
                             <div class="io-description">
@@ -515,7 +680,88 @@
                                 </table>
                             </div>
                         <div class="io-description">
-                            <b>Returns : </b>        <code><a href="../entitys/Users.html" target="_self" >Promise&lt;Users&gt;</a></code>
+                            <b>Returns : </b>    <code>Promise&lt;Users&gt;</code>
+
+                        </div>
+                            <div class="io-description">
+                                
+                            </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+    <table class="table table-sm table-bordered">
+        <tbody>
+            <tr>
+                <td class="col-md-4">
+                    <a name="update"></a>
+                    <span class="name">
+                            <span class="modifier">Async</span>
+                        <span ><b>update</b></span>
+                        <a href="#update"><span class="icon ion-ios-link"></span></a>
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <td class="col-md-4">
+                        <span class="modifier-icon icon ion-ios-reset"></span>
+                    <code>update(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank">number</a>, updateUserDto: <a href="../classes/UpdateUserDto.html" target="_self">UpdateUserDto</a>)</code>
+                </td>
+            </tr>
+
+
+                    <tr>
+                        <td class="col-md-4">
+                            <div class="io-line">Defined in <a href="" data-line="113"
+                                    class="link-to-prism">src/users/users.service.ts:113</a></div>
+                        </td>
+                    </tr>
+
+
+            <tr>
+                <td class="col-md-4">
+
+                            <div class="io-description">
+                                <b>Parameters :</b>
+                                
+                                <table class="params">
+                                    <thead>
+                                        <tr>
+                                            <td>Name</td>
+                                                <td>Type</td>
+                                            <td>Optional</td>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                                <td>id</td>
+                                            <td>
+                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/number" target="_blank" >number</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                        <tr>
+                                                <td>updateUserDto</td>
+                                            <td>
+                                                            <code><a href="../classes/UpdateUserDto.html" target="_self" >UpdateUserDto</a></code>
+                                            </td>
+
+                                            <td>
+                                                    No
+                                            </td>
+
+
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        <div class="io-description">
+                            <b>Returns : </b>    <code>Promise&lt;Users&gt;</code>
 
                         </div>
                             <div class="io-description">
@@ -547,8 +793,8 @@
 
                     <tr>
                         <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="141"
-                                    class="link-to-prism">src/users/users.service.ts:141</a></div>
+                            <div class="io-line">Defined in <a href="" data-line="120"
+                                    class="link-to-prism">src/users/users.service.ts:120</a></div>
                         </td>
                     </tr>
 
@@ -596,88 +842,7 @@
                                 </table>
                             </div>
                         <div class="io-description">
-                            <b>Returns : </b>        <code><a href="../entitys/Users.html" target="_self" >Promise&lt;Users&gt;</a></code>
-
-                        </div>
-                            <div class="io-description">
-                                
-                            </div>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    <table class="table table-sm table-bordered">
-        <tbody>
-            <tr>
-                <td class="col-md-4">
-                    <a name="updateUser"></a>
-                    <span class="name">
-                            <span class="modifier">Async</span>
-                        <span ><b>updateUser</b></span>
-                        <a href="#updateUser"><span class="icon ion-ios-link"></span></a>
-                    </span>
-                </td>
-            </tr>
-            <tr>
-                <td class="col-md-4">
-                        <span class="modifier-icon icon ion-ios-reset"></span>
-                    <code>updateUser(id: <a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank">string</a>, updateUserDto: <a href="../classes/UpdateUserDto.html" target="_self">UpdateUserDto</a>)</code>
-                </td>
-            </tr>
-
-
-                    <tr>
-                        <td class="col-md-4">
-                            <div class="io-line">Defined in <a href="" data-line="113"
-                                    class="link-to-prism">src/users/users.service.ts:113</a></div>
-                        </td>
-                    </tr>
-
-
-            <tr>
-                <td class="col-md-4">
-
-                            <div class="io-description">
-                                <b>Parameters :</b>
-                                
-                                <table class="params">
-                                    <thead>
-                                        <tr>
-                                            <td>Name</td>
-                                                <td>Type</td>
-                                            <td>Optional</td>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr>
-                                                <td>id</td>
-                                            <td>
-                                                            <code><a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/string" target="_blank" >string</a></code>
-                                            </td>
-
-                                            <td>
-                                                    No
-                                            </td>
-
-
-                                        </tr>
-                                        <tr>
-                                                <td>updateUserDto</td>
-                                            <td>
-                                                            <code><a href="../classes/UpdateUserDto.html" target="_self" >UpdateUserDto</a></code>
-                                            </td>
-
-                                            <td>
-                                                    No
-                                            </td>
-
-
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <div class="io-description">
-                            <b>Returns : </b>        <code><a href="../entitys/Users.html" target="_self" >Promise&lt;Users&gt;</a></code>
+                            <b>Returns : </b>    <code>Promise&lt;Users&gt;</code>
 
                         </div>
                             <div class="io-description">
@@ -713,17 +878,17 @@ import { Role } from &#x27;./enums/roles.enum&#x27;;
 export class UsersService {
   constructor(
     @InjectRepository(Users)
-    private userRepository: Repository&lt;Users&gt;,
+    private readonly usersRepository: Repository&lt;Users&gt;,
 
     @InjectRepository(Roles)
     private rolesRepository: Repository&lt;Roles&gt;,
   ) {}
 
   // Create a new user
-  async createUser(createUserDto: CreateUserDto): Promise&lt;Users&gt; {
+  async create(createUserDto: CreateUserDto): Promise&lt;Users&gt; {
     const { email, phone } &#x3D; createUserDto;
 
-    const existingUser &#x3D; await this.userRepository.findOne({
+    const existingUser &#x3D; await this.usersRepository.findOne({
       where: [{ email }, { phone }],
     });
 
@@ -741,7 +906,7 @@ export class UsersService {
       throw new InternalServerErrorException(&#x27;Customer role not found.&#x27;);
     }
 
-    const newUser &#x3D; this.userRepository.create({
+    const newUser &#x3D; this.usersRepository.create({
       ...createUserDto,
       password: hashedPassword,
       profileImage: createUserDto.profileImage || &#x27;profile.jpg&#x27;,
@@ -749,7 +914,7 @@ export class UsersService {
     });
 
     try {
-      return await this.userRepository.save(newUser);
+      return await this.usersRepository.save(newUser);
     } catch (error) {
       throw new InternalServerErrorException(&#x27;Failed to create user.&#x27;);
     }
@@ -774,7 +939,7 @@ export class UsersService {
         ]
       : undefined;
 
-    const [users, total] &#x3D; await this.userRepository.findAndCount({
+    const [users, total] &#x3D; await this.usersRepository.findAndCount({
       where: whereCondition,
       order: {
         [order_by]: order_direction.toUpperCase() &#x3D;&#x3D;&#x3D; &#x27;DESC&#x27; ? &#x27;DESC&#x27; : &#x27;ASC&#x27;,
@@ -792,7 +957,7 @@ export class UsersService {
 
   // Get user by ID
   async getUserById(id: string): Promise&lt;Users&gt; {
-    const user &#x3D; await this.userRepository.findOne({
+    const user &#x3D; await this.usersRepository.findOne({
       where: { id },
       relations: [&#x27;roles&#x27;],
     });
@@ -805,36 +970,15 @@ export class UsersService {
   }
 
   // Update user
-  async updateUser(id: string, updateUserDto: UpdateUserDto): Promise&lt;Users&gt; {
-    const user &#x3D; await this.userRepository.findOne({
-      where: { id },
-      relations: [&#x27;roles&#x27;],
-    });
-
-    if (!user) {
-      throw new NotFoundException(
-        &#x60;Cannot update: User with ID ${id} not found.&#x60;,
-      );
-    }
-
-    // Only hash password if provided
-    if (updateUserDto.password) {
-      updateUserDto.password &#x3D; await bcrypt.hash(updateUserDto.password, 10);
-    }
-
-    // Merge only provided fields
-    Object.assign(user, updateUserDto);
-
-    try {
-      return await this.userRepository.save(user);
-    } catch (error) {
-      throw new InternalServerErrorException(&#x27;Failed to update user.&#x27;);
-    }
+  async update(id: number, updateUserDto: UpdateUserDto): Promise&lt;Users&gt; {
+    const user &#x3D; await this.findOne(id);
+    await this.usersRepository.update(id.toString(), updateUserDto);
+    return this.findOne(id);
   }
 
   // Update profile image
   async updateProfileImage(id: string, profileImage: string): Promise&lt;Users&gt; {
-    const user &#x3D; await this.userRepository.findOne({ where: { id } });
+    const user &#x3D; await this.usersRepository.findOne({ where: { id } });
 
     if (!user) {
       throw new NotFoundException(
@@ -845,7 +989,7 @@ export class UsersService {
     user.profileImage &#x3D; profileImage;
 
     try {
-      return await this.userRepository.save(user);
+      return await this.usersRepository.save(user);
     } catch (error) {
       throw new InternalServerErrorException(&#x27;Failed to update profile image.&#x27;);
     }
@@ -853,7 +997,7 @@ export class UsersService {
 
   // Change user password
   async changePassword(id: string, password: string): Promise&lt;Users&gt; {
-    const user &#x3D; await this.userRepository.findOne({ where: { id } });
+    const user &#x3D; await this.usersRepository.findOne({ where: { id } });
 
     if (!user) {
       throw new NotFoundException(
@@ -864,10 +1008,42 @@ export class UsersService {
     user.password &#x3D; await bcrypt.hash(password, 10);
 
     try {
-      return await this.userRepository.save(user);
+      return await this.usersRepository.save(user);
     } catch (error) {
       throw new InternalServerErrorException(&#x27;Failed to change password.&#x27;);
     }
+  }
+
+  async findAll(page &#x3D; 1, limit &#x3D; 10) {
+    const skip &#x3D; (page - 1) * limit;
+
+    const [users, total] &#x3D; await this.usersRepository.findAndCount({
+      skip,
+      take: limit,
+      relations: [&#x27;roles&#x27;],
+    });
+
+    return {
+      data: users,
+      meta: {
+        total,
+        page,
+        limit,
+      },
+    };
+  }
+
+  async findOne(id: number): Promise&lt;Users&gt; {
+    const user &#x3D; await this.usersRepository.findOne({
+      where: { id: id.toString() },
+      relations: [&#x27;roles&#x27;],
+    });
+
+    if (!user) {
+      throw new NotFoundException(&#x60;User with ID ${id} not found&#x60;);
+    }
+
+    return user;
   }
 }
 </code></pre>

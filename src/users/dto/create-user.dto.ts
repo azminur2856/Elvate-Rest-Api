@@ -4,10 +4,8 @@ import {
   IsOptional,
   IsString,
   IsDateString,
-  IsEnum,
   IsPhoneNumber,
 } from 'class-validator';
-import { Role } from 'src/users/enums/roles.enum';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserDto {
@@ -29,15 +27,12 @@ export class CreateUserDto {
   lastName?: string;
 
   @ApiProperty({
-    description: 'Date of birth in ISO format',
+    description: 'Date of birth in ISO format (YYYY-MM-DD)',
     example: '1990-01-01'
   })
   @IsNotEmpty()
-  @IsDateString(
-    {},
-    { message: 'Date of Birth must be in ISO format (YYYY-MM-DD)' },
-  )
-  dob: Date;
+  @IsDateString({ strict: true })
+  dob: string;
 
   @ApiProperty({
     description: 'User email address',
@@ -66,15 +61,6 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   password: string;
-
-  @ApiProperty({
-    description: 'User role',
-    enum: Role,
-    required: false
-  })
-  @IsOptional()
-  @IsEnum(Role)
-  role?: Role;
 
   @ApiProperty({
     description: 'URL to user profile image',

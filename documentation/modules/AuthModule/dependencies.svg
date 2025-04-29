@@ -24,13 +24,13 @@
 <title>cluster_AuthModule</title>
 <polygon fill="none" stroke="black" stroke-dasharray="1,5" points="30,-70 30,-268 466,-268 466,-70 30,-70"/>
 </g>
-<g id="clust6" class="cluster">
-<title>cluster_AuthModule_providers</title>
-<polygon fill="none" stroke="black" points="38,-78 38,-130 458,-130 458,-78 38,-78"/>
-</g>
 <g id="clust4" class="cluster">
 <title>cluster_AuthModule_exports</title>
 <polygon fill="none" stroke="black" points="139,-208 139,-260 361,-260 361,-208 139,-208"/>
+</g>
+<g id="clust6" class="cluster">
+<title>cluster_AuthModule_providers</title>
+<polygon fill="none" stroke="black" points="38,-78 38,-130 458,-130 458,-78 38,-78"/>
 </g>
 <!-- JwtAuthGuard  -->
 <g id="node1" class="node">

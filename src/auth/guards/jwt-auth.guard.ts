@@ -37,10 +37,9 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
     return super.canActivate(context);
   }
 
-  handleRequest(err, user, info) {
-    // You can throw custom exceptions based on different scenarios
+  handleRequest(err: any, user: any, info: any) {
     if (err || !user) {
-      throw err || new UnauthorizedException('Invalid token or token expired');
+      throw new UnauthorizedException('Insufficient authority. Please log in with appropriate credentials.');
     }
     return user;
   }

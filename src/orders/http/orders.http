@@ -1,0 +1,84 @@
+### Variables
+@baseUrl = http://localhost:3000
+@authToken = {{login.response.body.access_token}}
+
+### Create a new order
+POST {{baseUrl}}/orders
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "items": [
+        {
+            "productId": "123",
+            "quantity": 2
+        },
+        {
+            "productId": "456",
+            "quantity": 1
+        }
+    ],
+    "notes": "Please deliver to the front door"
+}
+
+### Get current user's orders (with pagination and filtering)
+GET {{baseUrl}}/orders?page=1&limit=10&status=PENDING
+Authorization: Bearer {{authToken}}
+
+### Get order by ID
+GET {{baseUrl}}/orders/123
+Authorization: Bearer {{authToken}}
+
+### Update order
+PATCH {{baseUrl}}/orders/123
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "notes": "Updated delivery instructions"
+}
+
+### Get order analytics summary
+GET {{baseUrl}}/orders/analytics/summary?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{authToken}}
+
+### Get sales trends
+GET {{baseUrl}}/orders/analytics/trends?startDate=2024-01-01&endDate=2024-12-31&interval=week
+Authorization: Bearer {{authToken}}
+
+### Admin: Get all orders
+GET {{baseUrl}}/admin/orders?page=1&limit=10&status=PENDING&userId=123
+Authorization: Bearer {{authToken}}
+
+### Admin: Get revenue analytics
+GET {{baseUrl}}/admin/orders/analytics/revenue?startDate=2024-01-01&endDate=2024-12-31&interval=month
+Authorization: Bearer {{authToken}}
+
+### Admin: Get customer analytics
+GET {{baseUrl}}/admin/orders/analytics/customer?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{authToken}}
+
+### Admin: Get product performance analytics
+GET {{baseUrl}}/admin/orders/analytics/product?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{authToken}}
+
+### Admin: Update order status
+PATCH {{baseUrl}}/admin/orders/123/status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "status": "PROCESSING",
+    "adminNotes": "Order verified and being processed"
+}
+
+### Admin: Update bulk order status
+PATCH {{baseUrl}}/admin/orders/bulk-status
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "orderIds": ["123", "456", "789"],
+    "status": "SHIPPED",
+    "adminNotes": "Bulk shipment processed"
+} 

@@ -281,7 +281,7 @@
         <div class="tab-pane fade  tab-source-code" id="source">
             <pre class="line-numbers compodoc-sourcecode"><code class="language-typescript">import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from &#x27;@nestjs/common&#x27;;
 import { Reflector } from &#x27;@nestjs/core&#x27;;
-import { Role } from &#x27;src/users/enums/roles.enum&#x27;;
+import { Role } from &#x27;../../users/enums/roles.enum&#x27;;
 
 export const ROLES_KEY &#x3D; &#x27;roles&#x27;;
 
@@ -303,14 +303,13 @@ export class RolesGuard implements CanActivate {
     const { user } &#x3D; context.switchToHttp().getRequest();
     
     // Make sure user exists and has roles
-    if (!user || !user.roles) {
+    if (!user || !user.roles || user.roles.length &#x3D;&#x3D;&#x3D; 0) {
       throw new ForbiddenException(&#x27;User has no roles&#x27;);
     }
     
     // Check if user has any of the required roles
-    const hasRole &#x3D; user.roles.some(
-      (userRole) &#x3D;&gt; requiredRoles.includes(userRole.name)
-    );
+    const userRoles &#x3D; user.roles.map(role &#x3D;&gt; role.name);
+    const hasRole &#x3D; requiredRoles.some(role &#x3D;&gt; userRoles.includes(role));
     
     if (!hasRole) {
       throw new ForbiddenException(
