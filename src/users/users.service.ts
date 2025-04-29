@@ -308,10 +308,6 @@ export class UsersService {
     );
   }
 
-  async findByEmail(email: string) {
-    return await this.userRepository.findOne({ where: { email } });
-  }
-
   async updateLastLogin(id: string) {
     await this.userRepository.update(id, { lastLoginAt: new Date() });
   }
