@@ -10,7 +10,7 @@ export class Coupon {
   code: string;
 
   @Column()
-  type: string; // "Flat" or "Percentage"
+  type: string;
 
   @Column('decimal', { precision: 10, scale: 2 })
   value: number;

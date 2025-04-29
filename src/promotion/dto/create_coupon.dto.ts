@@ -12,7 +12,7 @@ export class CreateCouponDto {
   value: number;
 
   @IsDateString()
-  expiry_date: string; // date string like "2025-05-01"
+  expiry_date: string;
 
   @IsNumber()
   usage_limit: number;

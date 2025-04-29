@@ -109,7 +109,7 @@ export class CartService {
     }
 
     const oldQuantity = cartItem.quantity;
-    cartItem.quantity += 1; // Increment by 1
+    cartItem.quantity += 1;
     const updatedCartItem = await this.userCartRepository.save(cartItem);
 
     return {
