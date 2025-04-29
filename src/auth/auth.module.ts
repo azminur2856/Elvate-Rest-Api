@@ -11,15 +11,12 @@ import { JwtModule } from '@nestjs/jwt';
 import jwtConfig from './config/jwt.config';
 import { ConfigModule } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
-import refreshJwtConfig from './config/refresh-jwt.config';
-import { RefreshJwtStrategy } from './strategies/refresh.strategy';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Users, ActivityLog]),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
-    ConfigModule.forFeature(refreshJwtConfig),
   ],
   controllers: [AuthController],
   providers: [
@@ -28,7 +25,6 @@ import { RefreshJwtStrategy } from './strategies/refresh.strategy';
     ActivityLogsService,
     LocalStrategy,
     JwtStrategy,
-    RefreshJwtStrategy,
   ],
 })
 export class AuthModule {}
