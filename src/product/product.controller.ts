@@ -6,6 +6,8 @@ import {
   Param,
   Post,
   Put,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create_product.dto';
@@ -16,6 +18,7 @@ import { UpdateProductVariantDto } from './dto/update_product_variant.dto';
 import { ProductImageService } from './product_image.service';
 import { UpdateProductImageDto } from './dto/update_product_image.dto';
 import { CreateProductImageDto } from './dto/create_product_image.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('product')
 export class ProductController {
@@ -31,11 +34,19 @@ export class ProductController {
     // return 'check get';
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Post()
-  async createProduct(@Body() body: CreateProductDto) {
+  async createProduct(@Request() req, @Body() body: CreateProductDto) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Only admin can create products');
+    }
     return this.productService.createProduct(body);
-    // return 'hello';
   }
+
+  // async createProduct(@Body() body: CreateProductDto) {
+  //   return this.productService.createProduct(body);
+  //   // return 'hello';
+  // }
 
   @Get('variant')
   async showAllProductVariant() {
