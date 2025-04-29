@@ -19,12 +19,14 @@ import * as fs from 'fs';
 import { deleteTempDirectory } from 'src/auth/utility/delete-directory.util';
 import * as path from 'path';
 import { clearDirectory } from 'src/auth/utility/clear-direttory.util';
+import { MailService } from 'src/auth/services/mail.services';
 
 @Injectable()
 export class UsersService {
   constructor(
     private activityLogsService: ActivityLogsService,
     @InjectRepository(Users) private userRepository: Repository<Users>,
+    private mailService: MailService,
   ) {}
 
   async createUser(createUserDto: CreateUserDto) {
@@ -53,6 +55,8 @@ export class UsersService {
     }
 
     const { password, refreshToken, ...result } = user;
+    const fullName = result.firstName + ' ' + result.lastName;
+    this.mailService.sendWelcomeEmail(result.email, fullName);
     const activityLog = {
       activity: ActivityType.USER_REGISTER,
       description: `New user registered with id ${user.id}`,
