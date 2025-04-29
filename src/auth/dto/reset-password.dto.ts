@@ -14,7 +14,7 @@ export class ResetPasswordDto {
 
   @IsNotEmpty()
   @IsString()
-  //@IsStrongPassword()
+  @IsStrongPassword()
   newPassword: string;
 
   @IsOptional()

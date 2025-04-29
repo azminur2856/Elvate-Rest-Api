@@ -201,6 +201,7 @@ export class AuthService {
   }
 
   //Forgot password
+  /////////////////////////////// Forgot Password ///////////////////////////////
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
     const user = await this.usersService.getUserByDynamicCredential(
       forgotPasswordDto.email,
@@ -209,11 +210,14 @@ export class AuthService {
       throw new NotFoundException(`User not found`);
     }
 
+    /////////////////// Verification Method: EMAIL
+
     if (forgotPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
       const resetToken = nanoid(64);
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
 
+      // Check if user has same type of verification data saved in database. If yes, then delete it.
       await this.verificationRepository.delete({
         type: VerificationType.PASSWORD_RESET_TOKEN,
         userId: user.id,
@@ -246,18 +250,21 @@ export class AuthService {
           message: `Failed to sent email to your email ${maskedEmail}`,
         };
       }
-    } else if (
-      forgotPasswordDto.verificationMethod === VerificationMethod.SMS
-    ) {
+    }
+
+    /////////////////// Verification Method: SMS
+    else if (forgotPasswordDto.verificationMethod === VerificationMethod.SMS) {
       const otp = generateOtp();
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 2); // Expires in 2 minutes
 
+      // Check if user has same type of verification data saved in database. If yes, then delete it.
       await this.verificationRepository.delete({
         type: VerificationType.PASSWORD_RESET_OTP,
         userId: user.id,
       });
 
+      // Save new OTP verification data
       const verificationData = this.verificationRepository.create({
         type: VerificationType.PASSWORD_RESET_OTP,
         tokenOrOtp: otp,
@@ -266,13 +273,14 @@ export class AuthService {
       });
       await this.verificationRepository.save(verificationData);
 
+      // If phone number is null or empty or undefined then throw error
       if (!user.phone) {
         throw new BadRequestException('Phone number not found');
       }
       const fullName = user.firstName + ' ' + user.lastName;
-      const response = await this.smsService.sendOtp(user.phone, fullName, otp); // Send OTP to user phone
+      const response = await this.smsService.sendOtp(user.phone, otp, fullName); // Send OTP to user phone
 
-      const maskedPhone = `********${user.phone.slice(-2)}`;
+      const maskedPhone = `********${user.phone.slice(-3)}`;
 
       if (response.success) {
         return {
@@ -290,6 +298,7 @@ export class AuthService {
 
   //Reset Password
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    // Verification Method: EMAIL
     if (resetPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
       const verificationObj = await this.verificationRepository.findOne({
         where: {
@@ -317,6 +326,7 @@ export class AuthService {
 
       await this.verificationRepository.delete(verificationObj.id);
 
+      // Update Action Log
       const activityLog = {
         activity: ActivityType.USER_CHANGE_PASSWORD,
         description: 'User Reset Password With EMAIL Verification',
@@ -325,7 +335,10 @@ export class AuthService {
       await this.activityLogsService.createActivityLog(activityLog);
 
       return { message: 'Password reset successful' };
-    } else if (resetPasswordDto.verificationMethod === VerificationMethod.SMS) {
+    }
+
+    // Verification Method: SMS
+    else if (resetPasswordDto.verificationMethod === VerificationMethod.SMS) {
       const verificationObj = await this.verificationRepository.findOne({
         where: {
           tokenOrOtp: resetPasswordDto.resetTokenOrOTP,
@@ -352,6 +365,7 @@ export class AuthService {
 
       await this.verificationRepository.delete(verificationObj.id);
 
+      // Update Action Log
       const activityLog = {
         activity: ActivityType.USER_CHANGE_PASSWORD,
         description: 'User Reset Password With SMS Verification',
