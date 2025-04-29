@@ -7,7 +7,7 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { VerificationType } from 'src/auth/enums/verification-type.enum';
-import { Users } from 'src/users/entities/users.entity';
+import { Users } from 'src/users/users.entity';
 
 @Entity()
 export class Verification {

@@ -1,5 +1,5 @@
 import { Verification } from 'src/auth/entities/verification.entity';
-import { Role } from 'src/users/enums/role.enum';
+import { Role } from 'src/auth/enums/role.enum';
 import {
   BeforeInsert,
   BeforeUpdate,
