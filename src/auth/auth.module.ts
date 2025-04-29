@@ -18,14 +18,19 @@ import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { RolesGuard } from './guards/roles/roles.guard';
 import googleOauthConfig from './config/google-oauth.config';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { MailService } from './services/mail.services';
+import { SmsService } from './services/sms.service';
+import emailConfig from './config/email.config';
+import { Verification } from './entities/verification.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Users, ActivityLog]),
+    TypeOrmModule.forFeature([Users, ActivityLog, Verification]),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(refreshJwtConfig),
     ConfigModule.forFeature(googleOauthConfig),
+    ConfigModule.forFeature(emailConfig),
   ],
   controllers: [AuthController],
   providers: [
@@ -36,6 +41,8 @@ import { GoogleStrategy } from './strategies/google.strategy';
     JwtStrategy,
     RefreshJwtStrategy,
     GoogleStrategy,
+    MailService,
+    SmsService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard, //@UseGards(JwtAuthGuard) Global guard for JWT authentication for all API endpoints
