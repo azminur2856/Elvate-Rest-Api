@@ -121,18 +121,14 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-
-    if (updateUserDto.phone) {
-      const checkPhone = await this.userRepository.findOne({
+    if (
+      await this.userRepository.findOne({
         where: { phone: updateUserDto.phone },
-      });
-
-      if (checkPhone && checkPhone.id !== id) {
-        throw new BadRequestException(
-          `User with this phone ${updateUserDto.phone} already exists`,
-        );
-      }
-      updateUserDto.isPhoneVerified = false; // Set isPhoneVerified to false if phone is updated
+      })
+    ) {
+      throw new BadRequestException(
+        `User with this phone ${updateUserDto.phone} already exists`,
+      );
     }
 
     const result = await this.userRepository.update(id, updateUserDto);
@@ -173,11 +169,6 @@ export class UsersService {
       user: await this.userRepository.findOne({ where: { id: adminId } }),
     };
     await this.activityLogsService.createActivityLog(activityLog);
-
-    return {
-      message: 'User role updated successfully',
-      userAffected: result.affected,
-    };
   }
 
   async deteteUser(id: string, adminId: string) {
