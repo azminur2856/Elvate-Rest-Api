@@ -3,13 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from './entities/users.entity';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
-import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
-import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 
 @Injectable()
 export class UsersService {
   constructor(
-    private activityLogsService: ActivityLogsService,
     @InjectRepository(Users) private userRepositery: Repository<Users>,
   ) {}
 
@@ -38,14 +35,13 @@ export class UsersService {
       throw new NotFoundException('Faild to created user try again!');
     }
 
-    const { password, refreshToken, ...result } = user;
-    const activityLog = {
-      activity: ActivityType.USER_REGISTER,
-      description: `New user registered with id ${user.id}`,
-      user: user,
+    const { password, ...result } = user;
+    const name = result.firstName + ' ' + result.lastName;
+
+    return {
+      message: 'Welcome ' + name,
+      data: result,
     };
-    await this.activityLogsService.createActivityLog(activityLog);
-    return result;
   }
 
   async getAllUsers() {
