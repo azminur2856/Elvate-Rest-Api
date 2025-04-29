@@ -9,7 +9,7 @@ import {
 export class UpdateProductImageDto {
   @IsOptional()
   @IsString()
-  image_url?: string[];
+  image_url?: string;
 
   @IsOptional()
   @IsBoolean()

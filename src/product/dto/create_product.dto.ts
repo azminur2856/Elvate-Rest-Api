@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsNumber, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsUUID, IsInt } from 'class-validator';
 
 export class CreateProductDto {
   @IsString()
@@ -18,7 +18,11 @@ export class CreateProductDto {
   @IsNumber()
   category_id: number;
 
-  @IsUUID()
-  @IsNotEmpty()
-  created_by: string;
+  // @IsNumber()
+  // @IsNotEmpty()
+  // created_by: number;
+
+  @IsNumber()
+  // @IsInt()
+  created_by: number;
 }

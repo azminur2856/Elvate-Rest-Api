@@ -21,7 +21,7 @@ export class UpdateProductDto {
   @IsOptional()
   category_id?: number;
 
-  @IsUUID()
+  @IsNumber()
   @IsOptional()
   updated_by?: string;
 }

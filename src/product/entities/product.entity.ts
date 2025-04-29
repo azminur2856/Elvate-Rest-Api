@@ -34,11 +34,11 @@ export class Product {
   @Column()
   category_id: number;
 
-  @Column({ type: 'uuid' })
-  created_by: string;
+  @Column({ type: 'int' })
+  created_by: number;
 
-  @Column({ type: 'uuid', nullable: true })
-  updated_by: string;
+  @Column({ nullable: true })
+  updated_by: number;
 
   @OneToMany(() => ProductVariant, (variant) => variant.product)
   variants: ProductVariant[];

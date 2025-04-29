@@ -43,9 +43,20 @@ export class ProductController {
     return this.productService.createProduct(body);
   }
 
-  // async createProduct(@Body() body: CreateProductDto) {
-  //   return this.productService.createProduct(body);
-  //   // return 'hello';
+  // @UseGuards(AuthGuard('jwt'))
+  // @Post()
+  // async createProduct(@Request() req, @Body() body: CreateProductDto) {
+  //   if (req.user.role !== 'admin') {
+  //     throw new Error('Only admin can create products');
+  //   }
+
+  //   // const adminId = req.user.id; // 👈 get admin id from the JWT
+  //   const adminId = Number(req.user.id);
+
+  //   return this.productService.createProduct({
+  //     ...body,
+  //     created_by: adminId, // 👈 inject admin id into product creation
+  //   });
   // }
 
   @Get('variant')
@@ -63,13 +74,25 @@ export class ProductController {
     return this.productService.findOneProduct(id);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Put(':id')
-  async updateProduct(@Param('id') id: number, @Body() body: UpdateProductDto) {
+  async updateProduct(
+    @Request() req,
+    @Param('id') id: number,
+    @Body() body: UpdateProductDto,
+  ) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Only admin can update products');
+    }
     return this.productService.updateProduct(id, body);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
-  async removeProduct(@Param('id') id: number) {
+  async removeProduct(@Request() req, @Param('id') id: number) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Only admin can delete products');
+    }
     return this.productService.removeProduct(id);
   }
 
@@ -78,21 +101,40 @@ export class ProductController {
     return await this.productVariantService.findOneProductVariant(id);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Post('variant')
-  async createProductVariant(@Body() body: CreateProductVariantDto) {
+  async createProductVariant(
+    @Request() req,
+    @Body() body: CreateProductVariantDto,
+  ) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Only admin can create product variants');
+    }
     return await this.productVariantService.createProductVariant(body);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Put('variant/:id')
   async updateProductVariant(
+    @Request() req,
     @Param('id') id: number,
     @Body() body: UpdateProductVariantDto,
   ) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Only admin can update product variants');
+    }
     return await this.productVariantService.updateProductVariant(id, body);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Post('image')
-  async createProductImage(@Body() body: CreateProductImageDto) {
+  async createProductImage(
+    @Request() req,
+    @Body() body: CreateProductImageDto,
+  ) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Only admin can upload product images');
+    }
     return await this.productImageService.createProductImage(body);
   }
 
@@ -101,16 +143,34 @@ export class ProductController {
     return await this.productImageService.findOneProductImage(id);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Put('image/:id')
   async updateProductImage(
+    @Request() req,
     @Param('id') id: number,
     @Body() body: UpdateProductImageDto,
   ) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Only admin can update product images');
+    }
     return await this.productImageService.updateProductImage(id, body);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Delete('image/:id')
-  async removeProductImage(@Param('id') id: number) {
+  async removeProductImage(@Request() req, @Param('id') id: number) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Only admin can delete product images');
+    }
     return await this.productImageService.removeProductImage(id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Delete('variant/:id')
+  async removeProductVariant(@Request() req, @Param('id') id: number) {
+    if (req.user.role !== 'admin') {
+      throw new Error('Only admin can delete product images');
+    }
+    return await this.productVariantService.removeProductVariant(id);
   }
 }

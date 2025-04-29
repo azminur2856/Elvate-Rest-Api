@@ -6,20 +6,28 @@ import {
   Body,
   Put,
   Delete,
+  UseGuards,
+  Request,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create_category.dto';
 import { Category } from './entities/category.entity';
 import { UpdateCategoryDto } from './dto/update_category.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('category')
 export class CategoryController {
   constructor(private readonly categoryService: CategoryService) {}
 
+  @UseGuards(AuthGuard('jwt'))
   @Post()
   async createCategory(
+    @Request() req,
     @Body() createCategoryDto: CreateCategoryDto,
   ): Promise<Category> {
+    if (req.user.role !== 'admin') {
+      throw new Error('Only admin can create categories');
+    }
     return this.categoryService.createCategory(createCategoryDto);
   }
 

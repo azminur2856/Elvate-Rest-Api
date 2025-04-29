@@ -16,6 +16,14 @@ export class ProductService {
     return this.productRepository.save(product);
   }
 
+  // async createProduct(
+  //   createProductDto: CreateProductDto & { created_by: number },
+  // ): Promise<Product> {
+  //   const product = this.productRepository.create(createProductDto);
+
+  //   return this.productRepository.save(product);
+  // }
+
   async findAllProduct(): Promise<Product[]> {
     return this.productRepository.find({
       relations: ['variants', 'images', 'category'],
