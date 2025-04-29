@@ -34,7 +34,7 @@ export class Product {
   @Column()
   category_id: number;
 
-  @Column({ type: 'int' })
+  @Column({ type: 'int', nullable: true })
   created_by: number;
 
   @Column({ nullable: true })
