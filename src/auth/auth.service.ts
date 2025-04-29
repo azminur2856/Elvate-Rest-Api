@@ -9,7 +9,6 @@ import * as argon2 from 'argon2';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { CurrentUser } from './types/current-user';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -132,11 +131,5 @@ export class AuthService {
     if (!user) throw new UnauthorizedException('User not found');
     const currentUser: CurrentUser = { id: user.id, role: user.role };
     return currentUser;
-  }
-
-  async validateGoogleUser(googleUser: CreateUserDto) {
-    const user = await this.usersService.findByEmail(googleUser.email);
-    if (user) return user;
-    this.usersService.createUser(googleUser);
   }
 }
