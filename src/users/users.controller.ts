@@ -29,13 +29,11 @@ import { extname } from 'path';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth/jwt-auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { RolesGuard } from 'src/auth/guards/roles/roles.guard';
-import { Public } from 'src/auth/decorators/public.decorator';
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Public()
   @Post('createUser')
   createUser(@Body(ValidationPipe) createUserDto: CreateUserDto) {
     return this.usersService.createUser(createUserDto);
@@ -141,11 +139,5 @@ export class UsersController {
       req.user.id,
       profileImage.filename,
     );
-  }
-
-  @Roles(Role.ADMIN)
-  @Get('getUserById/:id')
-  getUserById(@Param('id') id: string) {
-    return this.usersService.getUserById(id);
   }
 }
