@@ -6,11 +6,7 @@ export const clearDirectory = (
   exceptfileName: string = '',
   startingWith: string = '',
 ): void => {
-  if (!fs.existsSync(directory)) {
-    // Directory doesn't exist, just return (nothing to clear)
-    return;
-  }
-
+  // Delete old files starting with "exampleText-" except the new file
   const files = fs.readdirSync(directory);
   for (const file of files) {
     if (file.startsWith(startingWith) && file !== exceptfileName) {
