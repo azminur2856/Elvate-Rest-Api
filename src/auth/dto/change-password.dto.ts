@@ -7,6 +7,6 @@ export class ChangePasswordDto {
 
   @IsNotEmpty()
   @IsString()
-  @IsStrongPassword()
+  //@IsStrongPassword()
   newPassword: string;
 }

@@ -30,6 +30,7 @@ import { VerificationType } from './enums/verification-type.enum';
 import { maskEmail } from './utility/email-mask.util';
 import { generateOtp } from './utility/otp.util';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { generateVerificationToken } from './utility/token.util';
 
 @Injectable()
 export class AuthService {
@@ -45,6 +46,33 @@ export class AuthService {
     private verificationRepository: Repository<Verification>,
   ) {}
 
+  // Verify Registration after user sign up
+  async verifyRegistratioin(token: string) {
+    const verification = await this.verificationRepository.findOne({
+      where: {
+        tokenOrOtp: token,
+        type: VerificationType.USER_REGISTRATION_VERIFICATION,
+      },
+      relations: ['user'],
+    });
+
+    if (!verification) {
+      throw new NotFoundException('Invalid or expired token');
+    }
+
+    if (verification.isUsed || new Date() > verification.expiresAt) {
+      throw new BadRequestException('Token has already been used or expired');
+    }
+
+    verification.isUsed = true;
+    await this.verificationRepository.save(verification);
+
+    return await this.usersService.verifyRegistrationUpdate(
+      verification.user.id,
+    );
+  }
+
+  // Validate user credentials
   async validateUser(email: string, password: string) {
     const user = await this.usersService.findByEmail(email);
     if (!user) {
@@ -54,9 +82,20 @@ export class AuthService {
     if (!isPasswordMatch) {
       throw new UnauthorizedException('Invalid password');
     }
+    if (!user.isEmailVerified) {
+      throw new UnauthorizedException(
+        'Email not verified. Please check your inbox and verify your email address to proceed.',
+      );
+    }
+    if (!user.isActive) {
+      throw new UnauthorizedException(
+        'User account is inactive or has been blocked. Please contact support for assistance.',
+      );
+    }
     return { id: user.id };
   }
 
+  // Lofin user and generate access and refresh tokens
   async login(userId: string) {
     const { accessToken, refreshToken } = await this.generateToken(userId);
 
@@ -82,6 +121,7 @@ export class AuthService {
     };
   }
 
+  // Generate access and refresh tokens
   async generateToken(userId: string) {
     const payload: AuthJwtPayload = { sub: userId };
     const [accessToken, refreshToken] = await Promise.all([
@@ -94,6 +134,7 @@ export class AuthService {
     };
   }
 
+  // Generate new access token using the refresh token
   refreshToken(userId: string) {
     const payload: AuthJwtPayload = { sub: userId };
     const accessToken = this.jwtService.sign(payload);
@@ -118,6 +159,7 @@ export class AuthService {
   //   };
   // }
 
+  // Validate refresh token
   async validateRefreshToken(userId: string, refreshToken: string) {
     const user = await this.usersService.getUserRefreshTokenFromDB(userId);
     if (!user) {
@@ -136,6 +178,7 @@ export class AuthService {
     return { id: userId };
   }
 
+  // Logout user and remove refresh token from the database
   async logout(userId: string) {
     const activityLog = {
       activity: ActivityType.USER_LOGOUT,
@@ -166,7 +209,7 @@ export class AuthService {
 
   //ChangePassword
   async changePassword(id: string, changePasswordDto: ChangePasswordDto) {
-    const user = await this.usersService.getUserByIdWithCredential(id);
+    const user = await this.usersService.findOne(id);
     if (!user) {
       throw new NotFoundException(`User not found`);
     }
@@ -202,15 +245,18 @@ export class AuthService {
 
   //Forgot password
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-    const user = await this.usersService.getUserByDynamicCredential(
-      forgotPasswordDto.email,
-    );
+    const user = await this.usersService.findByEmail(forgotPasswordDto.email);
     if (!user) {
       throw new NotFoundException(`User not found`);
     }
 
     if (forgotPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
-      const resetToken = nanoid(64);
+      if (!user.isEmailVerified) {
+        throw new BadRequestException(
+          'Email is not verified. Please verify your email address to proceed with password reset.',
+        );
+      }
+      const resetToken = generateVerificationToken();
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
 
@@ -249,6 +295,16 @@ export class AuthService {
     } else if (
       forgotPasswordDto.verificationMethod === VerificationMethod.SMS
     ) {
+      if (!user.phone) {
+        throw new BadRequestException(
+          'Phone number not found. Please add a valid phone number to proceed with password reset.',
+        );
+      }
+      if (!user.isPhoneVerified) {
+        throw new BadRequestException(
+          'Phone number is not verified. Please verify your phone number to proceed with password reset.',
+        );
+      }
       const otp = generateOtp();
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 2); // Expires in 2 minutes
@@ -300,7 +356,9 @@ export class AuthService {
       });
 
       if (!verificationObj) {
-        throw new UnauthorizedException('Password Reset Link Expired');
+        throw new UnauthorizedException(
+          'Invalid or expired password reset link',
+        );
       }
 
       const user = verificationObj.user;

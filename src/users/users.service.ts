@@ -20,50 +20,125 @@ import { deleteTempDirectory } from 'src/auth/utility/delete-directory.util';
 import * as path from 'path';
 import { clearDirectory } from 'src/auth/utility/clear-direttory.util';
 import { MailService } from 'src/auth/services/mail.services';
+import { generateVerificationToken } from 'src/auth/utility/token.util';
+import { Verification } from 'src/auth/entities/verification.entity';
+import { VerificationType } from 'src/auth/enums/verification-type.enum';
 
 @Injectable()
 export class UsersService {
   constructor(
     private activityLogsService: ActivityLogsService,
     @InjectRepository(Users) private userRepository: Repository<Users>,
+    @InjectRepository(Verification)
+    private verificationRepository: Repository<Verification>,
     private mailService: MailService,
   ) {}
 
+  // Create a new user and send verification email
   async createUser(createUserDto: CreateUserDto) {
-    if (
-      await this.userRepository.findOne({
-        where: { email: createUserDto.email },
-      })
-    ) {
-      throw new BadRequestException(
-        `User with this email ${createUserDto.email} already exists`,
-      );
-    }
-    if (
-      await this.userRepository.findOne({
-        where: { phone: createUserDto.phone },
-      })
-    ) {
-      throw new BadRequestException(
-        `User with this phone ${createUserDto.phone} already exists`,
-      );
-    }
-    const user = await this.userRepository.create(createUserDto);
-    const savedUser = await this.userRepository.save(user);
-    if (!savedUser) {
-      throw new NotFoundException('Faild to created user try again!');
+    const { email, phone } = createUserDto;
+
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
+
+    if (existingUser) {
+      const isUnverified = existingUser.isEmailVerified === false;
+      const hasExpired =
+        existingUser.createdAt &&
+        new Date().getTime() - new Date(existingUser.createdAt).getTime() >
+          3600000;
+
+      if (!isUnverified) {
+        throw new BadRequestException(
+          `User with email ${email} already exists.`,
+        );
+      }
+
+      if (isUnverified && !hasExpired) {
+        throw new BadRequestException(
+          `User with email ${email} is pending verification.`,
+        );
+      }
+
+      await this.userRepository.delete({ id: existingUser.id });
     }
 
-    const { password, refreshToken, ...result } = user;
-    const fullName = result.firstName + ' ' + result.lastName;
-    this.mailService.sendWelcomeEmail(result.email, fullName);
-    const activityLog = {
+    if (phone) {
+      const phoneExists = await this.userRepository.findOne({
+        where: { phone },
+      });
+      if (phoneExists) {
+        throw new BadRequestException(
+          `User with phone ${phone} already exists`,
+        );
+      }
+    }
+
+    const user = this.userRepository.create(createUserDto);
+    const savedUser = await this.userRepository.save(user);
+
+    const token = generateVerificationToken();
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    const verification = this.verificationRepository.create({
+      type: VerificationType.USER_REGISTRATION_VERIFICATION,
+      tokenOrOtp: token,
+      user: savedUser,
+      expiresAt: expiresAt,
+    });
+
+    await this.verificationRepository.save(verification);
+
+    const fullName = `${savedUser.firstName} ${savedUser.lastName || ''}`;
+
+    await this.mailService.sendRegistrationVerificationEmail(
+      savedUser.email,
+      fullName,
+      token,
+    );
+
+    //Log activity
+    await this.activityLogsService.createActivityLog({
       activity: ActivityType.USER_REGISTER,
-      description: `New user registered with id ${user.id}`,
-      user: user,
-    };
-    await this.activityLogsService.createActivityLog(activityLog);
+      description: `New user registered: ${savedUser.id}`,
+      user: savedUser,
+    });
+
+    const { password, refreshToken, ...result } = savedUser;
     return result;
+  }
+
+  // Verify user registration
+  async verifyRegistrationUpdate(userId: string) {
+    const result = await this.userRepository.update(userId, {
+      isEmailVerified: true,
+      isActive: true,
+    });
+
+    if (result.affected === 0) {
+      throw new NotFoundException('User not found or already verified');
+    } else {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        select: ['id', 'email', 'firstName', 'lastName'],
+      });
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      const fullName = `${user.firstName} ${user.lastName || ''}`;
+      this.mailService.sendWelcomeEmail(user.email, fullName);
+      const activityLog = {
+        activity: ActivityType.USER_REGISTER_VERIFICATION,
+        description: `Registration verified with id ${user.id}`,
+        user: user,
+      };
+      await this.activityLogsService.createActivityLog(activityLog);
+      return {
+        message: 'User registration verified successfully',
+        result,
+      };
+    }
   }
 
   async getAllUsers() {
@@ -313,7 +388,8 @@ export class UsersService {
   }
 
   async findByEmail(email: string) {
-    return await this.userRepository.findOne({ where: { email } });
+    const user = await this.userRepository.findOne({ where: { email } });
+    return user;
   }
 
   async updateLastLogin(id: string) {
@@ -344,23 +420,5 @@ export class UsersService {
 
   findOne(id: string) {
     return this.userRepository.findOne({ where: { id } });
-  }
-
-  async getUserByIdWithCredential(id: string) {
-    if (!id) {
-      throw new BadRequestException(`Id is required`);
-    }
-
-    return await this.userRepository.findOne({
-      where: { id },
-    });
-  }
-
-  async getUserByDynamicCredential(email: string) {
-    // Get user by email
-    const user = await this.userRepository.findOne({
-      where: { email },
-    });
-    return user;
   }
 }

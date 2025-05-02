@@ -84,12 +84,16 @@ export class Users {
   /////// Before insert //////
   @BeforeInsert()
   emailToLowerCase() {
-    this.email = this.email.toLowerCase();
+    if (this.email) {
+      this.email = this.email.toLowerCase();
+    }
   }
 
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword() {
-    this.password = await bcrypt.hash(this.password, 10);
+    if (this.password && !this.password.startsWith('$2b$')) {
+      this.password = await bcrypt.hash(this.password, 10);
+    }
   }
 }
