@@ -7,6 +7,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   Req,
   Request,
   Res,
@@ -27,6 +28,12 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Public()
+  @Get('verifyRegistration')
+  async verifyEmail(@Query('token') token: string) {
+    return this.authService.verifyRegistratioin(token);
+  }
 
   @Public()
   @HttpCode(HttpStatus.OK)

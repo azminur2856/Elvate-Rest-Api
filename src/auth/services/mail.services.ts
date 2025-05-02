@@ -19,36 +19,42 @@ export class MailService {
     });
   }
 
-  async sendPasswordResetEmail(to: string, fullName: string, token: string) {
-    const resetLink = `http://localhost/elvate/reset-password-view.html?resetToken=${token}`;
+  async sendRegistrationVerificationEmail(
+    email: string,
+    fullName: string,
+    token: string,
+  ) {
+    const verificationLink = `http://localhost:3000/auth/verifyRegistration?token=${token}`;
     const mailOptions = {
-      from: '"Elvate Authentication" <no-reply@elvate.com>',
-      to: to,
-      subject: 'Elvate Password Reset Request',
+      from: '"Elvate Verification Team" <no-reply@elvate.com>',
+      to: email,
+      subject: 'Verify your email address',
       html: `
-<div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px; color: #333;">
-  <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
-    <div style="background-color:rgb(0, 255, 217); padding: 20px; text-align: center;">
-      <h1 style="color: #ffffff;">Password Reset Request</h1>
-    </div>
-    <div style="padding: 20px;">
-      <p>Hello ${fullName},</p>
-      <p>You requested a password reset for your account. Click below to reset:</p>
-      <p style="text-align: center;">
-        <a href="${resetLink}" style="background-color: rgb(0, 255, 217); color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">Reset Password</a>
-      </p>
-      <p>If you did not request a reset, you can ignore this email.</p>
-      <p>— The Elvate Team</p>
-    </div>
-    <div style="background-color: #f1f1f1; text-align: center; padding: 10px;">
-      <p style="font-size: 12px;">© 2025 Elvate. All rights reserved.</p>
+  <div style="font-family: Arial, sans-serif; background-color: #ffffff; padding: 20px; color: #212529;">
+    <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; border: 1px solid #dee2e6;">
+      <div style="background-color: #343a40; padding: 20px; text-align: center;">
+        <h1 style="color: #ffffff; margin: 0;">Verify Your Email</h1>
+      </div>
+      <div style="padding: 20px;">
+        <p>Hello ${fullName},</p>
+        <p>Thank you for registering at <strong>Elvate</strong>! Please verify your email by clicking the button below. The link will expire in <strong>1 hour</strong>.</p>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationLink}" style="background-color: #007bff; color: #ffffff; padding: 12px 24px; border-radius: 5px; text-decoration: none; font-weight: bold;">
+            Verify Email
+          </a>
+        </div>
+        <p>If you didn’t create this account, feel free to ignore this email.</p>
+        <p style="margin-top: 40px;">Welcome aboard,<br><strong>The Elvate Team</strong></p>
+      </div>
+      <div style="background-color: #f8f9fa; text-align: center; padding: 10px; font-size: 12px; color: #6c757d;">
+        © 2024 Elvate. All rights reserved.
+      </div>
     </div>
   </div>
-</div>
       `,
     };
 
-    return await this.transporter.sendMail(mailOptions);
+    await this.transporter.sendMail(mailOptions);
   }
 
   async sendWelcomeEmail(to: string, fullName: string) {
@@ -80,6 +86,38 @@ export class MailService {
     };
 
     await this.transporter.sendMail(mailOptions);
+  }
+
+  async sendPasswordResetEmail(to: string, fullName: string, token: string) {
+    const resetLink = `http://localhost/elvate/reset-password-view.html?resetToken=${token}`;
+    const mailOptions = {
+      from: '"Elvate Authentication" <no-reply@elvate.com>',
+      to: to,
+      subject: 'Elvate Password Reset Request',
+      html: `
+<div style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px; color: #333;">
+  <div style="max-width: 600px; margin: auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);">
+    <div style="background-color:rgb(0, 255, 217); padding: 20px; text-align: center;">
+      <h1 style="color: #ffffff;">Password Reset Request</h1>
+    </div>
+    <div style="padding: 20px;">
+      <p>Hello ${fullName},</p>
+      <p>You requested a password reset for your account. Click below to reset:</p>
+      <p style="text-align: center;">
+        <a href="${resetLink}" style="background-color: rgb(0, 255, 217); color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">Reset Password</a>
+      </p>
+      <p>If you did not request a reset, you can ignore this email.</p>
+      <p>— The Elvate Team</p>
+    </div>
+    <div style="background-color: #f1f1f1; text-align: center; padding: 10px;">
+      <p style="font-size: 12px;">© 2025 Elvate. All rights reserved.</p>
+    </div>
+  </div>
+</div>
+      `,
+    };
+
+    return await this.transporter.sendMail(mailOptions);
   }
 
   async sendNotificationEmail(
