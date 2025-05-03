@@ -27,8 +27,7 @@ export class ActivityLogsController {
     return this.activityLogsService.getAllActivityLogs();
   }
 
-  //@Roles(Role.ADMIN)
-  @Public()
+  @Roles(Role.ADMIN)
   @Get('getUserActivityLogs/:userId')
   getUserActivityLogs(@Param('userId') userId: string) {
     return this.activityLogsService.getUserActivityLog(userId);
@@ -52,7 +51,7 @@ export class ActivityLogsController {
     return this.activityLogsService.createActivityLog(createActivityLogDto);
   }
 
-  @Public()
+  @Roles(Role.ADMIN)
   @Get('filter')
   async getFilteredActivityLogs(
     @Query('userId') userId?: string,
@@ -72,7 +71,7 @@ export class ActivityLogsController {
     });
   }
 
-  @Public()
+  @Roles(Role.ADMIN)
   @Get('export')
   async exportLogsToCSV(
     @Res() res: Response,
