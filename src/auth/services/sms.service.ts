@@ -62,6 +62,39 @@ export class SmsService {
     }
   }
 
+  async sendOtpPhoneVerification(
+    phoneNumber: string,
+    fullName: string,
+    otp: string,
+  ): Promise<any> {
+    const message = `Dear ${fullName},\nYour Elvate Phone Verification OTP is ${otp}.\nThis code will expire in 2 minutes.\n\nPlease do not share this OTP with anyone.`;
+
+    const params = {
+      api_key: this.apiKey,
+      senderid: this.senderId,
+      number: phoneNumber,
+      message,
+    };
+
+    try {
+      const response = await axios.post(this.apiUrl, null, { params });
+      const data = response.data as SmsApiResponse;
+
+      if (data.response_code === 202) {
+        this.logger.log('OTP SMS sent successfully');
+        return { success: true, message: 'OTP sent successfully' };
+      } else {
+        this.logger.error(
+          `Failed to send OTP SMS. Error: ${data.error_message}`,
+        );
+        return { success: false, error: data.error_message };
+      }
+    } catch (error: any) {
+      this.logger.error(`Failed to send OTP SMS. Error: ${error.message}`);
+      throw new Error('Unable to send OTP SMS at this time');
+    }
+  }
+
   async sendNotificationSMS(
     phoneNumber: string,
     fullName: string,

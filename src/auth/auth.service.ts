@@ -31,6 +31,7 @@ import { maskEmail } from './utility/email-mask.util';
 import { generateOtp } from './utility/otp.util';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { generateVerificationToken } from './utility/token.util';
+import { VerifyPhoneDto } from './dto/verify-Phone.dto';
 
 @Injectable()
 export class AuthService {
@@ -297,6 +298,14 @@ export class AuthService {
         resetToken,
       );
 
+      const activityLog = {
+        activity: ActivityType.REQUEST_TOKEN,
+        description: 'User requested Token for reset password',
+        user: user,
+      };
+
+      await this.activityLogsService.createActivityLog(activityLog);
+
       const maskedEmail = maskEmail(user.email);
 
       if (response.accepted.length > 0 && response.rejected.length === 0) {
@@ -345,6 +354,14 @@ export class AuthService {
       await this.verificationRepository.save(verificationData);
 
       const response = await this.smsService.sendOtp(user.phone, fullName, otp); // Send OTP to user phone
+
+      const activityLog = {
+        activity: ActivityType.REQUEST_OTP,
+        description: 'User requested OTP for reset password',
+        user: user,
+      };
+
+      await this.activityLogsService.createActivityLog(activityLog);
 
       const maskedPhone = `********${user.phone.slice(-2)}`;
 
@@ -436,5 +453,109 @@ export class AuthService {
     await this.activityLogsService.createActivityLog(activityLog);
 
     return { message: 'Password reset successful' };
+  }
+
+  //Check if phone number is already verified
+  async phoneVerification(userId: string) {
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    if (!user.phone) {
+      throw new BadRequestException(
+        'Phone number not found. Please add a valid phone number for verification.',
+      );
+    }
+
+    if (user.isPhoneVerified) {
+      throw new BadRequestException('Phone number already verified');
+    }
+
+    const otp = generateOtp();
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 2); // Expires in 2 minutes
+
+    await this.verificationRepository.update(
+      {
+        userId: user.id,
+        type: VerificationType.PHONE_VERIFICATION,
+        isUsed: false,
+      },
+      { isUsed: true },
+    );
+
+    const verificationData = this.verificationRepository.create({
+      type: VerificationType.PHONE_VERIFICATION,
+      tokenOrOtp: otp,
+      user: user,
+      expiresAt: expiresAt,
+    });
+
+    await this.verificationRepository.save(verificationData);
+
+    const response = await this.smsService.sendOtpPhoneVerification(
+      user.phone,
+      user.firstName,
+      otp,
+    );
+
+    const activityLog = {
+      activity: ActivityType.REQUEST_OTP,
+      description: 'User requested OTP for phone verification',
+      user: user,
+    };
+
+    await this.activityLogsService.createActivityLog(activityLog);
+
+    const maskedPhone = `********${user.phone.slice(-2)}`;
+
+    if (response.success) {
+      return {
+        message: `OTP Successfully sent to your phone number ${maskedPhone}`,
+      };
+    } else {
+      return {
+        message: `Failed to send OTP to your phone number ${maskedPhone}`,
+      };
+    }
+  }
+
+  // Verify Phone Number
+  async verifyPhone(verifyPhoneDto: VerifyPhoneDto) {
+    const verification = await this.verificationRepository.findOne({
+      where: {
+        tokenOrOtp: verifyPhoneDto.otp,
+        type: VerificationType.PHONE_VERIFICATION,
+      },
+      relations: ['user'],
+    });
+
+    if (!verification) {
+      throw new NotFoundException('OTP not found');
+    }
+
+    if (verification.isUsed) {
+      throw new BadRequestException('OTP has already been used');
+    }
+
+    if (new Date() > verification.expiresAt) {
+      throw new BadRequestException('OTP has expired');
+    }
+
+    verification.isUsed = true;
+    await this.verificationRepository.save(verification);
+
+    await this.usersService.verifyPhoneNumber(verification.user.id);
+
+    const activityLog = {
+      activity: ActivityType.USER_VERIFY_PHONE,
+      description: 'User verified phone number',
+      user: verification.user,
+    };
+
+    await this.activityLogsService.createActivityLog(activityLog);
+
+    return { message: 'Phone number verified successfully' };
   }
 }

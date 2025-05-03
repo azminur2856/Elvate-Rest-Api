@@ -24,6 +24,7 @@ import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyPhoneDto } from './dto/verify-Phone.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -92,5 +93,15 @@ export class AuthController {
     @Body(ValidationPipe) resetPasswordDto: ResetPasswordDto,
   ) {
     return this.authService.resetPassword(resetPasswordDto);
+  }
+
+  @Post('getOtpForPhoneVerification')
+  async phoneVerification(@Request() req) {
+    return await this.authService.phoneVerification(req.user.id);
+  }
+
+  @Post('verifyPhone')
+  async verifyPhone(@Body(ValidationPipe) verifyPhoneDto: VerifyPhoneDto) {
+    return this.authService.verifyPhone(verifyPhoneDto);
   }
 }
