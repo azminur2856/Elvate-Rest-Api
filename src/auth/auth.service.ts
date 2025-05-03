@@ -1,5 +1,9 @@
 // src/auth/auth.service.ts
-import { Injectable, UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Users } from 'src/users/entities/users.entity';
@@ -37,7 +41,10 @@ export class AuthService {
         throw new UnauthorizedException('Invalid credentials');
       }
 
-      const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+      const isPasswordValid = await bcrypt.compare(
+        loginDto.password,
+        user.password,
+      );
       if (!isPasswordValid) {
         throw new UnauthorizedException('Invalid credentials');
       }
@@ -50,14 +57,18 @@ export class AuthService {
       user.lastLoginAt = new Date();
       await this.usersRepository.save(user);
 
-      const payload = { 
-        sub: user.id, 
-        email: user.email, 
-        role: user.roles[0]?.name || 'USER' 
+      const role = user.roles[0]?.name || 'USER';
+      const nameFromEmail = user.email.split('@')[0];
+
+      const payload = {
+        sub: user.id,
+        email: user.email,
+        role,
       };
 
       return {
         access_token: this.jwtService.sign(payload),
+        message: `Welcome ${nameFromEmail}`,
       };
     } catch (error) {
       if (error instanceof UnauthorizedException) {

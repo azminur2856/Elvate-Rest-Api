@@ -47,22 +47,6 @@ export class AdminUserService {
         sortOrder = 'desc',
       } = queryDto;
 
-      // Validate pagination parameters
-      if (isNaN(page) || page < 1) {
-        throw new BadRequestException('Page must be a positive number');
-      }
-      if (isNaN(limit) || limit < 1) {
-        throw new BadRequestException('Limit must be a positive number');
-      }
-
-      // Validate date ranges
-      if (createdAfter && createdBefore && new Date(createdAfter) > new Date(createdBefore)) {
-        throw new BadRequestException('Created after date cannot be later than created before date');
-      }
-      if (lastLoginAfter && lastLoginBefore && new Date(lastLoginAfter) > new Date(lastLoginBefore)) {
-        throw new BadRequestException('Last login after date cannot be later than last login before date');
-      }
-
       const skip = (page - 1) * limit;
       const queryBuilder = this.userRepository.createQueryBuilder('user');
 
@@ -100,32 +84,15 @@ export class AdminUserService {
         });
       }
 
-      // Validate and apply sorting
+      // Apply sorting
       const validSortFields = ['createdAt', 'lastLoginAt', 'firstName', 'lastName', 'email', 'role'];
-      const validSortOrder = ['asc', 'desc'];
-
       const finalSortBy = validSortFields.includes(sortBy) ? sortBy : 'createdAt';
-      const finalSortOrder = validSortOrder.includes(sortOrder.toLowerCase()) 
-        ? sortOrder.toLowerCase() 
-        : 'desc';
+      queryBuilder.orderBy(`user.${finalSortBy}`, sortOrder.toUpperCase() as 'ASC' | 'DESC');
 
-      queryBuilder.orderBy(`user.${finalSortBy}`, finalSortOrder.toUpperCase() as 'ASC' | 'DESC');
+      // Apply pagination
       queryBuilder.skip(skip).take(limit);
 
       const [items, total] = await queryBuilder.getManyAndCount();
-
-      if (total === 0) {
-        return {
-          items: [],
-          meta: {
-            total: 0,
-            page,
-            limit,
-            totalPages: 0,
-            message: 'No users found matching the criteria'
-          },
-        };
-      }
 
       return {
         items,
@@ -134,12 +101,10 @@ export class AdminUserService {
           page,
           limit,
           totalPages: Math.ceil(total / limit),
+          message: total === 0 ? 'No users found matching the criteria' : undefined,
         },
       };
     } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
       throw new BadRequestException(`Error processing user query: ${error.message}`);
     }
   }

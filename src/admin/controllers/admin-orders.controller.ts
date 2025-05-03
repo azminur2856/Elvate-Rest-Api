@@ -69,26 +69,26 @@ export class AdminOrdersController {
     return this.ordersService.getProductAnalytics(startDate, endDate);
   }
 
-  @Patch(':id/status')
-  @ApiOperation({ summary: 'Update order status (admin only)' })
-  @ApiResponse({ status: 200, description: 'Order status updated successfully' })
-  @ApiResponse({ status: 404, description: 'Order not found' })
-  updateStatus(
-    @Param('id') id: string,
-    @Body('status') status: OrderStatus,
-    @Body('adminNotes') adminNotes?: string,
-  ) {
-    return this.ordersService.updateStatus(id, status, adminNotes);
-  }
+  // @Patch(':id/status')
+  // @ApiOperation({ summary: 'Update order status (admin only)' })
+  // @ApiResponse({ status: 200, description: 'Order status updated successfully' })
+  // @ApiResponse({ status: 404, description: 'Order not found' })
+  // updateStatus(
+  //   @Param('id') id: string,
+  //   @Body('status') status: OrderStatus,
+  //   @Body('adminNotes') adminNotes?: string,
+  // ) {
+  //   return this.ordersService.updateStatus(id, status, adminNotes);
+  // }
 
-  @Patch('bulk-status')
-  @ApiOperation({ summary: 'Update multiple orders status (admin only)' })
-  @ApiResponse({ status: 200, description: 'Orders status updated successfully' })
-  updateBulkStatus(
-    @Body('orderIds') orderIds: string[],
-    @Body('status') status: OrderStatus,
-    @Body('adminNotes') adminNotes?: string,
-  ) {
-    return this.ordersService.updateBulkStatus(orderIds, status, adminNotes);
-  }
+  // @Patch('bulk-status')
+  // @ApiOperation({ summary: 'Update multiple orders status (admin only)' })
+  // @ApiResponse({ status: 200, description: 'Orders status updated successfully' })
+  // updateBulkStatus(
+  //   @Body('orderIds') orderIds: string[],
+  //   @Body('status') status: OrderStatus,
+  //   @Body('adminNotes') adminNotes?: string,
+  // ) {
+  //   return this.ordersService.updateBulkStatus(orderIds, status, adminNotes);
+  // }
 } 

@@ -14,14 +14,22 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserQueryDto } from './dto/user-query.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+  ApiBearerAuth,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator'
 
 /**
  * Controller handling public user management operations.
  */
 @ApiTags('B. Public - User Profile')
-@Controller('users')
+@Controller('user')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
@@ -40,9 +48,25 @@ export class UsersController {
   @ApiOperation({ summary: 'Get all users' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiResponse({ status: 200, description: 'List of users retrieved successfully' })
+  @ApiResponse({
+    status: 200,
+    description: 'List of users retrieved successfully',
+  })
   async findAll(@Query('page') page?: number, @Query('limit') limit?: number) {
     return this.usersService.findAll(page, limit);
+  }
+
+  // Route to get the currently authenticated user's profile
+  @Get('profile')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get current user profile' })
+  @ApiResponse({
+    status: 200,
+    description: 'Current user profile retrieved successfully',
+  })
+  async getProfile(@CurrentUser() user: any) {
+    return this.usersService.getUserById(user.id);
   }
 
   // Route to get a single user by ID
