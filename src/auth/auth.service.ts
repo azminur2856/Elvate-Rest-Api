@@ -260,6 +260,8 @@ export class AuthService {
       throw new NotFoundException(`User not found`);
     }
 
+    const fullName = user.firstName + ' ' + (user.lastName || '');
+
     if (forgotPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
       if (!user.isEmailVerified) {
         throw new BadRequestException(
@@ -268,12 +270,17 @@ export class AuthService {
       }
       const resetToken = generateVerificationToken();
       const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
+      //expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
+      expiresAt.setMinutes(expiresAt.getMinutes() + 5); // Expires in 5 minutes
 
-      await this.verificationRepository.delete({
-        type: VerificationType.PASSWORD_RESET_TOKEN,
-        userId: user.id,
-      });
+      await this.verificationRepository.update(
+        {
+          userId: user.id,
+          type: VerificationType.PASSWORD_RESET_TOKEN,
+          isUsed: false,
+        },
+        { isUsed: true },
+      );
 
       const verificationData = this.verificationRepository.create({
         type: VerificationType.PASSWORD_RESET_TOKEN,
@@ -281,9 +288,8 @@ export class AuthService {
         user: user,
         expiresAt: expiresAt,
       });
-      await this.verificationRepository.save(verificationData);
 
-      const fullName = user.firstName + ' ' + user.lastName;
+      await this.verificationRepository.save(verificationData);
 
       const response = await this.mailService.sendPasswordResetEmail(
         user.email,
@@ -292,6 +298,7 @@ export class AuthService {
       );
 
       const maskedEmail = maskEmail(user.email);
+
       if (response.accepted.length > 0 && response.rejected.length === 0) {
         return {
           message: `Password reset link sent to your email ${maskedEmail}`,
@@ -319,10 +326,14 @@ export class AuthService {
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 2); // Expires in 2 minutes
 
-      await this.verificationRepository.delete({
-        type: VerificationType.PASSWORD_RESET_OTP,
-        userId: user.id,
-      });
+      await this.verificationRepository.update(
+        {
+          userId: user.id,
+          type: VerificationType.PASSWORD_RESET_OTP,
+          isUsed: false,
+        },
+        { isUsed: true },
+      );
 
       const verificationData = this.verificationRepository.create({
         type: VerificationType.PASSWORD_RESET_OTP,
@@ -330,12 +341,9 @@ export class AuthService {
         user: user,
         expiresAt: expiresAt,
       });
+
       await this.verificationRepository.save(verificationData);
 
-      if (!user.phone) {
-        throw new BadRequestException('Phone number not found');
-      }
-      const fullName = user.firstName + ' ' + user.lastName;
       const response = await this.smsService.sendOtp(user.phone, fullName, otp); // Send OTP to user phone
 
       const maskedPhone = `********${user.phone.slice(-2)}`;
@@ -356,80 +364,77 @@ export class AuthService {
 
   //Reset Password
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    let verification: Verification | null = null;
+
     if (resetPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
-      const verificationObj = await this.verificationRepository.findOne({
+      verification = await this.verificationRepository.findOne({
         where: {
           tokenOrOtp: resetPasswordDto.resetTokenOrOTP,
           type: VerificationType.PASSWORD_RESET_TOKEN,
         },
-        relations: ['user'], // It will include user object in the response. Access by verificationObj.user
+        relations: ['user'],
       });
 
-      if (!verificationObj) {
-        throw new UnauthorizedException(
-          'Invalid or expired password reset link',
+      if (!verification) {
+        throw new NotFoundException('Password reset link not found');
+      }
+
+      if (verification.isUsed) {
+        throw new BadRequestException(
+          'This password reset link has already been used',
         );
       }
 
-      const user = verificationObj.user;
-      if (!user) {
-        throw new NotFoundException('User not found');
+      if (verification.expiresAt < new Date()) {
+        throw new BadRequestException('This password reset link has expired');
       }
-
-      if (verificationObj.expiresAt < new Date()) {
-        throw new BadRequestException('Password reset Link expired');
-      }
-
-      const hashedPassword = bcrypt.hashSync(resetPasswordDto.newPassword, 10);
-      await this.usersService.changePassword(user.id, hashedPassword);
-
-      await this.verificationRepository.delete(verificationObj.id);
-
-      const activityLog = {
-        activity: ActivityType.USER_CHANGE_PASSWORD,
-        description: 'User Reset Password With EMAIL Verification',
-        user: user,
-      };
-      await this.activityLogsService.createActivityLog(activityLog);
-
-      return { message: 'Password reset successful' };
     } else if (resetPasswordDto.verificationMethod === VerificationMethod.SMS) {
-      const verificationObj = await this.verificationRepository.findOne({
+      verification = await this.verificationRepository.findOne({
         where: {
           tokenOrOtp: resetPasswordDto.resetTokenOrOTP,
           type: VerificationType.PASSWORD_RESET_OTP,
         },
-        relations: ['user'], // It will include user object in the response. Access by verificationObj.user
+        relations: ['user'],
       });
 
-      if (!verificationObj) {
-        throw new UnauthorizedException('Invalid or Expired OTP');
+      if (!verification) {
+        throw new NotFoundException('OTP not found');
       }
 
-      const user = verificationObj.user;
-      if (!user) {
-        throw new NotFoundException('User not found');
+      if (verification.isUsed) {
+        throw new BadRequestException('This OTP has already been used');
       }
 
-      if (verificationObj.expiresAt < new Date()) {
-        throw new BadRequestException('OTP expired');
+      if (verification.expiresAt < new Date()) {
+        throw new BadRequestException('This OTP has expired');
       }
-
-      const hashedPassword = bcrypt.hashSync(resetPasswordDto.newPassword, 10);
-      await this.usersService.changePassword(user.id, hashedPassword);
-
-      await this.verificationRepository.delete(verificationObj.id);
-
-      const activityLog = {
-        activity: ActivityType.USER_CHANGE_PASSWORD,
-        description: 'User Reset Password With SMS Verification',
-        user: user,
-      };
-      await this.activityLogsService.createActivityLog(activityLog);
-
-      return { message: 'Password reset successful' };
     } else {
       throw new BadRequestException('Invalid verification method');
     }
+
+    const user = verification.user;
+
+    if (!user) {
+      throw new NotFoundException('User not found for this token/OTP');
+    }
+
+    const hashedPassword = bcrypt.hashSync(resetPasswordDto.newPassword, 10);
+    await this.usersService.changePassword(user.id, hashedPassword);
+
+    verification.isUsed = true;
+    await this.verificationRepository.save(verification);
+
+    const activityLog = {
+      activity: ActivityType.USER_CHANGE_PASSWORD,
+      description:
+        resetPasswordDto.verificationMethod === VerificationMethod.EMAIL
+          ? 'User reset password via EMAIL Verification'
+          : 'User reset password via SMS Verification',
+      user: user,
+    };
+
+    await this.activityLogsService.createActivityLog(activityLog);
+
+    return { message: 'Password reset successful' };
   }
 }

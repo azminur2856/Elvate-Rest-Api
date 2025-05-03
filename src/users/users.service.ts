@@ -79,7 +79,8 @@ export class UsersService {
     const savedUser = await this.userRepository.save(user);
 
     const token = generateVerificationToken();
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
 
     const verification = this.verificationRepository.create({
       type: VerificationType.USER_REGISTRATION_VERIFICATION,
