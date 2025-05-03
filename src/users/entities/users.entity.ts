@@ -56,7 +56,7 @@ export class Users {
     type: 'varchar',
     length: 255,
     nullable: true,
-    default: 'profile.jpg',
+    default: 'profile.png',
   })
   profileImage: string;
 

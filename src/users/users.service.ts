@@ -351,7 +351,7 @@ export class UsersService {
       `${user.profileImage}`,
     );
 
-    if (user.profileImage === 'avatar.jpg') {
+    if (user.profileImage === 'profile.png') {
       imagePath = path.join(
         __dirname,
         '..',
