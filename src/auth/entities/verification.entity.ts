@@ -5,6 +5,7 @@ import {
   ManyToOne,
   CreateDateColumn,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { VerificationType } from 'src/auth/enums/verification-type.enum';
 import { Users } from 'src/users/entities/users.entity';
@@ -15,21 +16,25 @@ export class Verification {
   id: string;
 
   @Column({ type: 'enum', enum: VerificationType })
+  @Index()
   type: VerificationType;
 
   @Column({ type: 'varchar', length: 255 })
   tokenOrOtp: string;
 
   @Column({ type: 'boolean', default: false })
+  @Index()
   isUsed: boolean;
 
   @Column({ type: 'timestamp' })
+  @Index()
   expiresAt: Date;
 
   @CreateDateColumn()
   createdAt: Date;
 
   @Column({ type: 'uuid' })
+  @Index()
   userId: string; // Foreign key to Users table
 
   ////////// RELATIONSHIPS //////////
