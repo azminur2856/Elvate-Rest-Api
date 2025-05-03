@@ -423,7 +423,13 @@ export class UsersService {
     return user;
   }
 
-  findOne(id: string) {
-    return this.userRepository.findOne({ where: { id } });
+  async findOne(id: string) {
+    return await this.userRepository.findOne({ where: { id } });
+  }
+
+  async verifyPhoneNumber(userId: string) {
+    await this.userRepository.update(userId, {
+      isPhoneVerified: true,
+    });
   }
 }
