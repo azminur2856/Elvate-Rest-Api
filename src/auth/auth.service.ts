@@ -16,7 +16,6 @@ import * as argon2 from 'argon2';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { CurrentUser } from './types/current-user';
-import { CreateUserDto } from 'src/users/dto/create-user.dto';
 import { SmsService } from './services/sms.service';
 import { MailService } from './services/mail.services';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -25,13 +24,13 @@ import { Repository } from 'typeorm';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { VerificationMethod } from './enums/verification-method.enum';
-import { nanoid } from 'nanoid';
 import { VerificationType } from './enums/verification-type.enum';
 import { maskEmail } from './utility/email-mask.util';
 import { generateOtp } from './utility/otp.util';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { generateVerificationToken } from './utility/token.util';
 import { VerifyPhoneDto } from './dto/verify-Phone.dto';
+import { CreateGoogleUserDto } from 'src/users/dto/create-google-user.dto';
 
 @Injectable()
 export class AuthService {
@@ -212,10 +211,10 @@ export class AuthService {
     return currentUser;
   }
 
-  async validateGoogleUser(googleUser: CreateUserDto) {
-    const user = await this.usersService.findByEmail(googleUser.email);
+  async validateGoogleUser(createGoogleUserDto: CreateGoogleUserDto) {
+    const user = await this.usersService.findByEmail(createGoogleUserDto.email);
     if (user) return user;
-    this.usersService.createUser(googleUser);
+    this.usersService.createUser(createGoogleUserDto);
   }
 
   //ChangePassword
@@ -494,9 +493,11 @@ export class AuthService {
 
     await this.verificationRepository.save(verificationData);
 
+    const fullName = user.firstName + ' ' + (user.lastName || '');
+
     const response = await this.smsService.sendOtpPhoneVerification(
       user.phone,
-      user.firstName,
+      fullName,
       otp,
     );
 

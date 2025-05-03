@@ -41,6 +41,7 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
       email: profile.emails[0].value,
       phone: '',
       password: '',
+      isActive: true,
       isEmailVerified: true,
     });
     done(null, user);

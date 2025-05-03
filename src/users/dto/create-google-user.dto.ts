@@ -7,7 +7,7 @@ import {
   IsPhoneNumber,
 } from 'class-validator';
 
-export class CreateUserDto {
+export class CreateGoogleUserDto {
   @IsNotEmpty()
   @IsString()
   firstName: string;
@@ -38,4 +38,10 @@ export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
   password: string;
+
+  @IsNotEmpty()
+  isActive: boolean;
+
+  @IsNotEmpty()
+  isEmailVerified: boolean;
 }
