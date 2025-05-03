@@ -396,6 +396,10 @@ export class UsersService {
     await this.userRepository.update(id, { lastLoginAt: new Date() });
   }
 
+  async setLastLogoutTime(userId: string) {
+    await this.userRepository.update(userId, { lastLogoutAt: new Date() });
+  }
+
   async changePassword(id: string, password: string) {
     return await this.userRepository.update(id, {
       password: password,

@@ -187,16 +187,26 @@ export class AuthService {
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
-    const refreshToken = '';
-    await this.usersService.updateHashedRefreshToken(userId, refreshToken);
+    await this.usersService.updateHashedRefreshToken(userId, '');
+
+    await this.usersService.setLastLogoutTime(userId);
+
     return {
       message: 'User logged out successfully',
     };
   }
 
-  async validateJwtUser(userId: string) {
+  async validateJwtUser(userId: string, tokenIssuedAt: number) {
     const user = await this.usersService.findOne(userId);
     if (!user) throw new UnauthorizedException('User not found');
+
+    if (
+      user.lastLogoutAt &&
+      user.lastLogoutAt > new Date(tokenIssuedAt * 1000)
+    ) {
+      throw new UnauthorizedException('Token invalid due to logout');
+    }
+
     const currentUser: CurrentUser = { id: user.id, role: user.role };
     return currentUser;
   }
