@@ -69,6 +69,12 @@ export class Users {
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt: Date;
 
+  @Column({
+    type: 'timestamp',
+    default: () => `'1970-01-01 00:00:00'`,
+  })
+  lastLogoutAt: Date;
+
   /////////// RELATIONSHIPS ////////////
   @OneToMany(() => Verification, (verification) => verification.user, {
     cascade: true,
