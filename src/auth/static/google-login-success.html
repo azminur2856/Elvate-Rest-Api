@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login Success</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background: #f0f2f5;
+        padding: 20px;
+        text-align: center;
+      }
+      .container {
+        background: #fff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        display: inline-block;
+        text-align: left;
+      }
+      h2 {
+        color: #4caf50;
+      }
+      .token-box {
+        margin: 15px 0;
+        background: #f9f9f9;
+        padding: 12px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+        word-break: break-all;
+      }
+      button {
+        background: #007bff;
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-top: 5px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .alert {
+        margin-top: 8px;
+        font-size: 0.9em;
+        color: green;
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Google Login Successful ✅</h2>
+
+      <div>
+        <strong>Access Token:</strong>
+        <div class="token-box" id="accessToken"></div>
+        <div id="alertAccess" class="alert">Access Token copied!</div>
+        <button onclick="copyToken('accessToken', 'alertAccess')">
+          Copy Access Token
+        </button>
+      </div>
+      <br />
+      <div>
+        <strong>Refresh Token:</strong>
+        <div class="token-box" id="refreshToken"></div>
+        <div id="alertRefresh" class="alert">Refresh Token copied!</div>
+        <button onclick="copyToken('refreshToken', 'alertRefresh')">
+          Copy Refresh Token
+        </button>
+      </div>
+    </div>
+
+    <script>
+      const urlParams = new URLSearchParams(window.location.search);
+      const accessToken = urlParams.get('access_token');
+      const refreshToken = urlParams.get('refresh_token');
+
+      document.getElementById('accessToken').textContent =
+        accessToken || 'Not provided';
+      document.getElementById('refreshToken').textContent =
+        refreshToken || 'Not provided';
+
+      function copyToken(tokenId, alertId) {
+        const text = document.getElementById(tokenId).textContent;
+        navigator.clipboard.writeText(text).then(() => {
+          const alertEl = document.getElementById(alertId);
+          alertEl.style.display = 'block';
+          setTimeout(() => {
+            alertEl.style.display = 'none';
+          }, 1500);
+        });
+      }
+    </script>
+  </body>
+</html>
