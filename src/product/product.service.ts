@@ -5,6 +5,7 @@ import { Repository } from 'typeorm';
 import { CreateProductDto } from './dto/create_product.dto';
 import { UpdateProductDto } from './dto/update_product.dto';
 import { ProductLog } from './entities/product_logs.entity';
+import { plainToClass, plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class ProductService {
@@ -21,14 +22,25 @@ export class ProductService {
   //   return this.productRepository.save(product);
   // }
 
-  // product.service.ts
   async createProduct(dto: CreateProductDto, user: any): Promise<Product> {
     const product = this.productRepository.create({
       ...dto,
-      createdBy: { id: user.userId }, // TypeORM will handle the relation
+      createdBy: { id: user.userId },
     });
 
-    return this.productRepository.save(product);
+    const savedProduct = await this.productRepository.save(product);
+
+    // Log the creation
+    await this.logRepository.save({
+      product_id: savedProduct.id,
+      action: 'create',
+      previous_state: null,
+      new_state: savedProduct,
+      performed_by: user.userId,
+      performed_by_role: user.role,
+    });
+
+    return savedProduct;
   }
 
   // async createProduct(
@@ -39,11 +51,30 @@ export class ProductService {
   //   return this.productRepository.save(product);
   // }
 
-  async findAllProduct(): Promise<Product[]> {
-    return this.productRepository.find({
+  async findAllProduct(): Promise<Product[] | any[]> {
+    const products = this.productRepository.find({
       relations: ['variants', 'images', 'category', 'createdBy'],
     });
+
+    return (await products).map((product) => ({
+      ...product,
+      createdBy: {
+        id: product.createdBy.id,
+        role: product.createdBy.role,
+      },
+    }));
   }
+
+  // async findAllProduct(): Promise<ProductResponseDto[]> {
+  //   const products = await this.productRepository.find({
+  //     relations: ['variants', 'images', 'category', 'createdBy'],
+  //   });
+
+  //   // Transform the products to the desired response format
+  //   return plainToInstance(ProductResponseDto, products, {
+  //     excludeExtraneousValues: true,
+  //   });
+  // }
   async findOneProduct(id: number): Promise<Product> {
     const product = await this.productRepository.findOne({
       relations: ['variants', 'images', 'category', 'createdBy'],

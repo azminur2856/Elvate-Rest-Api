@@ -84,7 +84,7 @@ export class ProductController {
     @Body() body: UpdateProductDto,
   ) {
     if (req.user.role !== 'admin') {
-      throw new Error('Only admin can update products');
+      throw new ForbiddenException('Only admin can update products');
     }
 
     return this.productService.updateProduct(id, body, req.user);
@@ -111,7 +111,7 @@ export class ProductController {
     @Body() body: CreateProductVariantDto,
   ) {
     if (req.user.role !== 'admin') {
-      throw new Error('Only admin can create product variants');
+      throw new ForbiddenException('Only admin can create product variants');
     }
     return await this.productVariantService.createProductVariant(body);
   }
@@ -124,7 +124,7 @@ export class ProductController {
     @Body() body: UpdateProductVariantDto,
   ) {
     if (req.user.role !== 'admin') {
-      throw new Error('Only admin can update product variants');
+      throw new ForbiddenException('Only admin can update product variants');
     }
     return await this.productVariantService.updateProductVariant(id, body);
   }
@@ -136,7 +136,7 @@ export class ProductController {
     @Body() body: CreateProductImageDto,
   ) {
     if (req.user.role !== 'admin') {
-      throw new Error('Only admin can upload product images');
+      throw new ForbiddenException('Only admin can upload product images');
     }
     return await this.productImageService.createProductImage(body);
   }
@@ -154,7 +154,7 @@ export class ProductController {
     @Body() body: UpdateProductImageDto,
   ) {
     if (req.user.role !== 'admin') {
-      throw new Error('Only admin can update product images');
+      throw new ForbiddenException('Only admin can update product images');
     }
     return await this.productImageService.updateProductImage(id, body);
   }
@@ -163,7 +163,7 @@ export class ProductController {
   @Delete('image/:id')
   async removeProductImage(@Request() req, @Param('id') id: number) {
     if (req.user.role !== 'admin') {
-      throw new Error('Only admin can delete product images');
+      throw new ForbiddenException('Only admin can delete product images');
     }
     return await this.productImageService.removeProductImage(id);
   }
@@ -172,7 +172,7 @@ export class ProductController {
   @Delete('variant/:id')
   async removeProductVariant(@Request() req, @Param('id') id: number) {
     if (req.user.role !== 'admin') {
-      throw new Error('Only admin can delete product images');
+      throw new ForbiddenException('Only admin can delete product images');
     }
     return await this.productVariantService.removeProductVariant(id);
   }

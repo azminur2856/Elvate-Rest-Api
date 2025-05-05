@@ -10,6 +10,7 @@ import { ProductVariant } from './product_variant.entity';
 import { ProductImage } from './product_image.entity';
 import { Category } from 'src/category/entities/category.entity';
 import { User } from 'src/user/entities/user.entity';
+import { Expose } from 'class-transformer';
 
 @Entity()
 export class Product {
