@@ -8,6 +8,7 @@ import {
   Put,
   UseGuards,
   Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { CreateProductDto } from './dto/create_product.dto';
@@ -38,9 +39,10 @@ export class ProductController {
   @Post()
   async createProduct(@Request() req, @Body() body: CreateProductDto) {
     if (req.user.role !== 'admin') {
-      throw new Error('Only admin can create products');
+      throw new ForbiddenException('Only admin can create products');
     }
-    return this.productService.createProduct(body);
+
+    return this.productService.createProduct(body, req.user); // pass user info
   }
 
   // @UseGuards(AuthGuard('jwt'))
@@ -84,7 +86,8 @@ export class ProductController {
     if (req.user.role !== 'admin') {
       throw new Error('Only admin can update products');
     }
-    return this.productService.updateProduct(id, body);
+
+    return this.productService.updateProduct(id, body, req.user);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -93,7 +96,7 @@ export class ProductController {
     if (req.user.role !== 'admin') {
       throw new Error('Only admin can delete products');
     }
-    return this.productService.removeProduct(id);
+    return this.productService.removeProduct(id, req.user);
   }
 
   @Get('variant/:id')

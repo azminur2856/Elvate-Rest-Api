@@ -7,9 +7,17 @@ import { ProductVariant } from './entities/product_variant.entity';
 import { ProductImage } from './entities/product_image.entity';
 import { ProductVariantService } from './product_variant.service';
 import { ProductImageService } from './product_image.service';
+import { ProductLog } from './entities/product_logs.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Product, ProductImage, ProductVariant])],
+  imports: [
+    TypeOrmModule.forFeature([
+      Product,
+      ProductLog,
+      ProductImage,
+      ProductVariant,
+    ]),
+  ],
   controllers: [ProductController],
   providers: [ProductService, ProductVariantService, ProductImageService],
   exports: [TypeOrmModule.forFeature([ProductVariant])],

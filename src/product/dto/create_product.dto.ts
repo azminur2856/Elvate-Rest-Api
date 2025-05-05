@@ -22,7 +22,7 @@ export class CreateProductDto {
   // @IsNotEmpty()
   // created_by: number;
 
-  @IsNumber()
-  // @IsInt()
-  created_by: number;
+  // @IsNumber()
+  // // @IsInt()
+  // created_by: number;
 }

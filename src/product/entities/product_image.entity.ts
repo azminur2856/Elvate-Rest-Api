@@ -31,7 +31,7 @@ export class ProductImage {
   variant: ProductVariant;
 
   @Column('text')
-  image_url: string[];
+  image_url: string;
 
   @Column({ default: false })
   is_main: boolean;
@@ -39,10 +39,6 @@ export class ProductImage {
   @Column({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
-  @UpdateDateColumn({
-    type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
-    nullable: true,
-  })
+  @UpdateDateColumn({ type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   updated_at: Date;
 }

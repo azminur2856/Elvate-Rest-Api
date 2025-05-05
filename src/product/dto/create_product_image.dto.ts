@@ -17,7 +17,7 @@ export class CreateProductImageDto {
   variant_id: number;
 
   @IsString()
-  image_url: string[];
+  image_url: string;
 
   @IsBoolean()
   is_main: boolean;

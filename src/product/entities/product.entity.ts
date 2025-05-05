@@ -9,6 +9,7 @@ import {
 import { ProductVariant } from './product_variant.entity';
 import { ProductImage } from './product_image.entity';
 import { Category } from 'src/category/entities/category.entity';
+import { User } from 'src/user/entities/user.entity';
 
 @Entity()
 export class Product {
@@ -34,8 +35,12 @@ export class Product {
   @Column()
   category_id: number;
 
-  @Column({ type: 'int', nullable: true })
-  created_by: number;
+  // @Column({ type: 'int', nullable: true })
+  // created_by: number;
+
+  @ManyToOne(() => User)
+  @JoinColumn({ name: 'created_by' })
+  createdBy: User;
 
   @Column({ nullable: true })
   updated_by: number;
