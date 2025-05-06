@@ -46,8 +46,7 @@ const replicate = new Replicate({
 
 // const replicate = new Replicate({
 //   auth:
-//     process.env.REPLICATE_API_TOKEN ||
-//     'r8_0BUquD66OJTENsoLesxfT9sJUhudHVs3Oqv9x',
+//     process.env.REPLICATE_API_TOKEN,
 // });
 
 @Controller('product')
@@ -316,7 +315,7 @@ export class ProductController {
           { inputs: base64 },
           {
             headers: {
-              Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY || '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'}`, // Always use env variables
+              Authorization: `Bearer ${process.env.HUGGINGFACE_API_KEY}`, // Always use env variables
               'Content-Type': 'application/json',
             },
           },
