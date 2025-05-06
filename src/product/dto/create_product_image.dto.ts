@@ -22,6 +22,9 @@ export class CreateProductImageDto {
   @IsBoolean()
   is_main: boolean;
 
+  // @IsString() // Add this property
+  // caption: string; // This will store the generated caption
+
   // @IsDate()
   // @IsOptional()
   // created_at: Date;

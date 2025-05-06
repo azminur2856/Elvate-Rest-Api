@@ -22,6 +22,11 @@ export class ProductImageService {
     return this.productImageRepository.save(productImage);
   }
 
+  // async createProductImage(dto: CreateProductImageDto): Promise<ProductImage> {
+  //   const productImage = this.productImageRepository.create(dto);
+  //   return this.productImageRepository.save(productImage);
+  // }
+
   async showAllProductImages(): Promise<ProductImage[]> {
     return this.productImageRepository.find({
       relations: ['product', 'variant'],
