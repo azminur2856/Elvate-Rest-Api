@@ -13,6 +13,7 @@ import { UserModule } from './user/user.module';
 import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 // import path, { join } from 'path';
+import { LogModule } from './log/log.module';
 import * as path from 'path';
 
 @Module({
@@ -35,7 +36,7 @@ import * as path from 'path';
         from: `"Elvate " <${process.env.MAIL_FROM}>`, // your-gmail-email@gmail.com
       },
       template: {
-        dir: path.join(__dirname, 'templates'),
+        dir: path.join(__dirname, '..', 'templates'),
         adapter: new HandlebarsAdapter(),
         options: {
           strict: true,
@@ -49,6 +50,7 @@ import * as path from 'path';
     CategoryModule,
     AuthModule,
     UserModule,
+    LogModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -121,6 +121,39 @@ export class AuthService {
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     // const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const otpHtml = `
+    <div style="font-family: sans-serif;">
+      <h2>Your OTP Code</h2>
+      <p>Please use the following code to complete your registration:</p>
+      <table style="margin: 10px 0; border-spacing: 10px;">
+        <tr>
+          ${otp
+            .split('')
+            .map(
+              (digit) => `
+            <td style="
+              background-color: #4CAF50;
+              color: white;
+              font-size: 24px;
+              font-weight: bold;
+              text-align: center;
+              width: 40px;
+              height: 40px;
+              border-radius: 5px;
+            ">
+              ${digit}
+            </td>
+          `,
+            )
+            .join('')}
+        </tr>
+      </table>
+      <p>This code will expire in 10 minutes.</p>
+      <p>If you didn't request this, please ignore this email.</p>
+      <br>
+      <small>Thank you for using OurApp!</small>
+    </div>
+  `;
 
     const pending = this.pendingUserRepo.create({
       email: dto.email,
@@ -130,11 +163,30 @@ export class AuthService {
 
     await this.pendingUserRepo.save(pending);
 
+    // await this.mailerService.sendMail({
+    //   to: dto.email,
+    //   subject: 'Your OTP Code',
+    //   text: `Your OTP is ${otp}`,
+    //   html: `<p>Hello,</p><p>Your OTP is <strong>${otp}</strong>.</p><p>This code will expire in 10 minutes.</p>`,
+    // });
+
+    // await this.mailerService.sendMail({
+    //   to: dto.email,
+    //   subject: 'Elvate Registration Otp Code',
+    //   html: otpHtml,
+    // });
+
+    // const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpDigits = otp.split('');
     await this.mailerService.sendMail({
       to: dto.email,
       subject: 'Your OTP Code',
-      text: `Your OTP is ${otp}`,
-      html: `<p>Hello,</p><p>Your OTP is <strong>${otp}</strong>.</p><p>This code will expire in 10 minutes.</p>`,
+      template: 'otp',
+      context: {
+        name: dto.email.split('@')[0], // Or user's actual name if available
+        otpDigits, // array of digits for {{#each otpDigits}} in template
+        verificationLink: 'https://yourapp.com/verify', // your fallback or login link
+      },
     });
 
     return { message: 'OTP sent to email' };

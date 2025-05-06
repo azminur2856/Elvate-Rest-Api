@@ -4,7 +4,7 @@ import { Product } from './entities/product.entity';
 import { Repository } from 'typeorm';
 import { CreateProductDto } from './dto/create_product.dto';
 import { UpdateProductDto } from './dto/update_product.dto';
-import { ProductLog } from './entities/product_logs.entity';
+import { ProductLog } from '../log/entities/product_logs.entity';
 import { plainToClass, plainToInstance } from 'class-transformer';
 
 @Injectable()

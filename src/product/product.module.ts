@@ -7,7 +7,8 @@ import { ProductVariant } from './entities/product_variant.entity';
 import { ProductImage } from './entities/product_image.entity';
 import { ProductVariantService } from './product_variant.service';
 import { ProductImageService } from './product_image.service';
-import { ProductLog } from './entities/product_logs.entity';
+import { ProductLog } from '../log/entities/product_logs.entity';
+import { LogModule } from 'src/log/log.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { ProductLog } from './entities/product_logs.entity';
       ProductImage,
       ProductVariant,
     ]),
+    LogModule,
   ],
   controllers: [ProductController],
   providers: [ProductService, ProductVariantService, ProductImageService],
