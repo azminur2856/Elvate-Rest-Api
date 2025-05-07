@@ -5,6 +5,7 @@ import {
   IsUUID,
   IsInt,
   IsDecimal,
+  Min,
 } from 'class-validator';
 
 export class UpdateProductVariantDto {
@@ -20,9 +21,10 @@ export class UpdateProductVariantDto {
   @IsDecimal()
   price?: number;
 
-  @IsOptional()
+  // @IsOptional()
   @IsInt()
-  stock?: number;
+  @Min(1, { message: 'Amount must be greater than 0' })
+  stock: number;
 
   @IsOptional()
   @IsString()

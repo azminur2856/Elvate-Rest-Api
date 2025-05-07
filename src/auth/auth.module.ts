@@ -8,9 +8,13 @@ import { User } from '../user/entities/user.entity';
 import { ConfigService } from '@nestjs/config';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UserModule } from 'src/user/user.module';
+import { RefreshToken } from './entities/refresh_token.entity';
+import { BlacklistToken } from './entities/blackList_token.entity';
+import { JwtWithBlacklistGuard } from './CustomGuard/jwt_blacklist.guard';
 
 @Module({
   imports: [
+    TypeOrmModule.forFeature([RefreshToken, BlacklistToken]),
     PassportModule,
     UserModule,
     JwtModule.registerAsync({
@@ -21,8 +25,8 @@ import { UserModule } from 'src/user/user.module';
       }),
     }),
   ],
-  providers: [AuthService, JwtStrategy],
+  providers: [AuthService, JwtStrategy, JwtWithBlacklistGuard],
   controllers: [AuthController],
-  exports: [AuthService],
+  exports: [AuthService, JwtWithBlacklistGuard],
 })
 export class AuthModule {}

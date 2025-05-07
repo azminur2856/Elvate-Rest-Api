@@ -14,6 +14,8 @@ import { PendingUser } from 'src/user/entities/pending_user.entity';
 import { VerifyOtpDto } from 'src/user/dto/verify_otp.dto';
 import { RequestOtpDto } from 'src/user/dto/request_otp.dto';
 import { MailerService } from '@nestjs-modules/mailer';
+import { RefreshToken } from './entities/refresh_token.entity';
+import { BlacklistToken } from './entities/blackList_token.entity';
 
 @Injectable()
 export class AuthService {
@@ -25,6 +27,10 @@ export class AuthService {
     private mailerService: MailerService,
     @InjectRepository(PendingUser)
     private pendingUserRepo: Repository<PendingUser>,
+    @InjectRepository(RefreshToken)
+    private readonly refreshTokenRepository: Repository<RefreshToken>,
+    @InjectRepository(BlacklistToken)
+    private readonly blackListTokenRepository: Repository<BlacklistToken>,
   ) {}
 
   async register(createUserDto: CreateUserDto) {
@@ -58,9 +64,22 @@ export class AuthService {
   async login(user: any) {
     const payload = { username: user.email, sub: user.id, role: user.role };
     const access_token = this.jwtService.sign(payload);
+    const refresh_token = this.jwtService.sign(payload, {
+      expiresIn: '7d',
+      secret: process.env.JWT_REFRESH_SECRET,
+    });
+
+    await this.refreshTokenRepository.save({
+      userId: user.id,
+      token: refresh_token,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+      // revoked: false,
+    });
+
     const decoded = this.jwtService.verify(access_token);
     return {
       access_token,
+      // refresh_token,
       // user: {
       //   id: user.id,
       //   role: user.role,
@@ -68,6 +87,25 @@ export class AuthService {
       id: decoded.sub,
       role: decoded.role,
     };
+  }
+
+  async isBlacklisted(token: string): Promise<boolean> {
+    const entry = await this.blackListTokenRepository.findOne({
+      where: { token },
+    });
+    return !!entry;
+  }
+
+  async logout(userId: number, accessToken: string) {
+    const decoded = this.jwtService.decode(accessToken) as { exp: number };
+    const expiresAt = new Date(decoded.exp * 1000);
+
+    await this.refreshTokenRepository.delete({ userId });
+
+    await this.blackListTokenRepository.save({
+      token: accessToken,
+      expiresAt,
+    });
   }
 
   // async requestOtp(dto: RequestOtpDto) {
@@ -120,7 +158,6 @@ export class AuthService {
     if (existing) throw new ConflictException('Email already registered');
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    // const hashedPassword = await bcrypt.hash(dto.password, 10);
     const otpHtml = `
     <div style="font-family: sans-serif;">
       <h2>Your OTP Code</h2>
@@ -210,5 +247,31 @@ export class AuthService {
     await this.pendingUserRepo.delete({ email: dto.email });
 
     return { message: 'User registered successfully', user: newUser };
+  }
+
+  async refreshTokens(refreshToken: string) {
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
+      if (!user) {
+        throw new UnauthorizedException('User not found');
+      }
+
+      const newAccessToken = this.jwtService.sign(
+        { username: user.email, sub: user.id, role: user.role },
+        { expiresIn: '15m' },
+      );
+
+      return {
+        access_token: newAccessToken,
+      };
+    } catch (err) {
+      throw new UnauthorizedException('Invalid or expired refresh token');
+    }
   }
 }

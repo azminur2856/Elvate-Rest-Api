@@ -4,6 +4,7 @@ import {
   IsUUID,
   IsOptional,
   IsDecimal,
+  Min,
 } from 'class-validator';
 
 export class CreateProductVariantDto {
@@ -17,6 +18,7 @@ export class CreateProductVariantDto {
   price: number;
 
   @IsNumber()
+  @Min(1, { message: 'Stock must be greater than 0' })
   stock: number;
 
   @IsString()

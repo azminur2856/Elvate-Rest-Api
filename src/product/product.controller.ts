@@ -30,6 +30,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import axios from 'axios';
 import * as fs from 'fs';
+import { JwtWithBlacklistGuard } from 'src/auth/CustomGuard/jwt_blacklist.guard';
 // import Replicate from 'replicate';
 // import * as Replicate from 'replicate';
 const Replicate = require('replicate');
@@ -63,7 +64,8 @@ export class ProductController {
     // return 'check get';
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(JwtWithBlacklistGuard)
+  // @UseGuards(AuthGuard('jwt'))
   @Post()
   async createProduct(@Request() req, @Body() body: CreateProductDto) {
     if (req.user.role !== 'admin') {
