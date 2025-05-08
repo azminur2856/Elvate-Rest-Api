@@ -14,6 +14,7 @@ import { MailerModule } from '@nestjs-modules/mailer';
 import { HandlebarsAdapter } from '@nestjs-modules/mailer/dist/adapters/handlebars.adapter';
 // import path, { join } from 'path';
 import { LogModule } from './log/log.module';
+import { ChatbotModule } from './chatbot/chatbot.module';
 import * as path from 'path';
 
 @Module({
@@ -21,19 +22,19 @@ import * as path from 'path';
     ConfigModule.forRoot({
       isGlobal: true,
       expandVariables: true,
-      load: [dbConfig], // Assuming dbConfig is defined elsewhere
+      load: [dbConfig],
     }),
     MailerModule.forRoot({
       transport: {
-        host: process.env.MAIL_HOST, // smtp.gmail.com
-        port: parseInt(process.env.MAIL_PORT!), // 587
+        host: process.env.MAIL_HOST,
+        port: parseInt(process.env.MAIL_PORT!),
         auth: {
-          user: process.env.MAIL_USER, // your-gmail-email@gmail.com
-          pass: process.env.MAIL_PASS, // your-app-password
+          user: process.env.MAIL_USER,
+          pass: process.env.MAIL_PASS,
         },
       },
       defaults: {
-        from: `"Elvate " <${process.env.MAIL_FROM}>`, // your-gmail-email@gmail.com
+        from: `"Elvate " <${process.env.MAIL_FROM}>`,
       },
       template: {
         dir: path.join(__dirname, '..', 'templates'),
@@ -51,6 +52,7 @@ import * as path from 'path';
     AuthModule,
     UserModule,
     LogModule,
+    ChatbotModule,
   ],
   controllers: [AppController],
   providers: [AppService],
