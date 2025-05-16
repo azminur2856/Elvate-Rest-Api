@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Face Login</title>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"
+    ></script>
+    <style>
+      body {
+        font-family: 'Segoe UI', sans-serif;
+        background-color: #f4f6f9;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+
+      .container {
+        background: #fff;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 400px;
+        position: relative;
+      }
+
+      h2 {
+        margin-bottom: 20px;
+        color: #333;
+      }
+
+      input[type='text'] {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 5px;
+        font-size: 14px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+
+      .error-msg {
+        font-size: 13px;
+        color: #d9534f;
+        margin-bottom: 15px;
+        height: 16px;
+      }
+
+      .video-wrapper {
+        position: relative;
+        width: 320px;
+        height: 320px;
+        margin: 0 auto 15px auto;
+        border-radius: 50%;
+        overflow: hidden;
+        box-shadow: 0 0 0 5px #007bff80;
+        background: #000;
+      }
+
+      video {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        min-width: 100%;
+        min-height: 100%;
+        transform: translate(-50%, -50%);
+        object-fit: cover;
+      }
+
+      #status-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background-color: red;
+        box-shadow: 0 0 10px red;
+        margin: 10px auto;
+      }
+
+      button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-size: 15px;
+        cursor: pointer;
+        margin-top: 10px;
+        transition: background-color 0.3s ease;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      .spinner {
+        display: none;
+        margin: 15px auto;
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #007bff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .token-box {
+        background-color: #f1f1f1;
+        padding: 10px;
+        margin: 10px 0;
+        word-break: break-word;
+        border-radius: 6px;
+        text-align: left;
+        position: relative;
+      }
+
+      .copy-btn {
+        position: absolute;
+        right: 10px;
+        top: 10px;
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        font-size: 12px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+
+      .copy-btn:hover {
+        background: #218838;
+      }
+
+      #result {
+        margin-top: 15px;
+        font-weight: bold;
+        color: #d9534f;
+      }
+
+      #result.success {
+        color: #28a745;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2>Face Login</h2>
+
+      <input type="text" id="email" placeholder="Enter your email" />
+      <div class="error-msg" id="email-error"></div>
+
+      <div class="video-wrapper">
+        <video id="video" autoplay playsinline muted></video>
+      </div>
+
+      <div id="status-dot"></div>
+
+      <button onclick="loginWithFace()">Login With Face</button>
+      <div class="spinner" id="spinner"></div>
+
+      <p id="result"></p>
+
+      <div id="token-section" style="display: none">
+        <div class="token-box">
+          <strong>Access Token:</strong>
+          <div id="accessToken"></div>
+          <button class="copy-btn" onclick="copyToken('accessToken')">
+            Copy
+          </button>
+        </div>
+        <div class="token-box">
+          <strong>Refresh Token:</strong>
+          <div id="refreshToken"></div>
+          <button class="copy-btn" onclick="copyToken('refreshToken')">
+            Copy
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const video = document.getElementById('video');
+      const resultEl = document.getElementById('result');
+      const tokenSection = document.getElementById('token-section');
+      const statusDot = document.getElementById('status-dot');
+      const spinner = document.getElementById('spinner');
+      const emailError = document.getElementById('email-error');
+
+      navigator.mediaDevices.getUserMedia({ video: true }).then((stream) => {
+        video.srcObject = stream;
+      });
+
+      async function loadModels() {
+        await faceapi.nets.tinyFaceDetector.loadFromUri(
+          'https://justadudewhohacks.github.io/face-api.js/models',
+        );
+        await faceapi.nets.faceLandmark68Net.loadFromUri(
+          'https://justadudewhohacks.github.io/face-api.js/models',
+        );
+      }
+
+      async function detectFaceStatus() {
+        if (!faceapi.nets.tinyFaceDetector.params) return;
+
+        const options = new faceapi.TinyFaceDetectorOptions();
+        const detection = await faceapi
+          .detectSingleFace(video, options)
+          .withFaceLandmarks();
+
+        if (!detection) return setDotColor('red');
+
+        const leftEye = detection.landmarks.getLeftEye();
+        const rightEye = detection.landmarks.getRightEye();
+        const dy = rightEye[0].y - leftEye[0].y;
+        const dx = rightEye[0].x - leftEye[0].x;
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        if (Math.abs(angle) < 10) setDotColor('green');
+        else if (Math.abs(angle) < 25) setDotColor('yellow');
+        else setDotColor('red');
+      }
+
+      function setDotColor(color) {
+        statusDot.style.backgroundColor = color;
+        statusDot.style.boxShadow = `0 0 10px ${color}`;
+      }
+
+      function showError(id, msg) {
+        const el = document.getElementById(id);
+        el.innerText = msg;
+        setTimeout(() => {
+          el.innerText = '';
+        }, 3000);
+      }
+
+      async function loginWithFace() {
+        const email = document.getElementById('email').value;
+        resultEl.innerText = '';
+        resultEl.className = '';
+        tokenSection.style.display = 'none';
+
+        if (!email) {
+          showError('email-error', 'Email is required');
+          return;
+        }
+
+        spinner.style.display = 'block';
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0);
+
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, 'image/jpeg'),
+        );
+
+        const formData = new FormData();
+        formData.append('email', email);
+        formData.append('liveImage', blob, 'live.jpg');
+
+        try {
+          const res = await fetch(
+            'http://localhost:3000/auth/login-with-face',
+            {
+              method: 'POST',
+              body: formData,
+            },
+          );
+
+          const data = await res.json();
+          spinner.style.display = 'none';
+
+          if (!res.ok) {
+            resultEl.innerText = data.message || 'Login failed.';
+            return;
+          }
+
+          if (data.verified) {
+            resultEl.innerText = data.message;
+            resultEl.className = 'success';
+            document.getElementById('accessToken').innerText = data.accessToken;
+            document.getElementById('refreshToken').innerText =
+              data.refreshToken;
+            tokenSection.style.display = 'block';
+          } else {
+            resultEl.innerText = data.message || 'Face not matched.';
+          }
+        } catch (err) {
+          spinner.style.display = 'none';
+          resultEl.innerText = 'Error: ' + err.message;
+        }
+      }
+
+      function copyToken(id) {
+        const text = document.getElementById(id).innerText;
+        navigator.clipboard.writeText(text).then(() => {
+          const original = document.getElementById(id).innerText;
+          document.getElementById(id).innerText = 'Copied!';
+          setTimeout(() => {
+            document.getElementById(id).innerText = original;
+          }, 1000);
+        });
+      }
+
+      async function init() {
+        await loadModels();
+        setInterval(detectFaceStatus, 500);
+      }
+
+      window.addEventListener('DOMContentLoaded', init);
+    </script>
+  </body>
+</html>
