@@ -60,6 +60,9 @@ export class Users {
   })
   profileImage: string;
 
+  @Column({ default: false })
+  isFaceVerified: boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

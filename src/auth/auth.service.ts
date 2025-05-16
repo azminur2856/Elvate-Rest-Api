@@ -245,6 +245,8 @@ export class AuthService {
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
+    this.logout(id); // Logout user after password change
+
     return {
       message: 'Password changed successfully',
       generatedMaps: (await result).generatedMaps,
@@ -451,6 +453,8 @@ export class AuthService {
 
     await this.activityLogsService.createActivityLog(activityLog);
 
+    this.logout(user.id); // Logout user after password reset
+
     return { message: 'Password reset successful' };
   }
 
@@ -558,5 +562,16 @@ export class AuthService {
     await this.activityLogsService.createActivityLog(activityLog);
 
     return { message: 'Phone number verified successfully' };
+  }
+
+  async getVerifiedFaceUserByEmail(email: string) {
+    const user = await this.usersService.findByEmail(email);
+    if (!user) throw new NotFoundException('No user found for this email.');
+    if (!user.isFaceVerified) {
+      throw new NotFoundException(
+        '❌ Face not verified. Please verify face first.',
+      );
+    }
+    return user;
   }
 }

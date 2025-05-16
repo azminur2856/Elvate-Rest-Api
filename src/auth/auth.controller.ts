@@ -4,6 +4,7 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  NotFoundException,
   Patch,
   Post,
   Put,
@@ -11,7 +12,9 @@ import {
   Req,
   Request,
   Res,
+  UploadedFile,
   UseGuards,
+  UseInterceptors,
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -25,10 +28,18 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyPhoneDto } from './dto/verify-Phone.dto';
+import { resizeToBase64 } from './utility/resize-to-base64.util';
+import { FaceVerificationService } from 'src/users/services/face-verification.service';
+import { FileInterceptor } from '@nestjs/platform-express';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly faceVerificationService: FaceVerificationService,
+  ) {}
 
   @Public()
   @Get('verifyRegistration')
@@ -103,5 +114,53 @@ export class AuthController {
   @Post('verifyPhone')
   async verifyPhone(@Body(ValidationPipe) verifyPhoneDto: VerifyPhoneDto) {
     return this.authService.verifyPhone(verifyPhoneDto);
+  }
+
+  @Public()
+  @Post('login-with-face')
+  @UseInterceptors(FileInterceptor('liveImage'))
+  async loginWithFace(
+    @Body('email') email: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    const user = await this.authService.getVerifiedFaceUserByEmail(email);
+
+    const profileImagePath = path.join(
+      __dirname,
+      '..',
+      '..',
+      'assets',
+      'user_profile_image',
+      `user_${user.id}`,
+      user.profileImage,
+    );
+
+    if (!fs.existsSync(profileImagePath)) {
+      throw new NotFoundException('Profile image not found');
+    }
+
+    const profileImageBuffer = fs.readFileSync(profileImagePath);
+    const profileImageBase64 = await resizeToBase64(profileImageBuffer);
+    const liveImageBase64 = await resizeToBase64(file.buffer);
+
+    const isMatch = await this.faceVerificationService.compareFacesForLogin(
+      profileImageBase64,
+      liveImageBase64,
+    );
+
+    if (!isMatch) {
+      return {
+        verified: false,
+        message: '❌ Face does not match. Try again.',
+      };
+    }
+
+    const tokens = await this.authService.login(user.id);
+
+    return {
+      verified: true,
+      message: '✅ Face verified and logged in.',
+      ...tokens,
+    };
   }
 }

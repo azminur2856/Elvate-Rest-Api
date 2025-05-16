@@ -23,6 +23,7 @@ import { MailService } from 'src/auth/services/mail.services';
 import { generateVerificationToken } from 'src/auth/utility/token.util';
 import { Verification } from 'src/auth/entities/verification.entity';
 import { VerificationType } from 'src/auth/enums/verification-type.enum';
+import { maskEmail } from 'src/auth/utility/email-mask.util';
 
 @Injectable()
 export class UsersService {
@@ -106,8 +107,13 @@ export class UsersService {
       user: savedUser,
     });
 
-    const { password, refreshToken, ...result } = savedUser;
-    return result;
+    //const { password, refreshToken, ...result } = savedUser;
+    //return result;
+    const maskedEmail = maskEmail(savedUser.email);
+    return {
+      message: `Registration verification link sent to your email ${maskedEmail}`,
+      verificationToken: token,
+    };
   }
 
   // Verify user registration
@@ -431,5 +437,9 @@ export class UsersService {
     await this.userRepository.update(userId, {
       isPhoneVerified: true,
     });
+  }
+
+  async markFaceAsVerified(id: string) {
+    await this.userRepository.update(id, { isFaceVerified: true });
   }
 }
