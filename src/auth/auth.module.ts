@@ -22,6 +22,7 @@ import { MailService } from './services/mail.services';
 import { SmsService } from './services/sms.service';
 import emailConfig from './config/email.config';
 import { Verification } from './entities/verification.entity';
+import { FaceVerificationService } from 'src/users/services/face-verification.service';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { Verification } from './entities/verification.entity';
     GoogleStrategy,
     MailService,
     SmsService,
+    FaceVerificationService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard, //@UseGards(JwtAuthGuard) Global guard for JWT authentication for all API endpoints

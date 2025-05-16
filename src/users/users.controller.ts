@@ -5,6 +5,7 @@ import {
   Get,
   HttpException,
   HttpStatus,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -30,10 +31,15 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth/jwt-auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { RolesGuard } from 'src/auth/guards/roles/roles.guard';
 import { Public } from 'src/auth/decorators/public.decorator';
+import { FaceVerificationService } from './services/face-verification.service';
+import { resizeToBase64 } from 'src/auth/utility/resize-to-base64.util';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly faceVerificationService: FaceVerificationService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Public()
   @Post('createUser')
@@ -147,5 +153,81 @@ export class UsersController {
   @Get('getUserById/:id')
   getUserById(@Param('id') id: string) {
     return this.usersService.getUserById(id);
+  }
+
+  // @Post('verify-face')
+  // @UseInterceptors(FileInterceptor('liveImage'))
+  // async verifyFace(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+  //   const user = await this.usersService.findOne(req.user.id);
+  //   if (!user) throw new NotFoundException('User not found');
+
+  //   const profileImagePath = path.join(
+  //     __dirname,
+  //     '..',
+  //     '..',
+  //     'assets',
+  //     'user_profile_image',
+  //     `user_${user.id}`,
+  //     user.profileImage,
+  //   );
+
+  //   if (!fs.existsSync(profileImagePath)) {
+  //     throw new NotFoundException('Profile image not found');
+  //   }
+
+  //   const profileImageBase64 = fs
+  //     .readFileSync(profileImagePath)
+  //     .toString('base64');
+  //   const liveImageBase64 = file.buffer.toString('base64');
+
+  //   const isMatch = await this.faceVerificationService.compareFaces(
+  //     profileImageBase64,
+  //     liveImageBase64,
+  //   );
+  //   console.log('Face match result:', isMatch); // Debug
+
+  //   if (isMatch) {
+  //     await this.usersService.markFaceAsVerified(user.id);
+  //   }
+
+  //   return { verified: isMatch };
+  // }
+
+  @Post('verify-face')
+  @UseInterceptors(FileInterceptor('liveImage'))
+  async verifyFace(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+    const user = await this.usersService.findOne(req.user.id);
+    if (!user) throw new NotFoundException('User not found');
+
+    const profileImagePath = path.join(
+      __dirname,
+      '..',
+      '..',
+      'assets',
+      'user_profile_image',
+      `user_${user.id}`,
+      user.profileImage,
+    );
+
+    if (!fs.existsSync(profileImagePath)) {
+      throw new NotFoundException('Profile image not found');
+    }
+
+    // Resize both profile image and live image to base64
+    const profileImageBuffer = fs.readFileSync(profileImagePath);
+    const profileImageBase64 = await resizeToBase64(profileImageBuffer);
+
+    const liveImageBase64 = await resizeToBase64(file.buffer); // also compress live image
+
+    const isMatch = await this.faceVerificationService.compareFaces(
+      profileImageBase64,
+      liveImageBase64,
+    );
+
+    if (isMatch) {
+      await this.usersService.markFaceAsVerified(user.id);
+    }
+
+    return { verified: isMatch };
   }
 }

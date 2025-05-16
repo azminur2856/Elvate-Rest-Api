@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { OcrModule } from './ocr/ocr.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ReviewsModule } from './reviews/reviews.module';
     AuthModule,
     ActivityLogsModule,
     ReviewsModule,
+    OcrModule,
   ],
   controllers: [AppController],
   providers: [AppService],
