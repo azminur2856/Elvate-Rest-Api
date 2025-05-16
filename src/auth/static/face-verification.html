@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Face Verification</title>
+
+    <!-- ✅ Load face-api.js -->
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"
+    ></script>
+
+    <style>
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f6f9;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        background-color: white;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        text-align: center;
+        width: 400px;
+        position: relative;
+      }
+
+      h2 {
+        color: #333;
+        margin-bottom: 20px;
+      }
+
+      input[type='text'] {
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+        margin-bottom: 20px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+      }
+
+      .video-wrapper {
+        position: relative;
+        width: 320px;
+        height: 320px;
+        margin: 0 auto 15px auto;
+        border-radius: 50%;
+        overflow: hidden;
+        box-shadow: 0 0 0 5px #007bff80;
+        background: #000;
+      }
+
+      video {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        min-width: 100%;
+        min-height: 100%;
+        transform: translate(-50%, -50%);
+        object-fit: cover;
+      }
+
+      #face-status {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        margin: 10px auto;
+        background-color: red;
+        box-shadow: 0 0 10px red;
+      }
+
+      .loading-spinner {
+        display: none;
+        margin: 10px auto;
+        border: 5px solid #f3f3f3;
+        border-top: 5px solid #007bff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        border: none;
+        border-radius: 6px;
+        color: white;
+        font-size: 15px;
+        cursor: pointer;
+        transition: background-color 0.2s ease-in-out;
+        margin: 5px;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      #result {
+        margin-top: 15px;
+        font-weight: bold;
+        color: #333;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="container">
+      <h2>Face Verification</h2>
+
+      <label for="jwt">Enter JWT Token:</label>
+      <input type="text" id="jwt" placeholder="Paste your JWT token here" />
+
+      <div class="video-wrapper">
+        <video id="webcam" autoplay playsinline muted></video>
+      </div>
+
+      <div id="face-status"></div>
+
+      <button onclick="verifyFace()">FaceVerify</button>
+
+      <div class="loading-spinner" id="spinner"></div>
+      <p id="result"></p>
+    </div>
+
+    <!-- ✅ All scripts run after face-api.js is loaded -->
+    <script defer>
+      const video = document.getElementById('webcam');
+      const spinner = document.getElementById('spinner');
+      const jwtInput = document.getElementById('jwt');
+
+      let streamRef = null;
+
+      async function loadModels() {
+        await faceapi.nets.tinyFaceDetector.loadFromUri(
+          'https://justadudewhohacks.github.io/face-api.js/models',
+        );
+        await faceapi.nets.faceLandmark68Net.loadFromUri(
+          'https://justadudewhohacks.github.io/face-api.js/models',
+        );
+      }
+
+      async function startCamera() {
+        if (streamRef) {
+          streamRef.getTracks().forEach((track) => track.stop());
+        }
+
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' }, // front camera
+          });
+          video.srcObject = stream;
+          streamRef = stream;
+        } catch (err) {
+          alert('Camera access error: ' + err.name + '\n' + err.message);
+          console.error(err);
+        }
+      }
+
+      async function detectFaceStatus() {
+        if (!faceapi.nets.tinyFaceDetector.params) return;
+
+        const options = new faceapi.TinyFaceDetectorOptions();
+        const detection = await faceapi
+          .detectSingleFace(video, options)
+          .withFaceLandmarks();
+
+        const statusDot = document.getElementById('face-status');
+
+        if (!detection) {
+          setStatus('red');
+          return;
+        }
+
+        const leftEye = detection.landmarks.getLeftEye();
+        const rightEye = detection.landmarks.getRightEye();
+
+        const dy = rightEye[0].y - leftEye[0].y;
+        const dx = rightEye[0].x - leftEye[0].x;
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+
+        if (Math.abs(angle) < 10) {
+          setStatus('green');
+        } else if (Math.abs(angle) < 25) {
+          setStatus('yellow');
+        } else {
+          setStatus('red');
+        }
+      }
+
+      function setStatus(color) {
+        const dot = document.getElementById('face-status');
+        dot.style.backgroundColor = color;
+        dot.style.boxShadow = `0 0 10px ${color}`;
+      }
+
+      async function verifyFace() {
+        const jwt = jwtInput.value;
+        if (!jwt) return alert('JWT required');
+
+        spinner.style.display = 'block';
+        document.getElementById('result').innerText = '';
+
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        const blob = await new Promise((resolve) =>
+          canvas.toBlob(resolve, 'image/jpeg'),
+        );
+
+        const formData = new FormData();
+        formData.append('liveImage', blob, 'live.jpg');
+
+        try {
+          const res = await fetch('http://localhost:3000/users/verify-face', {
+            method: 'POST',
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+            },
+            body: formData,
+          });
+
+          const data = await res.json();
+          document.getElementById('result').innerText = data.verified
+            ? '✅ Face verified!'
+            : '❌ Face not matched.';
+        } catch (err) {
+          document.getElementById('result').innerText = 'Error: ' + err.message;
+        } finally {
+          spinner.style.display = 'none';
+        }
+      }
+
+      async function init() {
+        await loadModels();
+        await startCamera();
+        setInterval(detectFaceStatus, 500); // every 0.5s
+      }
+
+      window.addEventListener('DOMContentLoaded', init);
+    </script>
+  </body>
+</html>
