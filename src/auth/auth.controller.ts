@@ -33,6 +33,8 @@ import { FaceVerificationService } from 'src/users/services/face-verification.se
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as fs from 'fs';
 import * as path from 'path';
+import { Response } from 'express';
+import { encryptSessionCookie } from './utility/jose-cookie';
 
 @Controller('auth')
 export class AuthController {
@@ -47,23 +49,70 @@ export class AuthController {
     return this.authService.verifyRegistratioin(token);
   }
 
+  // @Public()
+  // @HttpCode(HttpStatus.OK)
+  // @UseGuards(LocalAuthGuard)
+  // @Post('login')
+  // async login(@Request() req) {
+  //   return await this.authService.login(req.user.id);
+  // }
+
   @Public()
   @HttpCode(HttpStatus.OK)
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req) {
-    return await this.authService.login(req.user.id);
+  async login(@Request() req, @Res({ passthrough: true }) res: Response) {
+    const cookieData = await this.authService.login(req.user.id);
+
+    // Encrypt the session data before setting it in the cookie
+    const cookieDataEncrypted = await encryptSessionCookie(cookieData);
+
+    // Set a single HTTP-only cookie named 'session'
+    res.cookie('session', cookieDataEncrypted, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    });
+
+    // Optionally, return only minimal info
+    return { success: true };
   }
 
+  // @Public()
+  // @UseGuards(RefreshAuthGuard)
+  // @Post('refresh')
+  // refreshToken(@Req() req) {
+  //   return this.authService.refreshToken(req.user.id);
+  // }
+
   @Public()
-  @UseGuards(RefreshAuthGuard)
+  @UseGuards(RefreshAuthGuard) // uses "refresh-jwt" strategy above
   @Post('refresh')
-  refreshToken(@Req() req) {
-    return this.authService.refreshToken(req.user.id);
+  async refreshToken(@Req() req, @Res({ passthrough: true }) res: Response) {
+    console.log('Cookies:', req.cookies);
+
+    const cookieData = await this.authService.refreshToken(req.user.id);
+
+    // Encrypt the session data before setting it in the cookie
+    const cookieDataEncrypted = await encryptSessionCookie(cookieData);
+
+    // Set a single HTTP-only cookie named 'session'
+    res.cookie('session', cookieDataEncrypted, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    });
+
+    // Optionally, return only minimal info
+    return { success: true };
   }
 
   @Post('logout')
-  async signout(@Request() req) {
+  async signout(@Request() req, @Res({ passthrough: true }) res: Response) {
+    // Clear the session cookie
+    res.clearCookie('session');
     return this.authService.logout(req.user.id);
   }
 

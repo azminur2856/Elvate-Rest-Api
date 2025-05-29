@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { OcrModule } from './ocr/ocr.module';
+import { DecryptSessionMiddleware } from './auth/middleware/decrypt-session.middleware';
 
 @Module({
   imports: [
@@ -27,4 +28,9 @@ import { OcrModule } from './ocr/ocr.module';
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {}
+//export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(DecryptSessionMiddleware).forRoutes('*'); // Or restrict as needed
+  }
+}

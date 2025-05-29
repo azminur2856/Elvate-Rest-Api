@@ -114,8 +114,14 @@ export class AuthService {
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
+    const userData = await this.usersService.getUserById(userId);
+
     return {
-      id: userId,
+      user: {
+        id: userId,
+        name: userData.firstName + ' ' + (userData.lastName || ''),
+        role: userData.role,
+      },
       accessToken,
       refreshToken,
     };
@@ -135,29 +141,36 @@ export class AuthService {
   }
 
   // Generate new access token using the refresh token
-  refreshToken(userId: string) {
-    const payload: AuthJwtPayload = { sub: userId };
-    const accessToken = this.jwtService.sign(payload);
-    return {
-      id: userId,
-      accessToken,
-    };
-  }
-
-  //Generate new access and refresh tokens using the refresh token
-  // async refreshToken(userId: string) {
-  //   const { accessToken, refreshToken } = await this.generateToken(userId);
-  //   const hashedRefreshToken = await argon2.hash(refreshToken);
-  //   await this.usersService.updateHashedRefreshToken(
-  //     userId,
-  //     hashedRefreshToken,
-  //   );
+  // refreshToken(userId: string) {
+  //   const payload: AuthJwtPayload = { sub: userId };
+  //   const accessToken = this.jwtService.sign(payload);
   //   return {
   //     id: userId,
   //     accessToken,
-  //     refreshToken,
   //   };
   // }
+
+  //Generate new access and refresh tokens using the refresh token
+  async refreshToken(userId: string) {
+    const { accessToken, refreshToken } = await this.generateToken(userId);
+    const hashedRefreshToken = await argon2.hash(refreshToken);
+    await this.usersService.updateHashedRefreshToken(
+      userId,
+      hashedRefreshToken,
+    );
+    console.log('Refresh token updated in DB');
+    const userData = await this.usersService.getUserById(userId);
+
+    return {
+      user: {
+        id: userId,
+        name: userData.firstName + ' ' + (userData.lastName || ''),
+        role: userData.role,
+      },
+      accessToken,
+      refreshToken,
+    };
+  }
 
   // Validate refresh token
   async validateRefreshToken(userId: string, refreshToken: string) {
