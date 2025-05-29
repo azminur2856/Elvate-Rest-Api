@@ -110,10 +110,10 @@ export class UsersService {
   }
 
   // Update user
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<Users> {
-    const user = await this.findOne(id);
-    await this.usersRepository.update(id.toString(), updateUserDto);
-    return this.findOne(id);
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<Users> {
+    const user = await this.getUserById(id);
+    Object.assign(user, updateUserDto);
+    return await this.usersRepository.save(user);
   }
 
   // Update profile image
@@ -157,32 +157,37 @@ export class UsersService {
   async findAll(page = 1, limit = 10) {
     const skip = (page - 1) * limit;
 
-    const [users, total] = await this.usersRepository.findAndCount({
-      skip,
-      take: limit,
-      relations: ['roles'],
-    });
+    // Create a query builder to join with roles and filter out admins
+    const queryBuilder = this.usersRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.roles', 'role')
+      .where('role.name != :adminRole', { adminRole: Role.ADMIN })
+      .skip(skip)
+      .take(limit);
+
+    const [users, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data: users,
+      data: users.map(user => ({
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        profileImage: user.profileImage,
+        roles: user.roles.map(role => ({
+          id: role.id,
+          name: role.name
+        })),
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt
+      })),
       meta: {
         total,
         page,
         limit,
+        totalPages: Math.ceil(total / limit)
       },
     };
-  }
-
-  async findOne(id: number): Promise<Users> {
-    const user = await this.usersRepository.findOne({
-      where: { id: id.toString() },
-      relations: ['roles'],
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
-    }
-
-    return user;
   }
 }

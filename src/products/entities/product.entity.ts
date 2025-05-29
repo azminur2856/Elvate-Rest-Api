@@ -1,5 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, OneToMany, JoinColumn } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { OrderItem } from '../../orders/entities/order-item.entity';
 
 export enum ProductCategory {
   ELECTRONICS = 'ELECTRONICS',
@@ -129,4 +130,7 @@ export class Product {
   @ApiProperty({ description: 'The date when the product was last updated' })
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => OrderItem, orderItem => orderItem.product)
+  orderItems: OrderItem[];
 } 

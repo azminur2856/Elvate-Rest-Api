@@ -2,6 +2,7 @@ import { Controller, Post, Patch, Delete, Body, Param, UseGuards, Get } from '@n
 import { ProductsService } from './products.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { UpdateStockDto } from './dto/update-stock.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -82,6 +83,17 @@ export class AdminProductsController {
   async toggleOnSale(@Param('id') id: string) {
     const product = await this.productsService.findOne(id);
     return this.productsService.update(id, { isOnSale: !product.isOnSale });
+  }
+
+  @Patch(':id/update-stock')
+  @ApiOperation({ summary: 'Update product stock', description: 'Updates the stock quantity of a product. Stock cannot be negative.' })
+  @ApiBody({ type: UpdateStockDto })
+  @ApiResponse({ status: 200, description: 'Stock updated successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid stock quantity' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin access required' })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  async updateStock(@Param('id') id: string, @Body() updateStockDto: UpdateStockDto) {
+    return this.productsService.updateStock(id, updateStockDto.stockQuantity);
   }
 
   @Get('analytics')

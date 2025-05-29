@@ -113,4 +113,10 @@ export class ProductsService {
       categoryCounts,
     };
   }
+
+  async updateStock(id: string, stockQuantity: number): Promise<Product> {
+    const product = await this.findOne(id);
+    product.stockQuantity = stockQuantity;
+    return await this.productRepository.save(product);
+  }
 } 

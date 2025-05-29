@@ -28,6 +28,23 @@ export class OrdersService {
   ) {}
 
   async create(createOrderDto: CreateOrderDto, userId: string) {
+    // Check stock availability for all products first
+    for (const item of createOrderDto.items) {
+      const product = await this.productRepository.findOne({
+        where: { id: item.productId },
+      });
+
+      if (!product) {
+        throw new NotFoundException(`Product with ID ${item.productId} not found`);
+      }
+
+      if (product.stockQuantity < item.quantity) {
+        throw new NotFoundException(
+          `Insufficient stock for product ${product.name}. Available: ${product.stockQuantity}, Requested: ${item.quantity}`
+        );
+      }
+    }
+
     // Create initial order
     const order = new Order();
     order.userId = userId;
@@ -54,6 +71,10 @@ export class OrdersService {
       if (!product) {
         throw new NotFoundException(`Product with ID ${item.productId} not found`);
       }
+
+      // Update stock quantity
+      product.stockQuantity -= item.quantity;
+      await this.productRepository.save(product);
 
       const orderItem = this.orderItemRepository.create({
         orderId: savedOrder.id,
@@ -303,8 +324,10 @@ export class OrdersService {
       .select([
         'product.id',
         'product.name',
-        'SUM(orderItem.quantity) as totalQuantity',
-        'SUM(orderItem.total) as totalRevenue',
+        'product.price',
+        'product.stockQuantity',
+        'COALESCE(SUM(orderItem.quantity), 0) as totalQuantity',
+        'COALESCE(SUM(orderItem.total), 0) as totalRevenue',
         'COUNT(DISTINCT order.id) as orderCount'
       ])
       .leftJoin('product.orderItems', 'orderItem')
@@ -316,6 +339,19 @@ export class OrdersService {
       query.where('order.createdAt BETWEEN :startDate AND :endDate', { startDate, endDate });
     }
 
-    return query.getRawMany();
+    const results = await query.getRawMany();
+
+    return results.map(result => ({
+      id: result.product_id,
+      name: result.product_name,
+      price: parseFloat(result.product_price),
+      currentStock: result.product_stockQuantity,
+      totalQuantitySold: parseInt(result.totalQuantity),
+      totalRevenue: parseFloat(result.totalRevenue),
+      orderCount: parseInt(result.orderCount),
+      averageOrderValue: result.orderCount > 0 
+        ? parseFloat(result.totalRevenue) / parseInt(result.orderCount)
+        : 0
+    }));
   }
 } 
