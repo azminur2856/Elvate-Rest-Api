@@ -96,7 +96,7 @@ export class AuthService {
   }
 
   // Lofin user and generate access and refresh tokens
-  async login(userId: string) {
+  async login(userId: string, loginMethod: string) {
     const { accessToken, refreshToken } = await this.generateToken(userId);
 
     const hashedRefreshToken = await argon2.hash(refreshToken);
@@ -107,8 +107,16 @@ export class AuthService {
 
     this.usersService.updateLastLogin(userId);
 
+    let activity: ActivityType;
+    if (loginMethod === 'googleOAuth') {
+      activity = ActivityType.USER_LOGIN_GOOGLEOAUTH;
+    } else if (loginMethod === 'faceLogin') {
+      activity = ActivityType.USER_LOGIN_FACE;
+    } else {
+      activity = ActivityType.USER_LOGIN;
+    }
     const activityLog = {
-      activity: ActivityType.USER_LOGIN,
+      activity,
       description: `User logged in with id ${userId}`,
       user: await this.usersService.getUserById(userId),
     };
@@ -159,6 +167,14 @@ export class AuthService {
       hashedRefreshToken,
     );
     console.log('Refresh token updated in DB');
+
+    const activityLog = {
+      activity: ActivityType.REFRESH_TOKEN,
+      description: `User logged in with id ${userId}`,
+      user: await this.usersService.getUserById(userId),
+    };
+    await this.activityLogsService.createActivityLog(activityLog);
+
     const userData = await this.usersService.getUserById(userId);
 
     return {
@@ -227,7 +243,7 @@ export class AuthService {
   async validateGoogleUser(createGoogleUserDto: CreateGoogleUserDto) {
     const user = await this.usersService.findByEmail(createGoogleUserDto.email);
     if (user) return user;
-    this.usersService.createUser(createGoogleUserDto);
+    this.usersService.createGoogleUser(createGoogleUserDto);
   }
 
   //ChangePassword
@@ -456,7 +472,10 @@ export class AuthService {
     await this.verificationRepository.save(verification);
 
     const activityLog = {
-      activity: ActivityType.USER_CHANGE_PASSWORD,
+      activity:
+        resetPasswordDto.verificationMethod === VerificationMethod.EMAIL
+          ? ActivityType.USER_RESET_PASSWORD_BY_EMAIL_TOKEN
+          : ActivityType.USER_RESET_PASSWORD_BY_SMS_OTP,
       description:
         resetPasswordDto.verificationMethod === VerificationMethod.EMAIL
           ? 'User reset password via EMAIL Verification'

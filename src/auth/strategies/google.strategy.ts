@@ -44,6 +44,9 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
       isActive: true,
       isEmailVerified: true,
     });
+    if (!user) {
+      return done(null, false);
+    }
     done(null, user);
   }
 }

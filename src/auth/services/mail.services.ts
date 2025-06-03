@@ -19,12 +19,14 @@ export class MailService {
     });
   }
 
+  private readonly FRONTEND_URL = process.env.FRONTEND_URL;
+
   async sendRegistrationVerificationEmail(
     email: string,
     fullName: string,
     token: string,
   ) {
-    const verificationLink = `http://localhost:3000/auth/verifyRegistration?token=${token}`;
+    const verificationLink = `${this.FRONTEND_URL}/auth/verifyRegistration?token=${token}`;
     const mailOptions = {
       from: '"Elvate Verification Team" <no-reply@elvate.com>',
       to: email,
@@ -70,7 +72,7 @@ export class MailService {
             <p>Hello ${fullName},</p>
             <p>We're excited to have you at Elvate! Start exploring digital products, manage your profile, and enjoy exclusive offers.</p>
             <p style="text-align: center;">
-              <a href="http://localhost:3000/" style="background-color: #0d6efd; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">Explore Elvate</a>
+              <a href=${this.FRONTEND_URL} style="background-color: #0d6efd; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">Explore Elvate</a>
             </p>
             <p>Happy exploring!<br><strong>The Elvate Team</strong></p>
           </div>
@@ -86,7 +88,7 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(to: string, fullName: string, token: string) {
-    const resetLink = `http://localhost/elvate/reset-password-view.html?resetToken=${token}`;
+    const resetLink = `${this.FRONTEND_URL}/auth/reset-password?token=${token}`;
     const mailOptions = {
       from: '"Elvate Authentication" <no-reply@elvate.com>',
       to: to,

@@ -116,6 +116,64 @@ export class UsersService {
     };
   }
 
+  //Create google user by Google OAuth
+  async createGoogleUser(createUserDto: CreateUserDto) {
+    const { email, phone } = createUserDto;
+
+    const existingUser = await this.userRepository.findOne({
+      where: { email },
+    });
+
+    if (existingUser) {
+      const isUnverified = existingUser.isEmailVerified === false;
+      const hasExpired =
+        existingUser.createdAt &&
+        new Date().getTime() - new Date(existingUser.createdAt).getTime() >
+          3600000;
+
+      if (!isUnverified) {
+        throw new BadRequestException(
+          `User with email ${email} already exists.`,
+        );
+      }
+
+      if (isUnverified && !hasExpired) {
+        throw new BadRequestException(
+          `User with email ${email} is pending verification.`,
+        );
+      }
+
+      await this.userRepository.delete({ id: existingUser.id });
+    }
+
+    if (phone) {
+      const phoneExists = await this.userRepository.findOne({
+        where: { phone },
+      });
+      if (phoneExists) {
+        throw new BadRequestException(
+          `User with phone ${phone} already exists`,
+        );
+      }
+    }
+
+    const user = this.userRepository.create(createUserDto);
+    const savedUser = await this.userRepository.save(user);
+
+    const fullName = `${savedUser.firstName} ${savedUser.lastName || ''}`;
+
+    await this.mailService.sendWelcomeEmail(savedUser.email, fullName);
+
+    //Log activity
+    await this.activityLogsService.createActivityLog({
+      activity: ActivityType.USER_REGISTER,
+      description: `New user registered by Google OAuth: ${savedUser.id}`,
+      user: savedUser,
+    });
+
+    return savedUser;
+  }
+
   // Verify user registration
   async verifyRegistrationUpdate(userId: string) {
     const result = await this.userRepository.update(userId, {

@@ -62,7 +62,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Request() req, @Res({ passthrough: true }) res: Response) {
-    const cookieData = await this.authService.login(req.user.id);
+    const cookieData = await this.authService.login(req.user.id, 'localLogin');
 
     // Encrypt the session data before setting it in the cookie
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
@@ -124,11 +124,31 @@ export class AuthController {
   @Public()
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
-  async googleCallback(@Req() req, @Res() res) {
-    const respons = await this.authService.login(req.user.id);
-    res.redirect(
-      `http://localhost:3000/auth/view/google-login-success.html?access_token=${respons.accessToken}&refresh_token=${respons.refreshToken}`,
-    );
+  // async googleCallback(@Req() req, @Res() res) {
+  //   const respons = await this.authService.login(req.user.id);
+  //   res.redirect(
+  //     `http://localhost:3000/auth/view/google-login-success.html?access_token=${respons.accessToken}&refresh_token=${respons.refreshToken}`,
+  //   );
+  // }
+  async googleCallback(@Request() req, @Res() res: Response) {
+    const cookieData = await this.authService.login(req.user.id, 'googleOAuth');
+
+    // Encrypt the session data before setting it in the cookie
+    const cookieDataEncrypted = await encryptSessionCookie(cookieData);
+
+    // Set a single HTTP-only cookie named 'session'
+    res.cookie('session', cookieDataEncrypted, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    });
+
+    // Redirect to profile page
+    return res.redirect(`http://localhost:3000/auth/google`);
+
+    // Optionally, return only minimal info
+    //return { success: true };
   }
 
   @Patch('changePassword')
@@ -165,12 +185,61 @@ export class AuthController {
     return this.authService.verifyPhone(verifyPhoneDto);
   }
 
+  // @Public()
+  // @Post('login-with-face')
+  // @UseInterceptors(FileInterceptor('liveImage'))
+  // async loginWithFace(
+  //   @Body('email') email: string,
+  //   @UploadedFile() file: Express.Multer.File,
+  // ) {
+  //   const user = await this.authService.getVerifiedFaceUserByEmail(email);
+
+  //   const profileImagePath = path.join(
+  //     __dirname,
+  //     '..',
+  //     '..',
+  //     'assets',
+  //     'user_profile_image',
+  //     `user_${user.id}`,
+  //     user.profileImage,
+  //   );
+
+  //   if (!fs.existsSync(profileImagePath)) {
+  //     throw new NotFoundException('Profile image not found');
+  //   }
+
+  //   const profileImageBuffer = fs.readFileSync(profileImagePath);
+  //   const profileImageBase64 = await resizeToBase64(profileImageBuffer);
+  //   const liveImageBase64 = await resizeToBase64(file.buffer);
+
+  //   const isMatch = await this.faceVerificationService.compareFacesForLogin(
+  //     profileImageBase64,
+  //     liveImageBase64,
+  //   );
+
+  //   if (!isMatch) {
+  //     return {
+  //       verified: false,
+  //       message: '❌ Face does not match. Try again.',
+  //     };
+  //   }
+
+  //   const tokens = await this.authService.login(user.id);
+
+  //   return {
+  //     verified: true,
+  //     message: '✅ Face verified and logged in.',
+  //     ...tokens,
+  //   };
+  // }
+
   @Public()
   @Post('login-with-face')
   @UseInterceptors(FileInterceptor('liveImage'))
   async loginWithFace(
     @Body('email') email: string,
     @UploadedFile() file: Express.Multer.File,
+    @Res({ passthrough: true }) res: Response,
   ) {
     const user = await this.authService.getVerifiedFaceUserByEmail(email);
 
@@ -204,12 +273,20 @@ export class AuthController {
       };
     }
 
-    const tokens = await this.authService.login(user.id);
+    // --- Set session cookie like in normal login ---
+    const cookieData = await this.authService.login(user.id, 'faceLogin');
+    const cookieDataEncrypted = await encryptSessionCookie(cookieData);
+
+    res.cookie('session', cookieDataEncrypted, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+    });
 
     return {
       verified: true,
       message: '✅ Face verified and logged in.',
-      ...tokens,
     };
   }
 }
