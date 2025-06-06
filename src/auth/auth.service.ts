@@ -115,14 +115,15 @@ export class AuthService {
     } else {
       activity = ActivityType.USER_LOGIN;
     }
+
+    const userData = await this.usersService.getUserById(userId);
+
     const activityLog = {
       activity,
       description: `User logged in with id ${userId}`,
-      user: await this.usersService.getUserById(userId),
+      user: userData,
     };
     await this.activityLogsService.createActivityLog(activityLog);
-
-    const userData = await this.usersService.getUserById(userId);
 
     return {
       user: {
@@ -168,14 +169,14 @@ export class AuthService {
     );
     console.log('Refresh token updated in DB');
 
+    const userData = await this.usersService.getUserById(userId);
+
     const activityLog = {
       activity: ActivityType.REFRESH_TOKEN,
-      description: `User logged in with id ${userId}`,
-      user: await this.usersService.getUserById(userId),
+      description: `User refresh token's with id ${userId}`,
+      user: userData,
     };
     await this.activityLogsService.createActivityLog(activityLog);
-
-    const userData = await this.usersService.getUserById(userId);
 
     return {
       user: {

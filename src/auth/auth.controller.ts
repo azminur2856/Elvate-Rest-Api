@@ -36,6 +36,8 @@ import * as path from 'path';
 import { Response } from 'express';
 import { encryptSessionCookie } from './utility/jose-cookie';
 
+const FRONTEND_URL = process.env.FRONTEND_URL;
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -145,7 +147,7 @@ export class AuthController {
     });
 
     // Redirect to profile page
-    return res.redirect(`http://localhost:3000/auth/google`);
+    return res.redirect(`${FRONTEND_URL}/auth/google`);
 
     // Optionally, return only minimal info
     //return { success: true };

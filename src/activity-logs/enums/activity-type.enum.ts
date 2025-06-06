@@ -15,6 +15,7 @@ export enum ActivityType {
   REQUEST_TOKEN = 'REQUEST_TOKEN',
   USER_VERIFY_PHONE = 'USER_VERIFY_PHONE',
   REFRESH_TOKEN = 'REFRESH_TOKEN',
+  USER_VERIFY_FACE = 'USER_VERIFY_FACE',
 
   // Review-related activities
   REVIEW_ADD = 'REVIEW_ADD',
