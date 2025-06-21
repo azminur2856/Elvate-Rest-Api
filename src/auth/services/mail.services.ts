@@ -21,12 +21,14 @@ export class MailService {
 
   private readonly FRONTEND_URL = process.env.FRONTEND_URL;
 
+  private readonly currentYear = new Date().getFullYear();
+
   async sendRegistrationVerificationEmail(
     email: string,
     fullName: string,
     token: string,
   ) {
-    const verificationLink = `${this.FRONTEND_URL}/auth/verifyRegistration?token=${token}`;
+    const verificationLink = `${this.FRONTEND_URL}/verifyRegistration?token=${token}`;
     const mailOptions = {
       from: '"Elvate Verification Team" <no-reply@elvate.com>',
       to: email,
@@ -47,7 +49,7 @@ export class MailService {
             <p style="margin-top: 40px;">Welcome aboard,<br><strong>The Elvate Team</strong></p>
           </div>
           <div style="background-color: #f8f9fa; text-align: center; padding: 10px; font-size: 12px; color: #6c757d;">
-            © 2024 Elvate. All rights reserved.
+            © ${this.currentYear} Elvate. All rights reserved.
           </div>
         </div>
       </div>
@@ -77,7 +79,7 @@ export class MailService {
             <p>Happy exploring!<br><strong>The Elvate Team</strong></p>
           </div>
           <div style="background-color: #f8f9fa; text-align: center; padding: 10px; font-size: 12px; color: #6c757d;">
-            © 2024 Elvate. All rights reserved.
+            © ${this.currentYear} Elvate. All rights reserved.
           </div>
         </div>
       </div>
@@ -88,7 +90,7 @@ export class MailService {
   }
 
   async sendPasswordResetEmail(to: string, fullName: string, token: string) {
-    const resetLink = `${this.FRONTEND_URL}/auth/reset-password?token=${token}`;
+    const resetLink = `${this.FRONTEND_URL}/resetPassword?token=${token}`;
     const mailOptions = {
       from: '"Elvate Authentication" <no-reply@elvate.com>',
       to: to,
@@ -109,7 +111,7 @@ export class MailService {
             <p><strong>The Elvate Team</strong></p>
           </div>
           <div style="background-color: #f8f9fa; text-align: center; padding: 10px; font-size: 12px; color: #6c757d;">
-            © 2025 Elvate. All rights reserved.
+            © ${this.currentYear} Elvate. All rights reserved.
           </div>
         </div>
       </div>
@@ -142,7 +144,7 @@ export class MailService {
             <p><strong>The Elvate Team</strong></p>
           </div>
           <div style="background-color: #f8f9fa; text-align: center; padding: 10px; font-size: 12px; color: #6c757d;">
-            © 2024 Elvate. All rights reserved.
+            © ${this.currentYear} Elvate. All rights reserved.
           </div>
         </div>
       </div>

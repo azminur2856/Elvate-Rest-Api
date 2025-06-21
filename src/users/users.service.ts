@@ -24,6 +24,9 @@ import { generateVerificationToken } from 'src/auth/utility/token.util';
 import { Verification } from 'src/auth/entities/verification.entity';
 import { VerificationType } from 'src/auth/enums/verification-type.enum';
 import { maskEmail } from 'src/auth/utility/email-mask.util';
+import { imagekit } from 'src/auth/utility/imagekit';
+import axios from 'axios';
+import { PassThrough } from 'stream';
 
 @Injectable()
 export class UsersService {
@@ -200,7 +203,8 @@ export class UsersService {
       };
       await this.activityLogsService.createActivityLog(activityLog);
       return {
-        message: 'User registration verified successfully',
+        message:
+          'Your account has been verified successfully! Redirecting to login...',
         result,
       };
     }
@@ -250,6 +254,8 @@ export class UsersService {
         'createdAt',
         'updatedAt',
         'lastLoginAt',
+        'lastLogoutAt',
+        'isFaceVerified',
       ],
     });
     if (!user) throw new NotFoundException(`No data found for user ${id}`);
@@ -276,7 +282,9 @@ export class UsersService {
           `User with this phone ${updateUserDto.phone} already exists`,
         );
       }
-      updateUserDto.isPhoneVerified = false; // Set isPhoneVerified to false if phone is updated
+      if (user.phone !== updateUserDto.phone) {
+        updateUserDto.isPhoneVerified = false; // Set isPhoneVerified to false if phone is updated
+      }
     }
 
     const result = await this.userRepository.update(id, updateUserDto);
@@ -358,91 +366,210 @@ export class UsersService {
     };
   }
 
-  async updateProfileImage(userId: string, profileImageFileName: string) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
+  // Update user profile image locally
+  // async updateProfileImage(userId: string, profileImageFileName: string) {
+  //   const user = await this.userRepository.findOne({ where: { id: userId } });
 
+  //   if (!user) {
+  //     throw new NotFoundException(`User not found`);
+  //   }
+
+  //   const result = await this.userRepository.update(userId, {
+  //     profileImage: profileImageFileName,
+  //     isFaceVerified: false, // Reset face verification status when profile image is updated
+  //   });
+
+  //   const uploadPath = path.join(
+  //     '..',
+  //     '..',
+  //     'assets',
+  //     'user_profile_image',
+  //     `user_${userId}`,
+  //   );
+
+  //   // Something went wrong while updating the user.
+  //   if (result.affected === 0) {
+  //     clearDirectory(uploadPath, user.profileImage, 'profileImage-');
+  //     throw new NotFoundException(`User not found`);
+  //   }
+
+  //   clearDirectory(uploadPath, profileImageFileName, 'profileImage-'); // Delete old files starting with "profileImage-" except the new file
+
+  //   // Update Action Log
+  //   const activityLog = {
+  //     activity: ActivityType.USER_UPDATE_PROFILE,
+  //     description: 'User Changed Profile Image',
+  //     user: user,
+  //   };
+  //   await this.activityLogsService.createActivityLog(activityLog);
+
+  //   return {
+  //     message: `Profile Image Updated Successfully`,
+  //     userAffected: result.affected,
+  //   };
+  // }
+
+  // Upload profile image to ImageKit
+  async uploadProfileImage(
+    userId: string,
+    fileBuffer: Buffer,
+    mimeType: string,
+    fileName: string,
+  ) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
-      throw new NotFoundException(`User not found`);
+      throw new NotFoundException('User not found');
     }
 
-    const result = await this.userRepository.update(userId, {
-      profileImage: profileImageFileName,
+    const folder = `/user_profile_image/user_${userId}`;
+
+    // Upload image to ImageKit
+    const uploadResponse = await imagekit.upload({
+      file: fileBuffer,
+      fileName: `${fileName}.jpg`,
+      folder: folder,
+      useUniqueFileName: false,
+      isPrivateFile: false,
     });
 
-    const uploadPath = path.join(
-      '..',
-      '..',
-      'assets',
-      'user_profile_image',
-      `user_${userId}`,
-    );
+    if (user.profileImage && user.profileImage !== 'profile.png') {
+      try {
+        const files = await imagekit.listFiles({
+          // only provide folder, NOT full path
+          folder: folder,
+        });
 
-    // Something went wrong while updating the user.
-    if (result.affected === 0) {
-      clearDirectory(uploadPath, user.profileImage, 'profileImage-');
-      throw new NotFoundException(`User not found`);
+        const fileToDelete = files.find(
+          (file) => file.name === user.profileImage,
+        );
+
+        if (fileToDelete) {
+          await imagekit.deleteFile(fileToDelete.fileId);
+          try {
+            const cleanUrl = fileToDelete.url.split('?')[0];
+            await imagekit.purgeCache(cleanUrl);
+            console.log('Cache purged for old image:', cleanUrl);
+            console.log('Cache purged for old image:', fileToDelete.url);
+          } catch (purgeError) {
+            console.warn('Failed to purge cache for old image:', purgeError);
+          }
+        } else {
+          console.warn('Old image not found in ImageKit folder');
+        }
+      } catch (err) {
+        console.warn('Failed to fetch or delete old image from ImageKit:', err);
+      }
     }
 
-    clearDirectory(uploadPath, profileImageFileName, 'profileImage-'); // Delete old files starting with "profileImage-" except the new file
+    // Save new image file name
+    const result = await this.userRepository.update(userId, {
+      profileImage: uploadResponse.name,
+      isFaceVerified: false,
+    });
 
-    // Update Action Log
+    if (result.affected === 0) {
+      throw new NotFoundException('Failed to update profile image');
+    }
+
+    // Log activity
     const activityLog = {
       activity: ActivityType.USER_UPDATE_PROFILE,
       description: 'User Changed Profile Image',
-      user: user,
+      user,
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
     return {
-      message: `Profile Image Updated Successfully`,
+      message: 'Profile Image Updated Successfully',
+      imageUrl: uploadResponse.url,
       userAffected: result.affected,
     };
   }
 
+  // Get user profile image from local storage
+  // async getUserProfileImage(userId: string, res: any) {
+  //   const user = await this.userRepository.findOne({ where: { id: userId } });
+  //   if (!user) {
+  //     throw new NotFoundException(`User not found`);
+  //   }
+
+  //   let imagePath = path.join(
+  //     __dirname,
+  //     '..',
+  //     '..',
+  //     'assets',
+  //     'user_profile_image',
+  //     `user_${userId}`,
+  //     `${user.profileImage}`,
+  //   );
+
+  //   if (user.profileImage === 'profile.png') {
+  //     imagePath = path.join(
+  //       __dirname,
+  //       '..',
+  //       '..',
+  //       'assets',
+  //       'user_profile_image',
+  //       `${user.profileImage}`,
+  //     );
+  //   }
+
+  //   // Check if the image exists
+  //   if (!fs.existsSync(imagePath)) {
+  //     throw new NotFoundException(`Image file not found`);
+  //   }
+
+  //   // Stream the image file to the client
+  //   res.sendFile(imagePath, (err: any) => {
+  //     if (err) {
+  //       throw new HttpException(
+  //         'Unable to retrieve the profile image',
+  //         HttpStatus.INTERNAL_SERVER_ERROR,
+  //       );
+  //     }
+  //   });
+  //   return {
+  //     message: `Profile Image Sent Successfully`,
+  //   };
+  // }
+
+  //Get user profile image from ImageKit
   async getUserProfileImage(userId: string, res: any) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException(`User not found`);
     }
 
-    let imagePath = path.join(
-      __dirname,
-      '..',
-      '..',
-      'assets',
-      'user_profile_image',
-      `user_${userId}`,
-      `${user.profileImage}`,
-    );
+    let imagePath: string;
 
-    if (user.profileImage === 'profile.png') {
-      imagePath = path.join(
-        __dirname,
-        '..',
-        '..',
-        'assets',
-        'user_profile_image',
-        `${user.profileImage}`,
+    if (!user.profileImage || user.profileImage === 'profile.png') {
+      // Serve default profile image from a public fallback location
+      imagePath = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/profile.png`;
+    } else {
+      imagePath = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/user_${userId}/${user.profileImage}`;
+    }
+
+    // Option 1: Stream the image file directly (for local files only)
+    // For remote URLs (like ImageKit), you need to proxy the request or redirect.
+    // If you want to fetch the image from ImageKit and stream it, use a request library.
+    // Here is an example using axios and stream:
+
+    try {
+      const response = await axios.get(imagePath, { responseType: 'stream' });
+      res.setHeader('Content-Type', response.headers['content-type']);
+      (response.data as NodeJS.ReadableStream).pipe(res);
+    } catch (err) {
+      throw new HttpException(
+        'Unable to retrieve the profile image',
+        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
 
-    // Check if the image exists
-    if (!fs.existsSync(imagePath)) {
-      throw new NotFoundException(`Image file not found`);
-    }
-
-    // Stream the image file to the client
-    res.sendFile(imagePath, (err: any) => {
-      if (err) {
-        throw new HttpException(
-          'Unable to retrieve the profile image',
-          HttpStatus.INTERNAL_SERVER_ERROR,
-        );
-      }
-    });
-    return {
-      message: `Profile Image Sent Successfully`,
-    };
+    // Option 2: Send as JSON response (for frontend to handle)
+    // return {
+    //   message: 'Profile image URL retrieved successfully',
+    //   imageUrl: imagePath,
+    // };
   }
 
   async updateHashedRefreshToken(userId: string, hashedRefreshToken: string) {

@@ -3,6 +3,7 @@ import {
   Inject,
   Injectable,
   NotFoundException,
+  Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -130,6 +131,7 @@ export class AuthService {
         id: userId,
         name: userData.firstName + ' ' + (userData.lastName || ''),
         role: userData.role,
+        profileImage: userData.profileImage,
       },
       accessToken,
       refreshToken,
@@ -183,6 +185,7 @@ export class AuthService {
         id: userId,
         name: userData.firstName + ' ' + (userData.lastName || ''),
         role: userData.role,
+        profileImage: userData.profileImage,
       },
       accessToken,
       refreshToken,
@@ -248,7 +251,11 @@ export class AuthService {
   }
 
   //ChangePassword
-  async changePassword(id: string, changePasswordDto: ChangePasswordDto) {
+  async changePassword(
+    id: string,
+    changePasswordDto: ChangePasswordDto,
+    res: any,
+  ) {
     const user = await this.usersService.findOne(id);
     if (!user) {
       throw new NotFoundException(`User not found`);
@@ -276,6 +283,7 @@ export class AuthService {
     await this.activityLogsService.createActivityLog(activityLog);
 
     this.logout(id); // Logout user after password change
+    res.clearCookie('session');
 
     return {
       message: 'Password changed successfully',

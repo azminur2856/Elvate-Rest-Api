@@ -35,6 +35,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from 'express';
 import { encryptSessionCookie } from './utility/jose-cookie';
+import axios from 'axios';
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -147,7 +148,7 @@ export class AuthController {
     });
 
     // Redirect to profile page
-    return res.redirect(`${FRONTEND_URL}/auth/google`);
+    return res.redirect(`${FRONTEND_URL}/google`);
 
     // Optionally, return only minimal info
     //return { success: true };
@@ -157,8 +158,9 @@ export class AuthController {
   async updatePassword(
     @Req() req: any,
     @Body(ValidationPipe) changePasswordDto: ChangePasswordDto,
+    @Res({ passthrough: true }) res: Response,
   ) {
-    return this.authService.changePassword(req.user.id, changePasswordDto);
+    return this.authService.changePassword(req.user.id, changePasswordDto, res);
   }
 
   @Public()
@@ -235,6 +237,65 @@ export class AuthController {
   //   };
   // }
 
+  //face login endpoint using local image and live image
+  // @Public()
+  // @Post('login-with-face')
+  // @UseInterceptors(FileInterceptor('liveImage'))
+  // async loginWithFace(
+  //   @Body('email') email: string,
+  //   @UploadedFile() file: Express.Multer.File,
+  //   @Res({ passthrough: true }) res: Response,
+  // ) {
+  //   const user = await this.authService.getVerifiedFaceUserByEmail(email);
+
+  //   const profileImagePath = path.join(
+  //     __dirname,
+  //     '..',
+  //     '..',
+  //     'assets',
+  //     'user_profile_image',
+  //     `user_${user.id}`,
+  //     user.profileImage,
+  //   );
+
+  //   if (!fs.existsSync(profileImagePath)) {
+  //     throw new NotFoundException('Profile image not found');
+  //   }
+
+  //   const profileImageBuffer = fs.readFileSync(profileImagePath);
+  //   const profileImageBase64 = await resizeToBase64(profileImageBuffer);
+  //   const liveImageBase64 = await resizeToBase64(file.buffer);
+
+  //   const isMatch = await this.faceVerificationService.compareFacesForLogin(
+  //     profileImageBase64,
+  //     liveImageBase64,
+  //   );
+
+  //   if (!isMatch) {
+  //     return {
+  //       verified: false,
+  //       message: '❌ Face does not match. Try again.',
+  //     };
+  //   }
+
+  //   // --- Set session cookie like in normal login ---
+  //   const cookieData = await this.authService.login(user.id, 'faceLogin');
+  //   const cookieDataEncrypted = await encryptSessionCookie(cookieData);
+
+  //   res.cookie('session', cookieDataEncrypted, {
+  //     httpOnly: true,
+  //     secure: process.env.NODE_ENV === 'production',
+  //     sameSite: 'lax',
+  //     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+  //   });
+
+  //   return {
+  //     verified: true,
+  //     message: '✅ Face verified and logged in.',
+  //   };
+  // }
+
+  // face login endpoint using imagekit image URL and live image
   @Public()
   @Post('login-with-face')
   @UseInterceptors(FileInterceptor('liveImage'))
@@ -245,21 +306,20 @@ export class AuthController {
   ) {
     const user = await this.authService.getVerifiedFaceUserByEmail(email);
 
-    const profileImagePath = path.join(
-      __dirname,
-      '..',
-      '..',
-      'assets',
-      'user_profile_image',
-      `user_${user.id}`,
-      user.profileImage,
-    );
+    const imageKitUrl = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/user_${user.id}/${user.profileImage}`;
 
-    if (!fs.existsSync(profileImagePath)) {
-      throw new NotFoundException('Profile image not found');
+    let profileImageBuffer: Buffer;
+    try {
+      const response = await axios.get(imageKitUrl, {
+        responseType: 'arraybuffer',
+      });
+      profileImageBuffer = Buffer.from(response.data as ArrayBuffer);
+    } catch (err) {
+      throw new NotFoundException(
+        'Failed to download profile image from ImageKit',
+      );
     }
 
-    const profileImageBuffer = fs.readFileSync(profileImagePath);
     const profileImageBase64 = await resizeToBase64(profileImageBuffer);
     const liveImageBase64 = await resizeToBase64(file.buffer);
 
