@@ -10,6 +10,7 @@ import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { OcrModule } from './ocr/ocr.module';
 import { DecryptSessionMiddleware } from './auth/middleware/decrypt-session.middleware';
+import { SubscriptionModule } from './subscription/subscription.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { DecryptSessionMiddleware } from './auth/middleware/decrypt-session.midd
     ActivityLogsModule,
     ReviewsModule,
     OcrModule,
+    SubscriptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

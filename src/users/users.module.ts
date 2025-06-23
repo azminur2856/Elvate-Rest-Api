@@ -18,5 +18,6 @@ import { FaceVerificationService } from './services/face-verification.service';
     ActivityLogsService,
     FaceVerificationService,
   ],
+  exports: [UsersService],
 })
 export class UsersModule {}

@@ -13,6 +13,8 @@ import {
 import * as bcrypt from 'bcrypt';
 import { ActivityLog } from 'src/activity-logs/entities/activity-logs.entity';
 import { Review } from 'src/reviews/entities/review.entity';
+import { Subscription } from 'src/subscription/entities/subscription.entity';
+import { Payment } from 'src/subscription/entities/payment.entity';
 
 @Entity()
 export class Users {
@@ -89,6 +91,12 @@ export class Users {
 
   @OneToMany(() => Review, (review) => review.user, { cascade: true }) // One user can have many reviews.
   reviews: Review[];
+
+  @OneToMany(() => Subscription, (subscription) => subscription.user)
+  subscriptions: Subscription[];
+
+  @OneToMany(() => Payment, (payment) => payment.user)
+  payments: Payment[];
 
   /////// Before insert //////
   @BeforeInsert()

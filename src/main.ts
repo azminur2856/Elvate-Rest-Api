@@ -30,6 +30,13 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
+import * as express from 'express';
+
+declare module 'express-serve-static-core' {
+  interface Request {
+    rawBody?: Buffer;
+  }
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -38,6 +45,17 @@ async function bootstrap() {
     origin: 'http://localhost:3000',
     credentials: true,
   });
+
+  // Only override body parser for webhook route
+  app.use(
+    '/subscriptions/webhook',
+    express.raw({ type: 'application/json' }),
+    (req, res, next) => {
+      req.rawBody = req.body;
+      next();
+    },
+  );
+
   await app.listen(8000);
 }
 bootstrap();
