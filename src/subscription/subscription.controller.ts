@@ -94,6 +94,14 @@ export class SubscriptionController {
     return this.subService.getAllSubscriptions(req.user.id);
   }
 
+  @Post('cancel')
+  async cancelSubscription(
+    @Req() req,
+    @Body('subscriptionId') subscriptionId: string,
+  ) {
+    return this.subService.cancelSubscription(req.user.id, subscriptionId);
+  }
+
   @Roles(Role.ADMIN)
   @Get('subStats')
   async getSubscriptionStats() {

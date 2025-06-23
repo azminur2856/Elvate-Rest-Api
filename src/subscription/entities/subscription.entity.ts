@@ -9,6 +9,9 @@ export class Subscription {
   @Column()
   stripeSubscriptionId: string;
 
+  @Column({ default: false })
+  isCancelled: boolean;
+
   @Column()
   plan: '1m' | '6m' | '12m';
 

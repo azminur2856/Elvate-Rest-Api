@@ -53,31 +53,38 @@ export class ActivityLogsService {
   }
 
   // Get activity logs for a specific user
-  async getUserActivityLog(userId: string) {
+  async getUserActivityLog(userId: string, page = 1, pageSize = 5) {
     if (userId.length !== 36) {
       return {
         message: 'Invalid user ID format. Please provide a valid UUID.',
       };
     }
-    const activityLogs = await this.activityLogsRepository.find({
-      where: { user: { id: userId } },
-      order: { id: 'DESC' },
-      relations: ['user'], // Include the user relation to get user details
-    });
+    const [activityLogs, total] =
+      await this.activityLogsRepository.findAndCount({
+        where: { user: { id: userId } },
+        order: { id: 'DESC' },
+        relations: ['user'],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      });
 
-    const activityLogsFiltered = activityLogs.map((log) => {
-      return {
-        id: log.id,
-        activity: log.activity,
-        description: log.description,
-        createdAt: log.createdAt,
-        userId: log.user ? log.user.id : null,
-      };
-    });
-    if (activityLogsFiltered.length === 0) {
-      throw new NotFoundException(`No activity logs found for user ${userId}`);
-    }
-    return activityLogsFiltered;
+    const logs = activityLogs.map((log) => ({
+      id: log.id,
+      activity: log.activity,
+      description: log.description,
+      createdAt: new Date(
+        new Date(log.createdAt).getTime() + 6 * 60 * 60 * 1000,
+      ),
+      userId: log.user ? log.user.id : null,
+    }));
+
+    return {
+      logs,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
   }
 
   // Get filtered activity logs with pagination

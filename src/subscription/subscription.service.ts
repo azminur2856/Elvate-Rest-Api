@@ -206,13 +206,19 @@ export class SubscriptionService {
       order: { paidAt: 'DESC' },
     });
 
-    return payments.map((payment) => ({
-      id: payment.id,
-      amount: payment.amount,
-      currency: payment.currency,
-      paidAt: payment.paidAt,
-      invoiceUrl: payment.invoiceUrl,
-    }));
+    return payments.map((payment) => {
+      // Add 6 hours to paidAt
+      const paidAtWithOffset = new Date(payment.paidAt);
+      paidAtWithOffset.setHours(paidAtWithOffset.getHours() + 6);
+
+      return {
+        id: payment.id,
+        amount: payment.amount,
+        currency: payment.currency,
+        paidAt: paidAtWithOffset,
+        invoiceUrl: payment.invoiceUrl,
+      };
+    });
   }
 
   async getAllSubscriptions(userId: string) {
@@ -235,11 +241,61 @@ export class SubscriptionService {
         startDate: sub.startDate,
         endDate: sub.endDate,
         stripeSubscriptionId: sub.stripeSubscriptionId,
+        isCancelled: sub.isCancelled,
         status: isActive ? `Active (${daysLeft} days remaining)` : 'Expired',
         daysLeft,
         isActive,
+        autoRenewal: !sub.isCancelled && isActive, // Show autoRenewal true if not cancelled and active
       };
     });
+  }
+
+  async cancelSubscription(userId: string, subscriptionId: string) {
+    const subscription = await this.subRepo.findOne({
+      where: { id: subscriptionId, user: { id: userId } },
+    });
+
+    if (!subscription) {
+      throw new BadRequestException(
+        'Subscription not found or does not belong to user.',
+      );
+    }
+
+    if (subscription.endDate <= new Date()) {
+      throw new BadRequestException(
+        'Cannot cancel an already expired subscription.',
+      );
+    }
+
+    const user = await this.usersService.findOne(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    // Stop auto-renewal in Stripe
+    try {
+      await this.stripe.subscriptions.update(
+        subscription.stripeSubscriptionId,
+        {
+          cancel_at_period_end: true,
+        },
+      );
+    } catch (error) {
+      throw new BadRequestException('Failed to cancel subscription in Stripe.');
+    }
+
+    // Update local subscription record
+    subscription.isCancelled = true;
+    await this.subRepo.update(subscription.id, { isCancelled: true });
+
+    // Log activity for cancellation
+    await this.activityLogService.createActivityLog({
+      activity: ActivityType.SUBSCRIPTION_CANCEL,
+      description: `User ${userId} cancelled subscription (ID: ${subscription.id})`,
+      user: user,
+    });
+
+    return { message: 'Subscription cancelled successfully.' };
   }
 
   async getSubscriptionStats() {

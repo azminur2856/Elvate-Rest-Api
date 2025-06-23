@@ -94,4 +94,18 @@ export class ActivityLogsController {
     );
     res.send(csv);
   }
+
+  @Get('user')
+  async getUserLogs(
+    @Req() req: any,
+    @Query('page') page = '1',
+    @Query('pageSize') pageSize = '5',
+  ) {
+    const userId = req.user?.id;
+    return this.activityLogsService.getUserActivityLog(
+      userId,
+      parseInt(page, 10) || 1,
+      parseInt(pageSize, 10) || 5,
+    );
+  }
 }
