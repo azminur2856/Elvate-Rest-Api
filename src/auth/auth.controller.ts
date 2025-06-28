@@ -306,6 +306,12 @@ export class AuthController {
   ) {
     const user = await this.authService.getVerifiedFaceUserByEmail(email);
 
+    if (user.isActive === false) {
+      throw new NotFoundException(
+        'User is inactive or blocked by admin. Contact support for assistance.',
+      );
+    }
+
     const imageKitUrl = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/user_${user.id}/${user.profileImage}`;
 
     let profileImageBuffer: Buffer;

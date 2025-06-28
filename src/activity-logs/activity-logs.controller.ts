@@ -22,9 +22,35 @@ export class ActivityLogsController {
   constructor(private activityLogsService: ActivityLogsService) {}
 
   @Roles(Role.ADMIN)
+  @Get('stats')
+  async getActivityStats() {
+    return this.activityLogsService.getActivityStats();
+  }
+
+  @Roles(Role.ADMIN)
   @Get('getAllActivityLogs')
-  getAllActivityLogs() {
-    return this.activityLogsService.getAllActivityLogs();
+  getAllActivityLogs(
+    @Query('page') page = '1',
+    @Query('pageSize') pageSize = '5',
+  ) {
+    return this.activityLogsService.getAllActivityLogs(
+      parseInt(page, 10) || 1,
+      parseInt(pageSize, 10) || 5,
+    );
+  }
+
+  @Get('user')
+  async getUserLogs(
+    @Req() req: any,
+    @Query('page') page = '1',
+    @Query('pageSize') pageSize = '5',
+  ) {
+    const userId = req.user?.id;
+    return this.activityLogsService.getUserActivityLog(
+      userId,
+      parseInt(page, 10) || 1,
+      parseInt(pageSize, 10) || 5,
+    );
   }
 
   @Roles(Role.ADMIN)
@@ -93,19 +119,5 @@ export class ActivityLogsController {
       'attachment; filename=activity_logs.csv',
     );
     res.send(csv);
-  }
-
-  @Get('user')
-  async getUserLogs(
-    @Req() req: any,
-    @Query('page') page = '1',
-    @Query('pageSize') pageSize = '5',
-  ) {
-    const userId = req.user?.id;
-    return this.activityLogsService.getUserActivityLog(
-      userId,
-      parseInt(page, 10) || 1,
-      parseInt(pageSize, 10) || 5,
-    );
   }
 }

@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UploadedFile,
@@ -54,6 +55,24 @@ export class UsersController {
     return this.usersService.getAllUsers();
   }
 
+  @Roles(Role.ADMIN)
+  @Get('getAllUsersWithTotalPaid')
+  async getPaginatedUsersWithTotalPaid(
+    @Query('page') page?: string,
+    @Query('pageSize') pageSize?: string,
+    @Query('sortBy') sortBy?: 'createdAt' | 'firstName',
+    @Query('search') search?: string,
+  ) {
+    const pageNum = page ? parseInt(page, 10) : 1;
+    const pageSizeNum = pageSize ? parseInt(pageSize, 10) : 10;
+    return await this.usersService.getPaginatedUsersWithTotalPaid(
+      pageNum,
+      pageSizeNum,
+      sortBy || 'firstName',
+      search,
+    );
+  }
+
   @Get('profile')
   getUserProfile(@Req() req: any) {
     return this.usersService.getUserById(req.user.id);
@@ -80,6 +99,23 @@ export class UsersController {
     @Req() req: any,
   ) {
     return this.usersService.updateUserRole(id, updateUserRoleDto, req.user.id);
+  }
+
+  @Roles(Role.ADMIN)
+  @Patch('updateUserStatus/:id')
+  updateUserStatus(
+    @Param('id') id: string,
+    @Body('status') status: 'true' | 'false',
+    @Req() req: any,
+  ) {
+    if (!['true', 'false'].includes(status)) {
+      throw new HttpException(
+        'Invalid status value. Use "true" or "false".',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+    const isActive = status === 'true';
+    return this.usersService.updateUserStatus(id, isActive, req.user.id);
   }
 
   @Roles(Role.ADMIN)
@@ -281,5 +317,11 @@ export class UsersController {
     }
 
     return { verified: isMatch };
+  }
+
+  @Roles(Role.ADMIN)
+  @Get('userStats')
+  async getUserStats() {
+    return this.usersService.getUserStats();
   }
 }

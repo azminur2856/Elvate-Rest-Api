@@ -299,44 +299,114 @@ export class SubscriptionService {
   }
 
   async getSubscriptionStats() {
-    const allSubs = await this.subRepo.find();
+    // 1. Total subscriptions
+    const totalSubscriptions = await this.subRepo.count();
 
-    const stats = {
-      total: allSubs.length,
-      '1m': 0,
-      '6m': 0,
-      '12m': 0,
-      active: 0,
-      expired: 0,
-      percent: {
-        '1m': 0,
-        '6m': 0,
-        '12m': 0,
-        active: 0,
-        expired: 0,
-      },
+    // 2. Count by plan
+    const countByPlanRaw = await this.subRepo
+      .createQueryBuilder('sub')
+      .select('sub.plan', 'plan')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('sub.plan')
+      .getRawMany();
+    const countByPlan: Record<string, number> = {};
+    for (const row of countByPlanRaw) {
+      countByPlan[row.plan] = Number(row.count);
+    }
+
+    // 3. Active vs Cancelled
+    const activeCount = await this.subRepo.count({
+      where: { isCancelled: false },
+    });
+    const cancelledCount = await this.subRepo.count({
+      where: { isCancelled: true },
+    });
+
+    // 4. Recent subscriptions (last 7 days)
+    const recentSubscriptions = await this.subRepo.find({
+      relations: ['user'],
+      order: { startDate: 'DESC' },
+      take: 10,
+    });
+
+    return {
+      totalSubscriptions,
+      countByPlan,
+      activeCount,
+      cancelledCount,
+      recentSubscriptions: recentSubscriptions.map((sub) => ({
+        id: sub.id,
+        plan: sub.plan,
+        isCancelled: sub.isCancelled,
+        startDate: sub.startDate,
+        endDate: sub.endDate,
+        userId: sub.user?.id,
+        userName: sub.user
+          ? `${sub.user.firstName ?? ''} ${sub.user.lastName ?? ''}`.trim()
+          : null,
+      })),
     };
+  }
 
-    const now = new Date();
+  // payment.service.ts
 
-    for (const sub of allSubs) {
-      if (sub.plan === '1m') stats['1m']++;
-      if (sub.plan === '6m') stats['6m']++;
-      if (sub.plan === '12m') stats['12m']++;
-      if (sub.endDate > now) stats.active++;
-      else stats.expired++;
-    }
+  async getPaymentStats() {
+    // Total payments & total amount
+    const totalPayments = await this.payRepo.count();
+    const totalAmountRaw = await this.payRepo
+      .createQueryBuilder('p')
+      .select('SUM(p.amount)', 'sum')
+      .getRawOne();
+    const totalAmount = Number(totalAmountRaw?.sum || 0);
 
-    // Calculate percentages
-    if (stats.total > 0) {
-      stats.percent['1m'] = Math.round((stats['1m'] / stats.total) * 100);
-      stats.percent['6m'] = Math.round((stats['6m'] / stats.total) * 100);
-      stats.percent['12m'] = Math.round((stats['12m'] / stats.total) * 100);
-      stats.percent.active = Math.round((stats.active / stats.total) * 100);
-      stats.percent.expired = Math.round((stats.expired / stats.total) * 100);
-    }
+    // Group by currency
+    const amountByCurrencyRaw = await this.payRepo
+      .createQueryBuilder('p')
+      .select('p.currency', 'currency')
+      .addSelect('COUNT(*)', 'count')
+      .addSelect('SUM(p.amount)', 'sum')
+      .groupBy('p.currency')
+      .getRawMany();
 
-    return stats;
+    const amountByCurrency = amountByCurrencyRaw.map((x) => ({
+      currency: x.currency,
+      count: Number(x.count),
+      sum: Number(x.sum),
+    }));
+
+    // Payments by day (last 7 days)
+    const byDay = await this.payRepo
+      .createQueryBuilder('p')
+      .select("TO_CHAR(p.paidAt, 'YYYY-MM-DD')", 'date')
+      .addSelect('COUNT(*)', 'count')
+      .addSelect('SUM(p.amount)', 'sum')
+      .where("p.paidAt >= NOW() - INTERVAL '7 days'")
+      .groupBy('date')
+      .orderBy('date', 'ASC')
+      .getRawMany();
+
+    // Recent 10 payments
+    const recentPayments = await this.payRepo.find({
+      relations: ['user'],
+      order: { paidAt: 'DESC' },
+      take: 10,
+    });
+
+    return {
+      totalPayments,
+      totalAmount,
+      amountByCurrency,
+      byDay,
+      recentPayments: recentPayments.map((p) => ({
+        id: p.id,
+        userId: p.user?.id,
+        userName: p.user ? `${p.user.firstName} ${p.user.lastName || ''}` : '',
+        amount: Number(p.amount),
+        currency: p.currency,
+        invoiceUrl: p.invoiceUrl,
+        paidAt: p.paidAt,
+      })),
+    };
   }
 
   async getPaymentAndPlanStats() {
@@ -405,6 +475,66 @@ export class SubscriptionService {
       planStats,
       planPercent,
       planPaymentStats,
+    };
+  }
+
+  async getAllPayments(page = 1, pageSize = 10) {
+    const [payments, total] = await this.payRepo.findAndCount({
+      order: { paidAt: 'DESC' },
+      relations: ['user'],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+
+    const list = payments.map((p) => ({
+      id: p.id,
+      userId: p.user ? p.user.id : null,
+      userName: p.user
+        ? `${p.user.firstName ?? ''} ${p.user.lastName ?? ''}`.trim()
+        : null,
+      amount: p.amount,
+      currency: p.currency,
+      invoiceUrl: p.invoiceUrl,
+      paidAt: p.paidAt,
+    }));
+
+    return {
+      payments: list,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    };
+  }
+
+  // subscriptions.service.ts
+
+  async getAllSubscriptionsAdmin(page = 1, pageSize = 10) {
+    const [subs, total] = await this.subRepo.findAndCount({
+      order: { startDate: 'DESC' },
+      relations: ['user'],
+      skip: (page - 1) * pageSize,
+      take: pageSize,
+    });
+
+    const list = subs.map((s) => ({
+      id: s.id,
+      userId: s.user ? s.user.id : null,
+      userName: s.user
+        ? `${s.user.firstName ?? ''} ${s.user.lastName ?? ''}`.trim()
+        : null,
+      plan: s.plan,
+      isCancelled: s.isCancelled,
+      startDate: s.startDate,
+      endDate: s.endDate,
+    }));
+
+    return {
+      subscriptions: list,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
     };
   }
 }

@@ -131,6 +131,7 @@ export class AuthService {
         id: userId,
         name: userData.firstName + ' ' + (userData.lastName || ''),
         role: userData.role,
+        email: userData.email,
         profileImage: userData.profileImage,
       },
       accessToken,
@@ -185,6 +186,7 @@ export class AuthService {
         id: userId,
         name: userData.firstName + ' ' + (userData.lastName || ''),
         role: userData.role,
+        email: userData.email,
         profileImage: userData.profileImage,
       },
       accessToken,
@@ -246,7 +248,15 @@ export class AuthService {
 
   async validateGoogleUser(createGoogleUserDto: CreateGoogleUserDto) {
     const user = await this.usersService.findByEmail(createGoogleUserDto.email);
-    if (user) return user;
+    if (user && user.isActive === false) {
+      throw new UnauthorizedException(
+        'User is inactive or blocked by admin. Contract support for assistance.',
+      );
+    }
+
+    if (user) {
+      return user;
+    }
     this.usersService.createGoogleUser(createGoogleUserDto);
   }
 

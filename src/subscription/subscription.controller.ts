@@ -8,6 +8,7 @@ import {
   Get,
   Param,
   UnauthorizedException,
+  Query,
 } from '@nestjs/common';
 import { SubscriptionService } from './subscription.service';
 import { Request, Response } from 'express';
@@ -109,8 +110,40 @@ export class SubscriptionController {
   }
 
   @Roles(Role.ADMIN)
+  @Get('paymentStats')
+  getPaymentStats() {
+    return this.subService.getPaymentStats();
+  }
+
+  @Roles(Role.ADMIN)
   @Get('paymentsPlanStats')
   async getPaymentAndPlanStats() {
     return this.subService.getPaymentAndPlanStats();
+  }
+
+  @Roles(Role.ADMIN)
+  @Get('getAllPayments')
+  getAllPayments(
+    @Query('page') page = '1',
+    @Query('pageSize') pageSize = '10',
+  ) {
+    return this.subService.getAllPayments(
+      parseInt(page, 10) || 1,
+      parseInt(pageSize, 10) || 10,
+    );
+  }
+
+  // subscriptions.controller.ts
+
+  @Roles(Role.ADMIN)
+  @Get('getAllSubscriptions')
+  getAllSubscriptionsAdmin(
+    @Query('page') page = '1',
+    @Query('pageSize') pageSize = '10',
+  ) {
+    return this.subService.getAllSubscriptionsAdmin(
+      parseInt(page, 10) || 1,
+      parseInt(pageSize, 10) || 10,
+    );
   }
 }

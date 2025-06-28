@@ -235,6 +235,87 @@ export class UsersService {
     };
   }
 
+  async getPaginatedUsersWithTotalPaid(
+    page: number = 1,
+    pageSize: number = 10,
+    sortBy: 'createdAt' | 'firstName' = 'firstName',
+    search?: string,
+  ) {
+    const skip = (page - 1) * pageSize;
+
+    let qb = this.userRepository
+      .createQueryBuilder('user')
+      .leftJoinAndSelect('user.payments', 'payment')
+      .select([
+        'user.id',
+        'user.firstName',
+        'user.lastName',
+        'user.dob',
+        'user.email',
+        'user.phone',
+        'user.role',
+        'user.isActive',
+        'user.isEmailVerified',
+        'user.isPhoneVerified',
+        'user.profileImage',
+        'user.createdAt',
+      ])
+      .addSelect('COALESCE(SUM(payment.amount), 0)', 'totalPaid')
+      .groupBy('user.id');
+
+    // Search filter (case-insensitive)
+    if (search) {
+      qb = qb.where(
+        'LOWER(user.firstName) LIKE :search OR LOWER(user.lastName) LIKE :search OR LOWER(user.email) LIKE :search',
+        { search: `%${search.toLowerCase()}%` },
+      );
+    }
+
+    // Sorting
+    if (sortBy === 'createdAt') {
+      qb = qb
+        .orderBy('user.createdAt', 'ASC')
+        .addOrderBy('user.firstName', 'ASC')
+        .addOrderBy('user.lastName', 'ASC');
+    } else {
+      // Default: firstName (A-Z)
+      qb = qb
+        .orderBy('user.firstName', 'ASC')
+        .addOrderBy('user.lastName', 'ASC');
+    }
+
+    // Pagination
+    qb = qb.skip(skip).take(pageSize);
+
+    // Fetch data and count in parallel
+    const [usersRaw, total] = await Promise.all([
+      qb.getRawAndEntities(),
+      this.userRepository
+        .createQueryBuilder('user')
+        .where(
+          search
+            ? `LOWER(user.firstName) LIKE :search OR LOWER(user.lastName) LIKE :search OR LOWER(user.email) LIKE :search`
+            : '1=1',
+          search ? { search: `%${search.toLowerCase()}%` } : {},
+        )
+        .getCount(),
+    ]);
+
+    const userList = usersRaw.entities.map((user, idx) => ({
+      ...user,
+      totalPaid: Number(usersRaw.raw[idx]?.totalPaid) || 0,
+      createdAt: user.createdAt,
+    }));
+
+    return {
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+      users: userList,
+    };
+  }
+
   async getUserById(id: string) {
     if (!id) throw new BadRequestException('User ID is required');
     const user = await this.userRepository.findOne({
@@ -328,6 +409,30 @@ export class UsersService {
 
     return {
       message: 'User role updated successfully',
+      userAffected: result.affected,
+    };
+  }
+
+  async updateUserStatus(id: string, isActive: boolean, adminId: string) {
+    const user = await this.userRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${id} not found`);
+    }
+    if (user.role === 'ADMIN') {
+      throw new UnauthorizedException(`Unauthorized to change admin status`);
+    }
+
+    const result = await this.userRepository.update(id, { isActive });
+
+    const activityLog = {
+      activity: ActivityType.ADMIN_UPDATE_USER_STATUS,
+      description: `Admin ${adminId} updated user ${id} status to ${isActive}`,
+      user: await this.userRepository.findOne({ where: { id: adminId } }),
+    };
+    await this.activityLogsService.createActivityLog(activityLog);
+
+    return {
+      message: 'User status updated successfully',
       userAffected: result.affected,
     };
   }
@@ -636,5 +741,63 @@ export class UsersService {
       user: user,
     };
     await this.activityLogsService.createActivityLog(activityLog);
+  }
+
+  async getUserStats() {
+    // Total users
+    const total = await this.userRepository.count();
+
+    // Active users
+    const active = await this.userRepository.count({
+      where: { isActive: true },
+    });
+
+    // Email-verified users
+    const emailVerified = await this.userRepository.count({
+      where: { isEmailVerified: true },
+    });
+
+    // Phone-verified users
+    const phoneVerified = await this.userRepository.count({
+      where: { isPhoneVerified: true },
+    });
+
+    // Face-verified users
+    const faceVerified = await this.userRepository.count({
+      where: { isFaceVerified: true },
+    });
+
+    // Role breakdown (count by role)
+    const roleCountsRaw = await this.userRepository
+      .createQueryBuilder('user')
+      .select('user.role', 'role')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('user.role')
+      .getRawMany();
+
+    const roleCounts = {};
+    for (const row of roleCountsRaw) {
+      roleCounts[row.role] = Number(row.count);
+    }
+
+    // User registration trend (last 7 days)
+    const regTrend = await this.userRepository
+      .createQueryBuilder('user')
+      .select("TO_CHAR(user.createdAt, 'YYYY-MM-DD')", 'date')
+      .addSelect('COUNT(*)', 'count')
+      .where("user.createdAt >= NOW() - INTERVAL '7 days'")
+      .groupBy('date')
+      .orderBy('date', 'ASC')
+      .getRawMany();
+
+    return {
+      total,
+      active,
+      emailVerified,
+      phoneVerified,
+      faceVerified,
+      roleCounts,
+      registrationTrend: regTrend, // [{ date, count }]
+    };
   }
 }
