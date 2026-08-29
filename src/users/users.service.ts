@@ -677,13 +677,6 @@ export class UsersService {
     // };
   }
 
-  async updateHashedRefreshToken(userId: string, hashedRefreshToken: string) {
-    return await this.userRepository.update(
-      { id: userId },
-      { refreshToken: hashedRefreshToken },
-    );
-  }
-
   async findByEmail(email: string) {
     const user = await this.userRepository.findOne({ where: { email } });
     return user;
@@ -701,22 +694,6 @@ export class UsersService {
     return await this.userRepository.update(id, {
       password: password,
     });
-  }
-
-  async getUserRefreshTokenFromDB(id: string) {
-    if (!id) {
-      throw new BadRequestException(`Id is required`);
-    }
-
-    const user = await this.userRepository.findOne({
-      where: { id },
-      select: ['id', 'refreshToken'],
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with id ${id} not found`);
-    }
-    return user;
   }
 
   async findOne(id: string) {

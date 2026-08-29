@@ -51,9 +51,6 @@ export class Users {
   @Column({ type: 'boolean', default: false })
   isPhoneVerified: boolean;
 
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  refreshToken: string;
-
   @Column({
     type: 'varchar',
     length: 255,
