@@ -32,6 +32,10 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { generateVerificationToken } from './utility/token.util';
 import { VerifyPhoneDto } from './dto/verify-Phone.dto';
 import { CreateGoogleUserDto } from 'src/users/dto/create-google-user.dto';
+import {
+  SESSION_COOKIE,
+  clearSessionCookieOptions,
+} from './utility/session-cookie.options';
 
 @Injectable()
 export class AuthService {
@@ -293,7 +297,7 @@ export class AuthService {
     await this.activityLogsService.createActivityLog(activityLog);
 
     this.logout(id); // Logout user after password change
-    res.clearCookie('session');
+    res.clearCookie(SESSION_COOKIE, clearSessionCookieOptions);
 
     return {
       message: 'Password changed successfully',

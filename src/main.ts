@@ -28,6 +28,7 @@
 // bootstrap();
 
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
@@ -39,10 +40,22 @@ declare module 'express-serve-static-core' {
 }
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Render (and most PaaS) terminate TLS at a reverse proxy; trust the first
+  // hop so req.secure / req.protocol reflect the original https request.
+  app.set('trust proxy', 1);
+
   app.use(cookieParser());
+
+  // In production the frontend proxies API calls through its own origin
+  // (Next.js rewrite), so CORS rarely matters — but keep the real frontend
+  // origin and localhost allowed for direct calls and local development.
+  const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:3000']
+    .filter((o): o is string => Boolean(o))
+    .map((o) => o.replace(/\/+$/, ''));
   app.enableCors({
-    origin: 'https://elvate.vercel.app',
+    origin: allowedOrigins,
     credentials: true,
   });
 

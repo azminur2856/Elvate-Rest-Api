@@ -35,6 +35,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { Response } from 'express';
 import { encryptSessionCookie } from './utility/jose-cookie';
+import {
+  SESSION_COOKIE,
+  sessionCookieOptions,
+  clearSessionCookieOptions,
+} from './utility/session-cookie.options';
 import axios from 'axios';
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
@@ -71,12 +76,7 @@ export class AuthController {
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
 
     // Set a single HTTP-only cookie named 'session'
-    res.cookie('session', cookieDataEncrypted, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    });
+    res.cookie(SESSION_COOKIE, cookieDataEncrypted, sessionCookieOptions);
 
     // Optionally, return only minimal info
     return { success: true };
@@ -93,20 +93,13 @@ export class AuthController {
   @UseGuards(RefreshAuthGuard) // uses "refresh-jwt" strategy above
   @Post('refresh')
   async refreshToken(@Req() req, @Res({ passthrough: true }) res: Response) {
-    console.log('Cookies:', req.cookies);
-
     const cookieData = await this.authService.refreshToken(req.user.id);
 
     // Encrypt the session data before setting it in the cookie
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
 
     // Set a single HTTP-only cookie named 'session'
-    res.cookie('session', cookieDataEncrypted, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-    });
+    res.cookie(SESSION_COOKIE, cookieDataEncrypted, sessionCookieOptions);
 
     // Optionally, return only minimal info
     return { success: true };
@@ -114,8 +107,8 @@ export class AuthController {
 
   @Post('logout')
   async signout(@Request() req, @Res({ passthrough: true }) res: Response) {
-    // Clear the session cookie
-    res.clearCookie('session');
+    // Clear the session cookie (options must match the ones it was set with)
+    res.clearCookie(SESSION_COOKIE, clearSessionCookieOptions);
     return this.authService.logout(req.user.id);
   }
 
@@ -140,12 +133,7 @@ export class AuthController {
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
 
     // Set a single HTTP-only cookie named 'session'
-    res.cookie('session', cookieDataEncrypted, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    });
+    res.cookie(SESSION_COOKIE, cookieDataEncrypted, sessionCookieOptions);
 
     // Redirect to profile page
     return res.redirect(`${FRONTEND_URL}/google`);
@@ -345,12 +333,7 @@ export class AuthController {
     const cookieData = await this.authService.login(user.id, 'faceLogin');
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
 
-    res.cookie('session', cookieDataEncrypted, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'none',
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-    });
+    res.cookie(SESSION_COOKIE, cookieDataEncrypted, sessionCookieOptions);
 
     return {
       verified: true,

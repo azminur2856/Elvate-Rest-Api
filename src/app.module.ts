@@ -11,6 +11,7 @@ import { ReviewsModule } from './reviews/reviews.module';
 import { OcrModule } from './ocr/ocr.module';
 import { DecryptSessionMiddleware } from './auth/middleware/decrypt-session.middleware';
 import { SubscriptionModule } from './subscription/subscription.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SubscriptionModule } from './subscription/subscription.module';
     ReviewsModule,
     OcrModule,
     SubscriptionModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
