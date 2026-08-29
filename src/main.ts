@@ -27,6 +27,8 @@
 // }
 // bootstrap();
 
+// Must stay the first import: forces the process into UTC before TypeORM/pg load.
+import './set-timezone';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';

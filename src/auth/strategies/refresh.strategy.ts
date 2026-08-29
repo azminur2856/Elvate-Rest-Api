@@ -76,6 +76,10 @@ export class RefreshJwtStrategy extends PassportStrategy(
     if (!refreshToken) {
       throw new NotFoundException('Refresh token not found');
     }
-    return this.authService.validateRefreshToken(userId, refreshToken);
+    return this.authService.validateRefreshToken(
+      userId,
+      payload.sid,
+      refreshToken,
+    );
   }
 }

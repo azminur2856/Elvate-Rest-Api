@@ -21,7 +21,8 @@ import { SmsService } from './services/sms.service';
 import { MailService } from './services/mail.services';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Verification } from './entities/verification.entity';
-import { Repository } from 'typeorm';
+import { UserSession } from './entities/user-session.entity';
+import { LessThan, Repository } from 'typeorm';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { VerificationMethod } from './enums/verification-method.enum';
@@ -37,6 +38,9 @@ import {
   clearSessionCookieOptions,
 } from './utility/session-cookie.options';
 
+/** Hard cap on a login session; matches the session cookie's maxAge (7 days). */
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -49,6 +53,8 @@ export class AuthService {
     private refreshTokenConfig: ConfigType<typeof refreshJwtConfig>,
     @InjectRepository(Verification)
     private verificationRepository: Repository<Verification>,
+    @InjectRepository(UserSession)
+    private sessionRepository: Repository<UserSession>,
   ) {}
 
   // Verify Registration after user sign up
@@ -101,14 +107,33 @@ export class AuthService {
   }
 
   // Lofin user and generate access and refresh tokens
-  async login(userId: string, loginMethod: string) {
-    const { accessToken, refreshToken } = await this.generateToken(userId);
-
-    const hashedRefreshToken = await argon2.hash(refreshToken);
-    await this.usersService.updateHashedRefreshToken(
+  async login(userId: string, loginMethod: string, userAgent?: string) {
+    // Opportunistically drop this user's expired sessions.
+    await this.sessionRepository.delete({
       userId,
-      hashedRefreshToken,
+      expiresAt: LessThan(new Date()),
+    });
+
+    // One session row per login ("device"). Its id travels inside both JWTs
+    // as `sid`, so each device refreshes/logs out independently.
+    const now = new Date();
+    const session = await this.sessionRepository.save(
+      this.sessionRepository.create({
+        userId,
+        hashedRefreshToken: '',
+        loginMethod,
+        userAgent: userAgent ? userAgent.slice(0, 512) : null,
+        lastUsedAt: now,
+        expiresAt: new Date(now.getTime() + SESSION_TTL_MS),
+      }),
     );
+
+    const { accessToken, refreshToken } = await this.generateToken(
+      userId,
+      session.id,
+    );
+    session.hashedRefreshToken = await argon2.hash(refreshToken);
+    await this.sessionRepository.save(session);
 
     this.usersService.updateLastLogin(userId);
 
@@ -144,8 +169,8 @@ export class AuthService {
   }
 
   // Generate access and refresh tokens
-  async generateToken(userId: string) {
-    const payload: AuthJwtPayload = { sub: userId };
+  async generateToken(userId: string, sessionId: string) {
+    const payload: AuthJwtPayload = { sub: userId, sid: sessionId };
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload),
       this.jwtService.signAsync(payload, this.refreshTokenConfig),
@@ -167,14 +192,19 @@ export class AuthService {
   // }
 
   //Generate new access and refresh tokens using the refresh token
-  async refreshToken(userId: string) {
-    const { accessToken, refreshToken } = await this.generateToken(userId);
-    const hashedRefreshToken = await argon2.hash(refreshToken);
-    await this.usersService.updateHashedRefreshToken(
+  async refreshToken(userId: string, sessionId: string) {
+    const { accessToken, refreshToken } = await this.generateToken(
       userId,
-      hashedRefreshToken,
+      sessionId,
     );
-    console.log('Refresh token updated in DB');
+    // Rotate the refresh token for THIS session only.
+    await this.sessionRepository.update(
+      { id: sessionId, userId },
+      {
+        hashedRefreshToken: await argon2.hash(refreshToken),
+        lastUsedAt: new Date(),
+      },
+    );
 
     const userData = await this.usersService.getUserById(userId);
 
@@ -199,26 +229,37 @@ export class AuthService {
   }
 
   // Validate refresh token
-  async validateRefreshToken(userId: string, refreshToken: string) {
-    const user = await this.usersService.getUserRefreshTokenFromDB(userId);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
+  async validateRefreshToken(
+    userId: string,
+    sessionId: string | undefined,
+    refreshToken: string,
+  ) {
+    if (!sessionId) {
+      // Token issued before per-device sessions existed.
+      throw new UnauthorizedException('Session missing, please log in again');
     }
-    if (!user.refreshToken) {
-      throw new UnauthorizedException('No refresh token found for user');
+    const session = await this.sessionRepository.findOne({
+      where: { id: sessionId, userId },
+    });
+    if (!session) {
+      throw new UnauthorizedException('Session not found or already logged out');
+    }
+    if (session.expiresAt < new Date()) {
+      await this.sessionRepository.delete({ id: sessionId });
+      throw new UnauthorizedException('Session expired, please log in again');
     }
     const refreshTokenMatches = await argon2.verify(
-      user.refreshToken,
+      session.hashedRefreshToken,
       refreshToken,
     );
     if (!refreshTokenMatches) {
       throw new UnauthorizedException('Invalid refresh token');
     }
-    return { id: userId };
+    return { id: userId, sid: sessionId };
   }
 
-  // Logout user and remove refresh token from the database
-  async logout(userId: string) {
+  // Logout THIS device only: delete its session row. Other devices stay logged in.
+  async logout(userId: string, sessionId?: string) {
     const activityLog = {
       activity: ActivityType.USER_LOGOUT,
       description: `User logged out with id ${userId}`,
@@ -226,16 +267,38 @@ export class AuthService {
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
-    await this.usersService.updateHashedRefreshToken(userId, '');
-
-    await this.usersService.setLastLogoutTime(userId);
+    if (sessionId) {
+      await this.sessionRepository.delete({ id: sessionId, userId });
+    }
 
     return {
       message: 'User logged out successfully',
     };
   }
 
-  async validateJwtUser(userId: string, tokenIssuedAt: number) {
+  // Logout EVERY device (password change / reset): delete all sessions and
+  // set lastLogoutAt so any still-valid access token is rejected immediately.
+  async logoutAll(userId: string) {
+    const activityLog = {
+      activity: ActivityType.USER_LOGOUT,
+      description: `User logged out from all devices with id ${userId}`,
+      user: await this.usersService.getUserById(userId),
+    };
+    await this.activityLogsService.createActivityLog(activityLog);
+
+    await this.sessionRepository.delete({ userId });
+    await this.usersService.setLastLogoutTime(userId);
+
+    return {
+      message: 'User logged out from all devices',
+    };
+  }
+
+  async validateJwtUser(
+    userId: string,
+    tokenIssuedAt: number,
+    sessionId?: string,
+  ) {
     const user = await this.usersService.findOne(userId);
     if (!user) throw new UnauthorizedException('User not found');
 
@@ -246,7 +309,24 @@ export class AuthService {
       throw new UnauthorizedException('Token invalid due to logout');
     }
 
-    const currentUser: CurrentUser = { id: user.id, role: user.role };
+    // The session row must still exist: deleting it (logout on that device)
+    // invalidates its access token immediately instead of after expiry.
+    if (!sessionId) {
+      throw new UnauthorizedException('Session missing, please log in again');
+    }
+    const session = await this.sessionRepository.findOne({
+      where: { id: sessionId, userId },
+      select: ['id'],
+    });
+    if (!session) {
+      throw new UnauthorizedException('Session ended, please log in again');
+    }
+
+    const currentUser: CurrentUser = {
+      id: user.id,
+      role: user.role,
+      sid: sessionId,
+    };
     return currentUser;
   }
 
@@ -296,7 +376,7 @@ export class AuthService {
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
-    this.logout(id); // Logout user after password change
+    await this.logoutAll(id); // Password changed: end every device's session
     res.clearCookie(SESSION_COOKIE, clearSessionCookieOptions);
 
     return {
@@ -508,7 +588,7 @@ export class AuthService {
 
     await this.activityLogsService.createActivityLog(activityLog);
 
-    this.logout(user.id); // Logout user after password reset
+    await this.logoutAll(user.id); // Password reset: end every device's session
 
     return { message: 'Password reset successful' };
   }

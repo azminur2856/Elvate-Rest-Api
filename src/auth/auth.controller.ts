@@ -70,7 +70,11 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Request() req, @Res({ passthrough: true }) res: Response) {
-    const cookieData = await this.authService.login(req.user.id, 'localLogin');
+    const cookieData = await this.authService.login(
+      req.user.id,
+      'localLogin',
+      req.headers['user-agent'],
+    );
 
     // Encrypt the session data before setting it in the cookie
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
@@ -93,7 +97,10 @@ export class AuthController {
   @UseGuards(RefreshAuthGuard) // uses "refresh-jwt" strategy above
   @Post('refresh')
   async refreshToken(@Req() req, @Res({ passthrough: true }) res: Response) {
-    const cookieData = await this.authService.refreshToken(req.user.id);
+    const cookieData = await this.authService.refreshToken(
+      req.user.id,
+      req.user.sid,
+    );
 
     // Encrypt the session data before setting it in the cookie
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
@@ -109,7 +116,7 @@ export class AuthController {
   async signout(@Request() req, @Res({ passthrough: true }) res: Response) {
     // Clear the session cookie (options must match the ones it was set with)
     res.clearCookie(SESSION_COOKIE, clearSessionCookieOptions);
-    return this.authService.logout(req.user.id);
+    return this.authService.logout(req.user.id, req.user.sid);
   }
 
   @Public()
@@ -127,7 +134,11 @@ export class AuthController {
   //   );
   // }
   async googleCallback(@Request() req, @Res() res: Response) {
-    const cookieData = await this.authService.login(req.user.id, 'googleOAuth');
+    const cookieData = await this.authService.login(
+      req.user.id,
+      'googleOAuth',
+      req.headers['user-agent'],
+    );
 
     // Encrypt the session data before setting it in the cookie
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
@@ -288,6 +299,7 @@ export class AuthController {
   @Post('login-with-face')
   @UseInterceptors(FileInterceptor('liveImage'))
   async loginWithFace(
+    @Request() req,
     @Body('email') email: string,
     @UploadedFile() file: Express.Multer.File,
     @Res({ passthrough: true }) res: Response,
@@ -330,7 +342,11 @@ export class AuthController {
     }
 
     // --- Set session cookie like in normal login ---
-    const cookieData = await this.authService.login(user.id, 'faceLogin');
+    const cookieData = await this.authService.login(
+      user.id,
+      'faceLogin',
+      req.headers['user-agent'],
+    );
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
 
     res.cookie(SESSION_COOKIE, cookieDataEncrypted, sessionCookieOptions);

@@ -71,6 +71,13 @@ export class Users {
   @UpdateDateColumn()
   updatedAt: Date;
 
+  // NOTE: plain `timestamp` (no time zone) — node-pg writes/reads it using the
+  // process's local wall-clock, so the process MUST run in UTC on every
+  // machine (see src/set-timezone.ts), otherwise a logout recorded on a UTC+6
+  // dev box is read by Render (UTC) as 6 h in the future and validateJwtUser()
+  // rejects every token with "Token invalid due to logout".
+  // (Not switched to `timestamptz`: with synchronize:true TypeORM drops and
+  // recreates a column on type change, which would fail on NOT NULL columns.)
   @Column({ type: 'timestamp', nullable: true })
   lastLoginAt: Date;
 

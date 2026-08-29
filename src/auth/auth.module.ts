@@ -22,11 +22,12 @@ import { MailService } from './services/mail.services';
 import { SmsService } from './services/sms.service';
 import emailConfig from './config/email.config';
 import { Verification } from './entities/verification.entity';
+import { UserSession } from './entities/user-session.entity';
 import { FaceVerificationService } from 'src/users/services/face-verification.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Users, ActivityLog, Verification]),
+    TypeOrmModule.forFeature([Users, ActivityLog, Verification, UserSession]),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(refreshJwtConfig),
