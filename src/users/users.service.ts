@@ -40,6 +40,8 @@ export class UsersService {
 
   // Create a new user and send verification email
   async createUser(createUserDto: CreateUserDto) {
+    // phone is unique but nullable: store a missing/blank phone as NULL, never ''.
+    createUserDto.phone = createUserDto.phone?.trim() || undefined;
     const { email, phone } = createUserDto;
 
     const existingUser = await this.userRepository.findOne({
@@ -121,6 +123,8 @@ export class UsersService {
 
   //Create google user by Google OAuth
   async createGoogleUser(createUserDto: CreateUserDto) {
+    // phone is unique but nullable: store a missing/blank phone as NULL, never ''.
+    createUserDto.phone = createUserDto.phone?.trim() || undefined;
     const { email, phone } = createUserDto;
 
     const existingUser = await this.userRepository.findOne({

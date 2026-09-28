@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
 import googleOauthConfig from '../config/google-oauth.config';
 import { ConfigType } from '@nestjs/config';
 import { AuthService } from '../auth.service';
@@ -32,22 +32,29 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
   async validate(
     accessToken: string,
     refreshToken: string,
-    profile: any,
+    profile: Profile,
     done: VerifyCallback,
   ) {
-    console.log('Google profile:', profile);
-    const user = await this.authService.validateGoogleUser({
-      firstName: profile.name.givenName,
-      lastName: profile.name.familyName,
-      email: profile.emails[0].value,
-      phone: '',
-      password: '',
-      isActive: true,
-      isEmailVerified: true,
-    });
-    if (!user) {
+    const email = profile.emails?.[0]?.value;
+    if (!email) {
       return done(null, false);
     }
-    done(null, user);
+    try {
+      // phone is omitted on purpose: it is unique, so it must stay NULL, not ''.
+      const user = await this.authService.validateGoogleUser({
+        firstName: profile.name?.givenName ?? profile.displayName ?? 'User',
+        lastName: profile.name?.familyName,
+        email,
+        password: '',
+        isActive: true,
+        isEmailVerified: true,
+      });
+      if (!user) {
+        return done(null, false);
+      }
+      done(null, user);
+    } catch (err) {
+      done(err as Error, false);
+    }
   }
 }

@@ -41,6 +41,12 @@ declare module 'express-serve-static-core' {
   }
 }
 
+// Safety net: a missed `await` somewhere must not take the whole API down
+// for every user (Node exits on unhandled rejections by default).
+process.on('unhandledRejection', (reason) => {
+  console.error('Unhandled promise rejection:', reason);
+});
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 

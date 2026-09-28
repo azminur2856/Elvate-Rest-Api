@@ -341,7 +341,8 @@ export class AuthService {
     if (user) {
       return user;
     }
-    this.usersService.createGoogleUser(createGoogleUserDto);
+    // Must be awaited: a floating rejection here crashes the whole process.
+    return await this.usersService.createGoogleUser(createGoogleUserDto);
   }
 
   //ChangePassword
