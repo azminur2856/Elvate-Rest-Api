@@ -80,7 +80,16 @@ export class UsersService {
       }
     }
 
-    const user = this.userRepository.create(createUserDto);
+    // Copy only the sign-up fields: role, status and verification flags
+    // must never come from the request body.
+    const user = this.userRepository.create({
+      firstName: createUserDto.firstName,
+      lastName: createUserDto.lastName,
+      dob: createUserDto.dob,
+      email: createUserDto.email,
+      phone: createUserDto.phone,
+      password: createUserDto.password,
+    });
     const savedUser = await this.userRepository.save(user);
 
     const token = generateVerificationToken();
@@ -366,12 +375,24 @@ export class UsersService {
           `User with this phone ${updateUserDto.phone} already exists`,
         );
       }
-      if (user.phone !== updateUserDto.phone) {
-        updateUserDto.isPhoneVerified = false; // Set isPhoneVerified to false if phone is updated
-      }
     }
 
-    const result = await this.userRepository.update(id, updateUserDto);
+    // Copy only the profile fields (never role / flags / password).
+    const changes: Partial<Users> = {};
+    if (updateUserDto.firstName !== undefined)
+      changes.firstName = updateUserDto.firstName;
+    if (updateUserDto.lastName !== undefined)
+      changes.lastName = updateUserDto.lastName;
+    if (updateUserDto.phone !== undefined) {
+      changes.phone = updateUserDto.phone;
+      // A new number has to be verified again.
+      if (user.phone !== updateUserDto.phone) changes.isPhoneVerified = false;
+    }
+    if (Object.keys(changes).length === 0) {
+      throw new BadRequestException('Nothing to update');
+    }
+
+    const result = await this.userRepository.update(id, changes);
     if (!result) {
       throw new BadGatewayException('Failed to update user');
     }

@@ -48,8 +48,8 @@ describe('ActivityLogsController', () => {
     );
   });
 
-  it('getUserActivityLogs/:userId passes page + pageSize through', () => {
-    controller.getUserActivityLogs('some-id', '3', '20');
+  it('getUserActivityLogs/:userId passes page + pageSize through', async () => {
+    await controller.getUserActivityLogs('some-id', '3', '20');
     expect(service.getUserActivityLog).toHaveBeenCalledWith('some-id', 3, 20);
   });
 });

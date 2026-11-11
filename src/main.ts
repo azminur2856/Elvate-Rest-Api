@@ -30,6 +30,7 @@
 // Must stay the first import: forces the process into UTC before TypeORM/pg load.
 import './set-timezone';
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
@@ -55,6 +56,11 @@ async function bootstrap() {
   app.set('trust proxy', 1);
 
   app.use(cookieParser());
+
+  // whitelist: strip every body/query field without a validator decorator,
+  // so DTOs are the allow-list (e.g. `role` can never ride along on
+  // updateUser / createUser). transform: DTO instances + typed params.
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   // In production the frontend proxies API calls through its own origin
   // (Next.js rewrite), so CORS rarely matters — but keep the real frontend
