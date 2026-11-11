@@ -3,9 +3,22 @@
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
+  "setupFiles": ["<rootDir>/e2e-env.ts"],
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.ts$": "ts-jest",
+    "[\\\\/]node_modules[\\\\/]jose[\\\\/].+\\.js$": [
+      "babel-jest",
+      {
+        "babelrc": false,
+        "configFile": false,
+        "plugins": [
+          "@babel/plugin-transform-export-namespace-from",
+          "@babel/plugin-transform-modules-commonjs"
+        ]
+      }
+    ]
   },
+  "transformIgnorePatterns": ["[\\\\/]node_modules[\\\\/](?!jose[\\\\/])"],
   "moduleNameMapper": {
     "^src/(.*)$": "<rootDir>/../src/$1"
   }

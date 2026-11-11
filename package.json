@@ -17,7 +17,7 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:e2e": "jest --config ./test/jest-e2e.json --runInBand",
     "seed": "ts-node -r tsconfig-paths/register src/seed/seed.ts",
     "openapi": "nest build && node dist/openapi.js"
   },
@@ -58,6 +58,8 @@
     "typeorm": "^0.3.22"
   },
   "devDependencies": {
+    "@babel/plugin-transform-export-namespace-from": "^7.29.7",
+    "@babel/plugin-transform-modules-commonjs": "^7.29.7",
     "@eslint/eslintrc": "^3.2.0",
     "@eslint/js": "^9.18.0",
     "@nestjs/schematics": "^11.0.0",
