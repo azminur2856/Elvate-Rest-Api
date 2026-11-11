@@ -6,8 +6,9 @@ import { PaymentMethod, PaymentStatus } from './order.enums';
 
 export type OrderMailKind = 'placed' | 'shipped' | 'delivered' | 'cancelled';
 
-/** RFC 2606/6761 names that can never receive mail (test accounts, seed users). */
-const UNDELIVERABLE = /\.(test|invalid|example|localhost)$/i;
+/** RFC 2606/6761 names that can never receive mail (test accounts, seed demo users). */
+const UNDELIVERABLE =
+  /(\.(test|invalid|example|localhost)|@example\.(com|net|org))$/i;
 
 const esc = (s: string) =>
   s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
