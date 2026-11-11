@@ -48,6 +48,7 @@ import { AuthUser } from 'src/common/auth-user';
 import { money } from 'src/common/decimal.transformer';
 import { Paginated, pageParams, paginated } from 'src/common/pagination';
 import stripeConfig from 'src/subscription/config/stripe.config';
+import { ReviewsService } from 'src/reviews/reviews.service';
 
 // ---------- response shapes (contract "Shared types") ----------
 
@@ -183,6 +184,7 @@ export class OrdersService {
     private readonly coupons: CouponService,
     private readonly activityLogs: ActivityLogsService,
     private readonly mailer: OrderMailer,
+    private readonly reviews: ReviewsService,
     private readonly config: ConfigService,
     @Inject(stripeConfig.KEY) stripeSettings: ConfigType<typeof stripeConfig>,
   ) {
@@ -429,7 +431,17 @@ export class OrdersService {
     const order = await this.loadFull(orderId);
     if (!order || !this.canView(order, viewer))
       throw new NotFoundException('Order not found');
-    return this.detailView(order, viewer);
+    // canReview hides products the owner has already reviewed
+    const reviewed =
+      order.userId === viewer.id && order.status === OrderStatus.DELIVERED
+        ? await this.reviews.reviewedProductIds(
+            viewer.id,
+            (order.items ?? [])
+              .map((i) => i.productId)
+              .filter((x): x is string => !!x),
+          )
+        : new Set<string>();
+    return this.detailView(order, viewer, reviewed);
   }
 
   async sessionStatus(user: AuthUser, sessionId: string) {
@@ -942,7 +954,11 @@ export class OrdersService {
     });
   }
 
-  detailView(order: Order, viewer: AuthUser): OrderDetail {
+  detailView(
+    order: Order,
+    viewer: AuthUser,
+    reviewed: Set<string> = new Set(),
+  ): OrderDetail {
     const isOwner = order.userId === viewer.id;
     const manager = isManager(viewer);
     const delivered = order.status === OrderStatus.DELIVERED;
@@ -969,8 +985,11 @@ export class OrdersService {
         unitPrice: i.unitPrice,
         quantity: i.quantity,
         lineTotal: i.lineTotal,
-        // BE-19 also excludes products this user has already reviewed
-        canReview: isOwner && delivered && i.productId !== null,
+        canReview:
+          isOwner &&
+          delivered &&
+          i.productId !== null &&
+          !reviewed.has(i.productId),
       })),
       subtotal: order.subtotal,
       discount: order.discount,

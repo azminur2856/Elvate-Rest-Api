@@ -4,51 +4,92 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
   Req,
 } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
+import {
+  AdminReviewsQueryDto,
+  CreateReviewDto,
+  FeaturedQueryDto,
+  ModerateReviewDto,
+} from './dto/review.dto';
 import { Public } from 'src/auth/decorators/public.decorator';
-import { ReviewStatus } from './enums/review-status.enum';
-import { CreateReviewDto } from './dto/review.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
-import { Role } from 'src/users/enums/role.enum';
+import { SHOP_MANAGER_ROLES } from 'src/users/enums/role.enum';
+import { PaginationQueryDto } from 'src/common/pagination';
+import type { AuthRequest } from 'src/common/auth-user';
+
+/** Reviews attached to a product page (BE-19). */
+@Controller('products')
+export class ProductReviewsController {
+  constructor(private readonly reviews: ReviewsService) {}
+
+  @Public()
+  @Get(':slug/reviews')
+  list(@Param('slug') slug: string, @Query() query: PaginationQueryDto) {
+    return this.reviews.forProduct(slug, query);
+  }
+
+  @Get(':slug/reviews/eligibility')
+  eligibility(@Param('slug') slug: string, @Req() req: AuthRequest) {
+    return this.reviews.eligibility(req.user.id, slug);
+  }
+
+  @Post(':productId/reviews')
+  create(
+    @Param('productId', ParseUUIDPipe) productId: string,
+    @Body() dto: CreateReviewDto,
+    @Req() req: AuthRequest,
+  ) {
+    return this.reviews.create(req.user, productId, dto);
+  }
+}
 
 @Controller('reviews')
 export class ReviewsController {
-  constructor(private readonly reviewsService: ReviewsService) {}
+  constructor(private readonly reviews: ReviewsService) {}
 
-  @Public()
-  @Get('status')
-  async getReviews(@Query('status') status?: string) {
-    if (status) {
-      const reviewStatus = status.toUpperCase() as ReviewStatus;
-      return this.reviewsService.getReviewsByStatus(reviewStatus);
-    } else {
-      return this.reviewsService.getAllReviews();
-    }
+  @Get('my')
+  mine(@Query() query: PaginationQueryDto, @Req() req: AuthRequest) {
+    return this.reviews.mine(req.user.id, query);
   }
 
+  /** Home page: approved, 4★+, with a comment, newest first. */
   @Public()
-  @Post('add')
-  async addReview(@Body() createReviewDto: CreateReviewDto) {
-    return this.reviewsService.addReview(createReviewDto);
+  @Get('featured')
+  featured(@Query() query: FeaturedQueryDto) {
+    return this.reviews.featured(query.limit ?? 10);
   }
 
-  @Public()
-  @Delete('remove/:reviewId')
-  async removeReview(@Param('reviewId') reviewId: number, @Req() req) {
-    return this.reviewsService.removeReview(reviewId, req.user.id);
+  /** Owner or ADMIN. */
+  @Delete(':id')
+  remove(@Param('id', ParseIntPipe) id: number, @Req() req: AuthRequest) {
+    return this.reviews.remove(req.user, id);
+  }
+}
+
+/** Moderation queue: ADMIN and STAFF. */
+@Roles(...SHOP_MANAGER_ROLES)
+@Controller('admin/reviews')
+export class AdminReviewsController {
+  constructor(private readonly reviews: ReviewsService) {}
+
+  @Get()
+  list(@Query() query: AdminReviewsQueryDto) {
+    return this.reviews.adminList(query);
   }
 
-  @Roles(Role.ADMIN)
-  @Patch('changeStatus/:reviewId')
-  async changeReviewStatus(
-    @Param('reviewId') reviewId: number,
-    @Body('status') status: number, // 1 for ACCEPTED, 0 for REJECTED
+  @Patch(':id/status')
+  moderate(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: ModerateReviewDto,
+    @Req() req: AuthRequest,
   ) {
-    return this.reviewsService.changeReviewStatus(reviewId, status);
+    return this.reviews.moderate(req.user, id, dto.status);
   }
 }

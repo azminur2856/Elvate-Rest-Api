@@ -13,6 +13,7 @@ import { CartModule } from 'src/cart/cart.module';
 import { AddressesModule } from 'src/addresses/addresses.module';
 import { OffersModule } from 'src/offers/offers.module';
 import { ActivityLogsModule } from 'src/activity-logs/activity-logs.module';
+import { ReviewsModule } from 'src/reviews/reviews.module';
 import { MailService } from 'src/auth/services/mail.services';
 import stripeConfig from 'src/subscription/config/stripe.config';
 
@@ -24,6 +25,7 @@ import stripeConfig from 'src/subscription/config/stripe.config';
     AddressesModule,
     OffersModule,
     ActivityLogsModule,
+    ReviewsModule,
   ],
   controllers: [OrdersController, AdminOrdersController],
   providers: [OrdersService, AdminOrdersService, OrderMailer, MailService],
