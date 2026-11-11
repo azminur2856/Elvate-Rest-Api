@@ -1,12 +1,4 @@
-import {
-  IsEmail,
-  IsOptional,
-  IsString,
-  IsDateString,
-  IsEnum,
-  IsPhoneNumber,
-} from 'class-validator';
-import { Role } from 'src/users/enums/role.enum';
+import { IsOptional, IsString, IsPhoneNumber } from 'class-validator';
 
 export class UpdateUserDto {
   @IsOptional()

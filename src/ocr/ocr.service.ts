@@ -256,7 +256,7 @@ export class OcrService {
     // Return result as Buffer (default: PNG)
     try {
       return await image.png().toBuffer();
-    } catch (err) {
+    } catch {
       throw new BadRequestException('Image processing failed');
     }
   }

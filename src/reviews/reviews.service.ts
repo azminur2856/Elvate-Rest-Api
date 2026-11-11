@@ -18,8 +18,7 @@ export class ReviewsService {
   ) {}
 
   async addReview(createReviewDto: CreateReviewDto): Promise<Review> {
-    const { userId, productId, rating, comment, reviewStatus } =
-      createReviewDto;
+    const { userId, rating, comment, reviewStatus } = createReviewDto;
     const user = await this.usersRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException(`User with id ${userId} not found`);
@@ -54,10 +53,11 @@ export class ReviewsService {
       throw new NotFoundException(`Review with id ${reviewId} not found`);
     }
 
-    // Check if the review belongs to the current user or if the user is an admin
-    // if (review.user.id !== userId) {
-    //     throw new BadRequestException('You are not authorized to delete this review');
-    // }
+    if (review.user?.id !== userId) {
+      throw new BadRequestException(
+        'You are not authorized to delete this review',
+      );
+    }
 
     // Delete the review
     await this.reviewsRepository.delete(reviewId);

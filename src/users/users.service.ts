@@ -17,16 +17,15 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import * as fs from 'fs';
 import { deleteTempDirectory } from 'src/auth/utility/delete-directory.util';
-import * as path from 'path';
-import { clearDirectory } from 'src/auth/utility/clear-direttory.util';
 import { MailService } from 'src/auth/services/mail.services';
 import { generateVerificationToken } from 'src/auth/utility/token.util';
 import { Verification } from 'src/auth/entities/verification.entity';
 import { VerificationType } from 'src/auth/enums/verification-type.enum';
 import { maskEmail } from 'src/auth/utility/email-mask.util';
 import { imagekit } from 'src/auth/utility/imagekit';
+import type { FileObject } from 'imagekit/dist/libs/interfaces';
+import { Role } from './enums/role.enum';
 import axios from 'axios';
-import { PassThrough } from 'stream';
 
 @Injectable()
 export class UsersService {
@@ -396,7 +395,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    if (user.role === 'ADMIN') {
+    if (user.role === Role.ADMIN) {
       throw new UnauthorizedException(`Unauthorized to change admin role`);
     }
 
@@ -422,7 +421,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    if (user.role === 'ADMIN') {
+    if (user.role === Role.ADMIN) {
       throw new UnauthorizedException(`Unauthorized to change admin status`);
     }
 
@@ -446,7 +445,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    if (user.role === 'ADMIN') {
+    if (user.role === Role.ADMIN) {
       throw new UnauthorizedException(`Unauthorized to delete admin account`);
     }
 
@@ -543,13 +542,13 @@ export class UsersService {
 
     if (user.profileImage && user.profileImage !== 'profile.png') {
       try {
-        const files = await imagekit.listFiles({
-          // only provide folder, NOT full path
-          folder: folder,
-        });
+        // `path` limits the search to this user's folder (`folder` is not a
+        // listFiles option and was silently ignored, searching the whole library).
+        const files = await imagekit.listFiles({ path: folder });
 
         const fileToDelete = files.find(
-          (file) => file.name === user.profileImage,
+          (file): file is FileObject =>
+            file.type === 'file' && file.name === user.profileImage,
         );
 
         if (fileToDelete) {
@@ -667,7 +666,7 @@ export class UsersService {
       const response = await axios.get(imagePath, { responseType: 'stream' });
       res.setHeader('Content-Type', response.headers['content-type']);
       (response.data as NodeJS.ReadableStream).pipe(res);
-    } catch (err) {
+    } catch {
       throw new HttpException(
         'Unable to retrieve the profile image',
         HttpStatus.INTERNAL_SERVER_ERROR,

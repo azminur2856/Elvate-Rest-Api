@@ -13,7 +13,6 @@ import {
   Req,
   Res,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
   ValidationPipe,
 } from '@nestjs/common';
@@ -23,14 +22,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from './enums/role.enum';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage, memoryStorage } from 'multer';
-import { CurrentUser } from 'src/auth/types/current-user';
-import * as path from 'path';
-import * as fs from 'fs';
-import { extname } from 'path';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth/jwt-auth.guard';
+import { memoryStorage } from 'multer';
 import { Roles } from 'src/auth/decorators/roles.decorator';
-import { RolesGuard } from 'src/auth/guards/roles/roles.guard';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { FaceVerificationService } from './services/face-verification.service';
 import { resizeToBase64 } from 'src/auth/utility/resize-to-base64.util';
@@ -295,7 +288,7 @@ export class UsersController {
         responseType: 'arraybuffer',
       });
       profileImageBuffer = Buffer.from(response.data as ArrayBuffer);
-    } catch (err) {
+    } catch {
       throw new NotFoundException(
         'Failed to download profile image from ImageKit',
       );

@@ -10,7 +10,6 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EditOptions, OcrService } from './ocr.service';
 import { extname } from 'path';
-import { Public } from 'src/auth/decorators/public.decorator';
 
 //@Public()
 @Controller('ocr')

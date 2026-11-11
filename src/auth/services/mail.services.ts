@@ -196,7 +196,10 @@ export class MailService {
     );
   }
 
-  async sendWelcomeEmail(to: string, fullName: string): Promise<MailSendResult> {
+  async sendWelcomeEmail(
+    to: string,
+    fullName: string,
+  ): Promise<MailSendResult> {
     const html = this.layout(
       '#0d6efd',
       'Welcome to Elvate!',

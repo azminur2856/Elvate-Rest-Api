@@ -70,7 +70,7 @@ export class SubscriptionService {
   async handleWebhook(event: Stripe.Event) {
     if (event.type !== 'checkout.session.completed') return;
 
-    const session = event.data.object as Stripe.Checkout.Session;
+    const session = event.data.object;
 
     // Validate metadata
     if (
@@ -280,7 +280,7 @@ export class SubscriptionService {
           cancel_at_period_end: true,
         },
       );
-    } catch (error) {
+    } catch {
       throw new BadRequestException('Failed to cancel subscription in Stripe.');
     }
 
@@ -420,7 +420,7 @@ export class SubscriptionService {
     };
 
     let totalAmount = 0;
-    let totalPayments = payments.length;
+    const totalPayments = payments.length;
 
     // Plan-wise payment stats
     const planPaymentStats: Record<'1m' | '6m' | '12m', number> = {
@@ -441,7 +441,7 @@ export class SubscriptionService {
               userLatestPlan[sub.user.id] === s.plan,
           )?.endDate || new Date(0))
       ) {
-        userLatestPlan[sub.user.id] = sub.plan as '1m' | '6m' | '12m';
+        userLatestPlan[sub.user.id] = sub.plan;
       }
       if (sub.plan === '1m') planStats['1m']++;
       if (sub.plan === '6m') planStats['6m']++;

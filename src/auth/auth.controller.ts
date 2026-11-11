@@ -18,10 +18,8 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthGuard } from '@nestjs/passport';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
-import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { Public } from './decorators/public.decorator';
 import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -31,8 +29,6 @@ import { VerifyPhoneDto } from './dto/verify-Phone.dto';
 import { resizeToBase64 } from './utility/resize-to-base64.util';
 import { FaceVerificationService } from 'src/users/services/face-verification.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import * as fs from 'fs';
-import * as path from 'path';
 import { Response } from 'express';
 import { encryptSessionCookie } from './utility/jose-cookie';
 import {
@@ -320,7 +316,7 @@ export class AuthController {
         responseType: 'arraybuffer',
       });
       profileImageBuffer = Buffer.from(response.data as ArrayBuffer);
-    } catch (err) {
+    } catch {
       throw new NotFoundException(
         'Failed to download profile image from ImageKit',
       );

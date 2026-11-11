@@ -3,7 +3,6 @@ import {
   Inject,
   Injectable,
   NotFoundException,
-  Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -242,7 +241,9 @@ export class AuthService {
       where: { id: sessionId, userId },
     });
     if (!session) {
-      throw new UnauthorizedException('Session not found or already logged out');
+      throw new UnauthorizedException(
+        'Session not found or already logged out',
+      );
     }
     if (session.expiresAt < new Date()) {
       await this.sessionRepository.delete({ id: sessionId });
