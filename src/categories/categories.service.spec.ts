@@ -34,7 +34,7 @@ describe('CategoriesService', () => {
     addSelect: jest.fn().mockReturnThis(),
     groupBy: jest.fn().mockReturnThis(),
     where: jest.fn().mockReturnThis(),
-    getRawMany: () => counts.getRawMany(),
+    getRawMany: (): Promise<unknown> => counts.getRawMany() as Promise<unknown>,
   };
   const repo = {
     find: jest.fn().mockResolvedValue(ROWS),
