@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Post,
@@ -19,6 +20,7 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/users/enums/role.enum';
 import { OrdersService } from 'src/orders/orders.service';
 
+@ApiTags('Subscriptions')
 @Controller('subscriptions')
 export class SubscriptionController {
   constructor(

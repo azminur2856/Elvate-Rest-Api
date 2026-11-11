@@ -1,4 +1,5 @@
 import { applyDecorators, SetMetadata } from '@nestjs/common';
+import { ApiExtension } from '@nestjs/swagger';
 import { IS_PUBLIC_KEY } from './public.decorator';
 
 export const OPTIONAL_AUTH_KEY = 'optionalAuth';
@@ -12,4 +13,5 @@ export const OptionalAuth = () =>
   applyDecorators(
     SetMetadata(IS_PUBLIC_KEY, true),
     SetMetadata(OPTIONAL_AUTH_KEY, true),
+    ApiExtension('x-optional-auth', true),
   );

@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -41,6 +42,7 @@ import axios from 'axios';
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(

@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Post,
@@ -12,6 +13,7 @@ import { EditOptions, OcrService } from './ocr.service';
 import { extname } from 'path';
 import type { AuthRequest } from 'src/common/auth-user';
 
+@ApiTags('Digital tools')
 @Controller('ocr')
 export class OcrController {
   constructor(private readonly ocrService: OcrService) {}

@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -21,6 +22,7 @@ import { SHOP_MANAGER_ROLES } from 'src/users/enums/role.enum';
 import type { AuthRequest } from 'src/common/auth-user';
 
 /** Order administration (BE-16): ADMIN and STAFF. Order detail is GET /orders/:id. */
+@ApiTags('Admin · Orders')
 @Roles(...SHOP_MANAGER_ROLES)
 @Controller('admin/orders')
 export class AdminOrdersController {

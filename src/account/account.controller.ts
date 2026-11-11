@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -22,6 +23,7 @@ import { RateLimit } from 'src/auth/throttle/rate-limit';
 import type { AuthRequest } from 'src/common/auth-user';
 
 /** Account settings (BE-20): devices + delete account. */
+@ApiTags('Account')
 @Controller()
 export class AccountController {
   constructor(private readonly account: AccountService) {}

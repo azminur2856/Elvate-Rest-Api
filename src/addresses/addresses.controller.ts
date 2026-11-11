@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -14,6 +15,7 @@ import { CreateAddressDto, UpdateAddressDto } from './dto/address.dto';
 import type { AuthRequest } from 'src/common/auth-user';
 
 /** The caller's own saved addresses (BE-14). */
+@ApiTags('Addresses')
 @Controller('addresses')
 export class AddressesController {
   constructor(private readonly addresses: AddressesService) {}

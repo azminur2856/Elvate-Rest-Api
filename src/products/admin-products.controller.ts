@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   BadRequestException,
   Body,
@@ -31,6 +32,7 @@ import type { AuthRequest } from 'src/common/auth-user';
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 /** Admin product management (BE-12): ADMIN and STAFF. */
+@ApiTags('Admin · Products')
 @Roles(...SHOP_MANAGER_ROLES)
 @Controller('admin/products')
 export class AdminProductsController {

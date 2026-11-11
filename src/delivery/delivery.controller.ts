@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -15,6 +16,7 @@ import { Role } from 'src/users/enums/role.enum';
 import type { AuthRequest } from 'src/common/auth-user';
 
 /** Delivery app (BE-17). ADMIN may call these too. */
+@ApiTags('Delivery')
 @Roles(Role.DELIVERY_MAN, Role.ADMIN)
 @Controller('delivery')
 export class DeliveryController {

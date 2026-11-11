@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -31,6 +32,7 @@ import { FaceVerificationService } from './services/face-verification.service';
 import { resizeToBase64 } from 'src/auth/utility/resize-to-base64.util';
 import axios from 'axios';
 
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(

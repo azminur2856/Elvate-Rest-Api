@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import { Controller, Get, Param, Query, Req } from '@nestjs/common';
 import { CatalogService } from './catalog.service';
 import {
@@ -10,6 +11,7 @@ import { OptionalAuth } from 'src/auth/decorators/optional-auth.decorator';
 import type { AuthUser } from 'src/common/auth-user';
 
 /** Public catalog (BE-11). Only active products are visible to shoppers. */
+@ApiTags('Products')
 @Controller('products')
 export class ProductsController {
   constructor(private readonly catalog: CatalogService) {}

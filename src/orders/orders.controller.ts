@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -20,6 +21,7 @@ import {
 import type { AuthRequest } from 'src/common/auth-user';
 
 /** Checkout + the customer's orders (BE-15). */
+@ApiTags('Orders')
 @Controller('orders')
 export class OrdersController {
   constructor(private readonly orders: OrdersService) {}

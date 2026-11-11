@@ -7,6 +7,7 @@ import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import helmet from 'helmet';
+import { setupSwagger, swaggerEnabled } from './swagger';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -58,6 +59,9 @@ async function bootstrap() {
       next();
     },
   );
+
+  // API docs at /docs (SWAGGER_ENABLED; off in production by default)
+  if (swaggerEnabled()) setupSwagger(app);
 
   await app.listen(process.env.PORT || 8000);
 }

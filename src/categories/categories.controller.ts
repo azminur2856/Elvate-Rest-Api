@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -16,6 +17,7 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { SHOP_MANAGER_ROLES } from 'src/users/enums/role.enum';
 import type { AuthRequest } from 'src/common/auth-user';
 
+@ApiTags('Categories')
 @Controller('categories')
 export class CategoriesController {
   constructor(private readonly categories: CategoriesService) {}

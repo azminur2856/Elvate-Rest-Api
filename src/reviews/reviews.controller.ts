@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -25,6 +26,7 @@ import { PaginationQueryDto } from 'src/common/pagination';
 import type { AuthRequest } from 'src/common/auth-user';
 
 /** Reviews attached to a product page (BE-19). */
+@ApiTags('Reviews')
 @Controller('products')
 export class ProductReviewsController {
   constructor(private readonly reviews: ReviewsService) {}
@@ -50,6 +52,7 @@ export class ProductReviewsController {
   }
 }
 
+@ApiTags('Reviews')
 @Controller('reviews')
 export class ReviewsController {
   constructor(private readonly reviews: ReviewsService) {}
@@ -74,6 +77,7 @@ export class ReviewsController {
 }
 
 /** Moderation queue: ADMIN and STAFF. */
+@ApiTags('Admin · Reviews')
 @Roles(...SHOP_MANAGER_ROLES)
 @Controller('admin/reviews')
 export class AdminReviewsController {

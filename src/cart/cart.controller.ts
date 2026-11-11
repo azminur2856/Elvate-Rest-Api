@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -21,6 +22,7 @@ import { Public } from 'src/auth/decorators/public.decorator';
 import type { AuthRequest } from 'src/common/auth-user';
 
 /** Cart (BE-13). Every response is re-priced from the DB. */
+@ApiTags('Cart')
 @Controller('cart')
 export class CartController {
   constructor(private readonly cart: CartService) {}

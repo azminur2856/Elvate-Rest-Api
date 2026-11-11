@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Body,
   Controller,
@@ -25,6 +26,7 @@ import { Role } from 'src/users/enums/role.enum';
 import type { AuthRequest } from 'src/common/auth-user';
 
 /** Live flash sales + public coupons (BE-18). */
+@ApiTags('Offers')
 @Controller('offers')
 export class OffersController {
   constructor(private readonly offers: OffersService) {}
@@ -37,6 +39,7 @@ export class OffersController {
 }
 
 /** Coupon administration: ADMIN only (not STAFF). */
+@ApiTags('Admin · Coupons')
 @Roles(Role.ADMIN)
 @Controller('admin/coupons')
 export class AdminCouponsController {
@@ -68,6 +71,7 @@ export class AdminCouponsController {
 }
 
 /** Flash sale administration: ADMIN only (not STAFF). */
+@ApiTags('Admin · Flash sales')
 @Roles(Role.ADMIN)
 @Controller('admin/flash-sales')
 export class AdminFlashSalesController {

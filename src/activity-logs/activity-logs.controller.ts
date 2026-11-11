@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Get,
@@ -16,6 +17,7 @@ import { Role } from 'src/users/enums/role.enum';
 // The old public `createUnauthorizedActivityLog` / `createAuthorizedActivityLog`
 // endpoints were removed (B-06): unused by the frontend, and they let anyone
 // write arbitrary log rows.
+@ApiTags('Activity logs')
 @Controller('activity-logs')
 export class ActivityLogsController {
   constructor(private activityLogsService: ActivityLogsService) {}
