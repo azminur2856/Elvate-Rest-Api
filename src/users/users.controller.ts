@@ -36,6 +36,18 @@ import { FaceVerificationService } from './services/face-verification.service';
 import { resizeToBase64 } from 'src/auth/utility/resize-to-base64.util';
 import axios from 'axios';
 
+/** Copy only the listed keys that are actually present (defence against mass assignment). */
+function pickDefined<T extends object, K extends keyof T>(
+  source: T,
+  keys: readonly K[],
+): Partial<Pick<T, K>> {
+  const out: Partial<Pick<T, K>> = {};
+  for (const key of keys) {
+    if (source[key] !== undefined) out[key] = source[key];
+  }
+  return out;
+}
+
 @Controller('users')
 export class UsersController {
   constructor(
@@ -45,8 +57,21 @@ export class UsersController {
 
   @Public()
   @Post('createUser')
-  createUser(@Body(ValidationPipe) createUserDto: CreateUserDto) {
-    return this.usersService.createUser(createUserDto);
+  createUser(
+    @Body(new ValidationPipe({ whitelist: true })) createUserDto: CreateUserDto,
+  ) {
+    // Security: only sign-up fields may come from the client, never
+    // role / isActive / isEmailVerified (they were copied straight into the DB).
+    return this.usersService.createUser(
+      pickDefined(createUserDto, [
+        'firstName',
+        'lastName',
+        'dob',
+        'email',
+        'phone',
+        'password',
+      ]) as CreateUserDto,
+    );
   }
 
   @Roles(Role.ADMIN)
@@ -86,9 +111,19 @@ export class UsersController {
   @Patch('updateUser')
   updateUser(
     @Req() req: any,
-    @Body(ValidationPipe) updateUserDto: UpdateUserDto,
+    @Body(new ValidationPipe({ whitelist: true })) updateUserDto: UpdateUserDto,
   ) {
-    return this.usersService.updateUser(req.user.id, updateUserDto);
+    // Security: users may only change their name and phone here, never role,
+    // password or verification flags (those have their own guarded routes).
+    const allowed = pickDefined(updateUserDto, [
+      'firstName',
+      'lastName',
+      'phone',
+    ]);
+    if (Object.keys(allowed).length === 0) {
+      throw new HttpException('Nothing to update', HttpStatus.BAD_REQUEST);
+    }
+    return this.usersService.updateUser(req.user.id, allowed);
   }
 
   @Roles(Role.ADMIN)

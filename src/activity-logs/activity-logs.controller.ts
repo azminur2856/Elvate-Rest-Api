@@ -12,7 +12,6 @@ import {
 import { Response } from 'express';
 import { ActivityLogsService } from './activity-logs.service';
 import { CreateActivityLogDto } from './dto/create-activity-log.dto';
-import { Public } from 'src/auth/decorators/public.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/users/enums/role.enum';
 import { ActivityType } from './enums/activity-type.enum';
@@ -59,6 +58,8 @@ export class ActivityLogsController {
     return this.activityLogsService.getUserActivityLog(userId);
   }
 
+  // Security hotfix: users could write arbitrary log entries; unused by the frontend.
+  @Roles(Role.ADMIN)
   @Post('createAuthorizedActivityLog')
   createAuthorizedActivityLog(
     @Req() req: any,
@@ -68,7 +69,8 @@ export class ActivityLogsController {
     return this.activityLogsService.createActivityLog(createActivityLogDto);
   }
 
-  @Public()
+  // Security hotfix: was public, so anyone could write fake log entries.
+  @Roles(Role.ADMIN)
   @Post('createUnauthorizedActivityLog')
   async createUnauthorizedActionLog(
     @Body(ValidationPipe) createActivityLogDto: CreateActivityLogDto,

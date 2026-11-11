@@ -31,13 +31,15 @@ export class ReviewsController {
     }
   }
 
-  @Public()
+  // Security hotfix: these were public (anyone could post a review in another
+  // user's name). Unused by the frontend; admin-only until the new reviews ship.
+  @Roles(Role.ADMIN)
   @Post('add')
   async addReview(@Body() createReviewDto: CreateReviewDto) {
     return this.reviewsService.addReview(createReviewDto);
   }
 
-  @Public()
+  @Roles(Role.ADMIN)
   @Delete('remove/:reviewId')
   async removeReview(@Param('reviewId') reviewId: number, @Req() req) {
     return this.reviewsService.removeReview(reviewId, req.user.id);

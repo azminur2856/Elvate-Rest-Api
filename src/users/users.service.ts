@@ -115,9 +115,9 @@ export class UsersService {
     //const { password, refreshToken, ...result } = savedUser;
     //return result;
     const maskedEmail = maskEmail(savedUser.email);
+    // Security: never return the verification token; it must only reach the user's inbox.
     return {
       message: `Registration verification link sent to your email ${maskedEmail}`,
-      verificationToken: token,
     };
   }
 
