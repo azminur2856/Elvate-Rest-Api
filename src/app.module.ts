@@ -18,6 +18,7 @@ import { CartModule } from './cart/cart.module';
 import { AddressesModule } from './addresses/addresses.module';
 import { OffersModule } from './offers/offers.module';
 import { OrdersModule } from './orders/orders.module';
+import { DeliveryModule } from './delivery/delivery.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { throttlerTracker } from './auth/throttle/rate-limit';
 
@@ -48,6 +49,7 @@ import { throttlerTracker } from './auth/throttle/rate-limit';
     AddressesModule,
     OffersModule,
     OrdersModule,
+    DeliveryModule,
   ],
   controllers: [AppController],
   providers: [AppService],
