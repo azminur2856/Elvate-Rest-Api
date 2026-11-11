@@ -12,6 +12,7 @@ import { OcrModule } from './ocr/ocr.module';
 import { DecryptSessionMiddleware } from './auth/middleware/decrypt-session.middleware';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { HealthModule } from './health/health.module';
+import { CategoriesModule } from './categories/categories.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { throttlerTracker } from './auth/throttle/rate-limit';
 
@@ -36,6 +37,7 @@ import { throttlerTracker } from './auth/throttle/rate-limit';
     OcrModule,
     SubscriptionModule,
     HealthModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
