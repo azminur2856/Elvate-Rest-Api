@@ -36,6 +36,13 @@ import { actorLabel, AuthUser } from 'src/common/auth-user';
 import { Users } from 'src/users/entities/users.entity';
 import { imagekit } from 'src/auth/utility/imagekit';
 
+export type AdminProductDetail = ProductDetail & {
+  salePrice: number | null;
+  viewCount: number;
+  soldCount: number;
+  variants: (ProductVariantView & { priceOverride: number | null })[];
+};
+
 export const LOW_STOCK = 5;
 export const MAX_IMAGES = 8;
 
@@ -174,8 +181,31 @@ export class AdminProductsService {
     );
   }
 
-  detail(id: string): Promise<ProductDetail> {
-    return this.catalog.detailById(id);
+  /**
+   * ProductDetail plus the raw values an edit form needs: `salePrice` (hidden
+   * behind effectivePrice while a flash sale runs), counters, and each
+   * variant's `priceOverride` (null = uses the product price).
+   */
+  async detail(id: string): Promise<AdminProductDetail> {
+    const [detail, raw, overrides] = await Promise.all([
+      this.catalog.detailById(id),
+      this.products.findOne({
+        select: ['id', 'salePrice', 'viewCount', 'soldCount'],
+        where: { id },
+      }),
+      this.variants.find({ select: ['id', 'price'], where: { productId: id } }),
+    ]);
+    const override = new Map(overrides.map((v) => [v.id, v.price]));
+    return {
+      ...detail,
+      salePrice: raw?.salePrice ?? null,
+      viewCount: raw?.viewCount ?? 0,
+      soldCount: raw?.soldCount ?? 0,
+      variants: detail.variants.map((v) => ({
+        ...v,
+        priceOverride: override.get(v.id) ?? null,
+      })),
+    };
   }
 
   // ---------- create / update / delete ----------
@@ -238,7 +268,7 @@ export class AdminProductsService {
       `${actorLabel(actor)} created product "${saved.name}" (${saved.slug}, ${saved.id}) with ${dto.variants.length} variant(s)`,
       actor,
     );
-    return this.catalog.detailById(saved.id);
+    return this.detail(saved.id);
   }
 
   async update(
@@ -293,7 +323,7 @@ export class AdminProductsService {
       `${actorLabel(actor)} updated product "${product.name}" (${product.slug}, ${id}): ${[...changed, ...(dto.slug ? ['slug'] : []), ...(dto.categoryId ? ['categoryId'] : [])].join(', ') || 'no changes'}`,
       actor,
     );
-    return this.catalog.detailById(id);
+    return this.detail(id);
   }
 
   /** Soft delete (isActive=false) when the product was ever ordered; hard delete otherwise. */
