@@ -1,0 +1,393 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
+import { Brackets, DataSource, Repository } from 'typeorm';
+import { Order } from './entities/order.entity';
+import { OrderStatus, PaymentMethod, PaymentStatus } from './order.enums';
+import { allowedNextStatuses } from './order-rules';
+import {
+  fullName,
+  OrderDetail,
+  OrderSummary,
+  OrdersService,
+} from './orders.service';
+import {
+  AdminOrdersQueryDto,
+  AssignDeliveryDto,
+  OrderNotesDto,
+  UpdateOrderStatusDto,
+} from './dto/admin-order.dto';
+import { Users } from 'src/users/entities/users.entity';
+import { Role } from 'src/users/enums/role.enum';
+import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
+import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
+import { actorLabel, AuthUser } from 'src/common/auth-user';
+import { money } from 'src/common/decimal.transformer';
+import { Paginated, pageParams, paginated } from 'src/common/pagination';
+
+/** Orders a delivery man is still working on (for `activeOrders`). */
+export const ACTIVE_DELIVERY = [
+  OrderStatus.PROCESSING,
+  OrderStatus.SHIPPED,
+  OrderStatus.OUT_FOR_DELIVERY,
+];
+const ASSIGNABLE = new Set([OrderStatus.PROCESSING, OrderStatus.SHIPPED]);
+const LOW_STOCK = 5;
+
+const zeroStatuses = () =>
+  Object.fromEntries(Object.values(OrderStatus).map((s) => [s, 0])) as Record<
+    OrderStatus,
+    number
+  >;
+
+/** "2026-11-11" → that whole day; a full date-time is used as given. */
+const isPlainDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
+
+/** Calendar day in Bangladesh for a timestamp column (stored as UTC wall clock). */
+const dhakaDay = (col: string) =>
+  `to_char((${col} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD')`;
+
+const dhakaDate = (d: Date) =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(d);
+
+@Injectable()
+export class AdminOrdersService {
+  constructor(
+    @InjectRepository(Order) private readonly orders: Repository<Order>,
+    @InjectDataSource() private readonly dataSource: DataSource,
+    private readonly ordersService: OrdersService,
+    private readonly activityLogs: ActivityLogsService,
+  ) {}
+
+  // ---------- GET /admin/orders ----------
+
+  async list(query: AdminOrdersQueryDto): Promise<
+    Paginated<OrderSummary> & {
+      counts: Record<OrderStatus, number> & { all: number };
+    }
+  > {
+    const { page, pageSize, skip, take } = pageParams(query, 10);
+
+    /** Every filter except `status` (the tab counts share it). */
+    const filtered = () => {
+      const qb = this.orders.createQueryBuilder('o').leftJoin('o.user', 'u');
+      if (query.paymentStatus)
+        qb.andWhere('o.paymentStatus = :ps', { ps: query.paymentStatus });
+      if (query.paymentMethod)
+        qb.andWhere('o.paymentMethod = :pm', { pm: query.paymentMethod });
+      if (query.q) {
+        const like = `%${query.q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+        qb.andWhere(
+          new Brackets((w) =>
+            w
+              .where('o.orderNumber ILIKE :like')
+              .orWhere('u.email ILIKE :like')
+              .orWhere(
+                "CONCAT(u.firstName, ' ', COALESCE(u.lastName, '')) ILIKE :like",
+              ),
+          ),
+          { like },
+        );
+      }
+      if (query.fromDate)
+        qb.andWhere('o.placedAt >= :from', { from: new Date(query.fromDate) });
+      if (query.toDate) {
+        if (isPlainDate(query.toDate)) {
+          const end = new Date(query.toDate);
+          end.setUTCDate(end.getUTCDate() + 1);
+          qb.andWhere('o.placedAt < :to', { to: end });
+        } else {
+          qb.andWhere('o.placedAt <= :to', { to: new Date(query.toDate) });
+        }
+      }
+      return qb;
+    };
+
+    const listQb = filtered();
+    if (query.status)
+      listQb.andWhere('o.status = :status', { status: query.status });
+    const [rows, total] = await listQb
+      .orderBy('o.placedAt', 'DESC')
+      .addOrderBy('o.id', 'ASC')
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
+
+    const byStatus = await filtered()
+      .select('o.status', 'status')
+      .addSelect('COUNT(*)', 'count')
+      .groupBy('o.status')
+      .getRawMany<{ status: OrderStatus; count: string }>();
+    const counts = { ...zeroStatuses(), all: 0 };
+    for (const r of byStatus) {
+      counts[r.status] = Number(r.count);
+      counts.all += Number(r.count);
+    }
+
+    return {
+      ...paginated(
+        await this.ordersService.summaries(rows, true),
+        total,
+        page,
+        pageSize,
+      ),
+      counts,
+    };
+  }
+
+  // ---------- writes ----------
+
+  async updateStatus(
+    id: string,
+    dto: UpdateOrderStatusDto,
+    actor: AuthUser,
+  ): Promise<OrderDetail> {
+    const order = await this.mustFind(id);
+    const allowed = allowedNextStatuses(order, actor);
+    if (!allowed.includes(dto.status)) {
+      throw new BadRequestException(
+        allowed.length
+          ? `A ${order.status} order can move to ${allowed.join(' or ')}, not ${dto.status}`
+          : `A ${order.status} order cannot change status any more`,
+      );
+    }
+    await this.ordersService.changeStatus(
+      id,
+      dto.status,
+      dto.note || null,
+      actor,
+    );
+    return this.ordersService.detailFor(id, actor);
+  }
+
+  async assign(
+    id: string,
+    dto: AssignDeliveryDto,
+    actor: AuthUser,
+  ): Promise<OrderDetail> {
+    const order = await this.mustFind(id);
+    if (!ASSIGNABLE.has(order.status)) {
+      throw new BadRequestException(
+        `Only PROCESSING or SHIPPED orders can be assigned (this one is ${order.status})`,
+      );
+    }
+    const rider = await this.dataSource
+      .getRepository(Users)
+      .findOne({ where: { id: dto.deliveryManId } });
+    if (!rider || rider.role !== Role.DELIVERY_MAN) {
+      throw new BadRequestException('That user is not a delivery man');
+    }
+    if (!rider.isActive)
+      throw new BadRequestException('That delivery man account is inactive');
+
+    await this.orders.update(id, { deliveryManId: rider.id });
+    await this.log(
+      actor,
+      ActivityType.ADMIN_ASSIGN_DELIVERY,
+      `${actorLabel(actor)} assigned order ${order.orderNumber} to delivery man ${fullName(rider)} (${rider.id})`,
+    );
+    return this.ordersService.detailFor(id, actor);
+  }
+
+  async notes(
+    id: string,
+    dto: OrderNotesDto,
+    actor: AuthUser,
+  ): Promise<OrderDetail> {
+    const order = await this.mustFind(id);
+    await this.orders.update(id, {
+      adminNotes: dto.adminNotes?.trim() || null,
+    });
+    await this.log(
+      actor,
+      ActivityType.ADMIN_UPDATE_ORDER_NOTES,
+      `${actorLabel(actor)} updated the notes of order ${order.orderNumber}`,
+    );
+    return this.ordersService.detailFor(id, actor);
+  }
+
+  // ---------- reads ----------
+
+  async deliveryMen() {
+    const riders = await this.dataSource.getRepository(Users).find({
+      where: { role: Role.DELIVERY_MAN, isActive: true },
+      order: { firstName: 'ASC', lastName: 'ASC' },
+    });
+    if (riders.length === 0) return [];
+    const active = await this.orders
+      .createQueryBuilder('o')
+      .select('o.deliveryManId', 'id')
+      .addSelect('COUNT(*)', 'count')
+      .where('o.deliveryManId IN (:...ids)', { ids: riders.map((r) => r.id) })
+      .andWhere('o.status IN (:...statuses)', { statuses: ACTIVE_DELIVERY })
+      .groupBy('o.deliveryManId')
+      .getRawMany<{ id: string; count: string }>();
+    const count = new Map(active.map((a) => [a.id, Number(a.count)]));
+    return riders.map((r) => ({
+      id: r.id,
+      name: fullName(r),
+      phone: r.phone ?? null,
+      activeOrders: count.get(r.id) ?? 0,
+    }));
+  }
+
+  /**
+   * Dashboard for the last `days` days (Bangladesh calendar days). Revenue
+   * counts PAID orders only (paid card orders + delivered COD).
+   */
+  async stats(days = 30) {
+    const now = new Date();
+    const since = new Date(now.getTime() - days * 24 * 3600 * 1000);
+    const inWindow = () =>
+      this.orders
+        .createQueryBuilder('o')
+        .where('o.placedAt >= :since', { since });
+
+    const [totals, pending, byStatus, byMethod, perDay, top, low] =
+      await Promise.all([
+        inWindow()
+          .select('COUNT(*)', 'orders')
+          .addSelect(
+            'COUNT(*) FILTER (WHERE o.paymentStatus = :paid)',
+            'paidOrders',
+          )
+          .addSelect(
+            'COALESCE(SUM(o.total) FILTER (WHERE o.paymentStatus = :paid), 0)',
+            'revenue',
+          )
+          .setParameter('paid', PaymentStatus.PAID)
+          .getRawOne<{ orders: string; paidOrders: string; revenue: string }>(),
+        this.orders.count({ where: { status: OrderStatus.PENDING } }),
+        inWindow()
+          .select('o.status', 'key')
+          .addSelect('COUNT(*)', 'count')
+          .groupBy('o.status')
+          .getRawMany<{ key: OrderStatus; count: string }>(),
+        inWindow()
+          .select('o.paymentMethod', 'key')
+          .addSelect('COUNT(*)', 'count')
+          .groupBy('o.paymentMethod')
+          .getRawMany<{ key: PaymentMethod; count: string }>(),
+        inWindow()
+          .select(dhakaDay('o.placedAt'), 'date')
+          .addSelect('COUNT(*)', 'count')
+          .addSelect(
+            'COALESCE(SUM(o.total) FILTER (WHERE o.paymentStatus = :paid), 0)',
+            'revenue',
+          )
+          .setParameter('paid', PaymentStatus.PAID)
+          .groupBy('date')
+          .getRawMany<{ date: string; count: string; revenue: string }>(),
+        this.dataSource
+          .createQueryBuilder()
+          .select('i."productId"', 'productId')
+          .addSelect('MAX(i."productName")', 'name')
+          .addSelect('MAX(i.image)', 'image')
+          .addSelect('SUM(i.quantity)', 'quantity')
+          .addSelect('SUM(i."lineTotal")', 'revenue')
+          .from('order_item', 'i')
+          .innerJoin('orders', 'o', 'o.id = i."orderId"')
+          .where('o."placedAt" >= :since', { since })
+          .andWhere('o.status NOT IN (:...gone)', {
+            gone: [OrderStatus.CANCELLED, OrderStatus.RETURNED],
+          })
+          .andWhere('i."productId" IS NOT NULL')
+          .groupBy('i."productId"')
+          .orderBy('quantity', 'DESC')
+          .limit(5)
+          .getRawMany<{
+            productId: string;
+            name: string;
+            image: string | null;
+            quantity: string;
+            revenue: string;
+          }>(),
+        this.dataSource
+          .createQueryBuilder()
+          .select('v.id', 'variantId')
+          .addSelect('p.name', 'productName')
+          .addSelect('v.size', 'size')
+          .addSelect('v.color', 'color')
+          .addSelect('v.stock', 'stock')
+          .from('product_variant', 'v')
+          .innerJoin('product', 'p', 'p.id = v."productId"')
+          .where('p."isActive" = true')
+          .andWhere('v.stock <= :low', { low: LOW_STOCK })
+          .orderBy('v.stock', 'ASC')
+          .addOrderBy('p.name', 'ASC')
+          .limit(10)
+          .getRawMany<{
+            variantId: string;
+            productName: string;
+            size: string | null;
+            color: string | null;
+            stock: number;
+          }>(),
+      ]);
+
+    const countByStatus = zeroStatuses();
+    for (const r of byStatus) countByStatus[r.key] = Number(r.count);
+    const paymentMethodSplit = Object.fromEntries(
+      Object.values(PaymentMethod).map((m) => [m, 0]),
+    ) as Record<PaymentMethod, number>;
+    for (const r of byMethod) paymentMethodSplit[r.key] = Number(r.count);
+
+    // one row per day, including days without orders
+    const dayMap = new Map(perDay.map((d) => [d.date, d]));
+    const byDay: { date: string; count: number; revenue: number }[] = [];
+    for (let i = days - 1; i >= 0; i--) {
+      const date = dhakaDate(new Date(now.getTime() - i * 24 * 3600 * 1000));
+      const d = dayMap.get(date);
+      byDay.push({
+        date,
+        count: Number(d?.count ?? 0),
+        revenue: Number(d?.revenue ?? 0),
+      });
+    }
+
+    const revenue = Number(totals?.revenue ?? 0);
+    const paidOrders = Number(totals?.paidOrders ?? 0);
+    return {
+      days,
+      totalOrders: Number(totals?.orders ?? 0),
+      revenue,
+      avgOrderValue: paidOrders ? money(revenue / paidOrders) : 0,
+      pendingCount: pending,
+      countByStatus,
+      paymentMethodSplit,
+      byDay,
+      topProducts: top.map((t) => ({
+        productId: t.productId,
+        name: t.name,
+        image: t.image,
+        quantity: Number(t.quantity),
+        revenue: Number(t.revenue),
+      })),
+      lowStock: low.map((l) => ({
+        variantId: l.variantId,
+        productName: l.productName,
+        variantLabel: [l.size, l.color].filter(Boolean).join(' / ') || null,
+        stock: Number(l.stock),
+      })),
+    };
+  }
+
+  // ---------- helpers ----------
+
+  private async mustFind(id: string) {
+    const order = await this.orders.findOne({ where: { id } });
+    if (!order) throw new NotFoundException('Order not found');
+    return order;
+  }
+
+  private log(actor: AuthUser, activity: ActivityType, description: string) {
+    return this.activityLogs.createActivityLog({
+      activity,
+      description,
+      user: { id: actor.id } as Users,
+    });
+  }
+}

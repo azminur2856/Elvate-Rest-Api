@@ -6,6 +6,8 @@ import { OrderItem } from './entities/order-item.entity';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
 import { OrdersService } from './orders.service';
 import { OrdersController } from './orders.controller';
+import { AdminOrdersController } from './admin-orders.controller';
+import { AdminOrdersService } from './admin-orders.service';
 import { OrderMailer } from './order-mailer';
 import { CartModule } from 'src/cart/cart.module';
 import { AddressesModule } from 'src/addresses/addresses.module';
@@ -23,8 +25,8 @@ import stripeConfig from 'src/subscription/config/stripe.config';
     OffersModule,
     ActivityLogsModule,
   ],
-  controllers: [OrdersController],
-  providers: [OrdersService, OrderMailer, MailService],
+  controllers: [OrdersController, AdminOrdersController],
+  providers: [OrdersService, AdminOrdersService, OrderMailer, MailService],
   exports: [OrdersService],
 })
 export class OrdersModule {}
