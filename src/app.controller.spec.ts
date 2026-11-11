@@ -15,8 +15,8 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
+    it('should return the welcome text', () => {
+      expect(appController.getHello()).toBe('Welcome to ELVATE!');
     });
   });
 });
