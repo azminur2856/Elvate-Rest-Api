@@ -271,4 +271,32 @@ export class MailService {
       message: `Email notification sent to ${to} successfully`,
     };
   }
+
+  /**
+   * Order lifecycle e-mail (placed / shipped / delivered / cancelled).
+   * `bodyHtml` must already be escaped by the caller. Links point to
+   * `${FRONTEND_URL}/orders/<orderId>`.
+   */
+  async sendOrderEmail(
+    to: string,
+    fullName: string,
+    subject: string,
+    heading: string,
+    bodyHtml: string,
+    orderId: string,
+  ): Promise<MailSendResult> {
+    const html = this.layout(
+      '#198754',
+      heading,
+      `
+            <p>Hello ${fullName},</p>
+            ${bodyHtml}
+            <p style="text-align: center;">
+              <a href="${this.FRONTEND_URL}/orders/${orderId}" style="background-color: #198754; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">View your order</a>
+            </p>
+            <p><strong>The Elvate Team</strong></p>
+      `,
+    );
+    return this.send('Elvate Orders', to, subject, html);
+  }
 }

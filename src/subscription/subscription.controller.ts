@@ -17,12 +17,14 @@ import { ConfigService } from '@nestjs/config';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/users/enums/role.enum';
+import { OrdersService } from 'src/orders/orders.service';
 
 @Controller('subscriptions')
 export class SubscriptionController {
   constructor(
     private readonly subService: SubscriptionService,
     private readonly config: ConfigService,
+    private readonly orders: OrdersService,
   ) {}
 
   @Post('checkout')
@@ -51,7 +53,12 @@ export class SubscriptionController {
     try {
       const event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
 
-      await this.subService.handleWebhook(event);
+      // One endpoint for both: order payments carry metadata.kind = 'order'.
+      if (this.orders.isOrderEvent(event)) {
+        await this.orders.handleStripeEvent(event);
+      } else {
+        await this.subService.handleWebhook(event);
+      }
       res.status(200).send(); // Stripe expects a 2xx response
     } catch (err: any) {
       console.error('Webhook error:', err.message);
