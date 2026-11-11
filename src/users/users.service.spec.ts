@@ -74,7 +74,7 @@ describe('UsersService: profile writes only touch allowed fields', () => {
 
   it('createUser never copies role or verification flags from the body', async () => {
     userRepo.findOne.mockResolvedValue(null);
-    await service.createUser({
+    const res = await service.createUser({
       firstName: 'A',
       email: 'a@elvate.test',
       password: 'Test@12345',
@@ -82,6 +82,8 @@ describe('UsersService: profile writes only touch allowed fields', () => {
       isActive: true,
       isEmailVerified: true,
     } as unknown as CreateUserDto);
+    // the e-mail verification token must only travel by e-mail
+    expect(res).not.toHaveProperty('verificationToken');
     const created = userRepo.create.mock.calls[0][0];
     expect(created).not.toHaveProperty('role');
     expect(created).not.toHaveProperty('isActive');

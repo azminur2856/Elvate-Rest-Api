@@ -121,7 +121,7 @@ export class UsersService {
     const maskedEmail = maskEmail(savedUser.email);
     return {
       message: `Registration verification link sent to your email ${maskedEmail}`,
-      verificationToken: token,
+      // never return the token: it would let anyone verify an e-mail they do not own
     };
   }
 
