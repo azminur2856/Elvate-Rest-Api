@@ -669,9 +669,12 @@ export class UsersService {
       .select('user.role', 'role')
       .addSelect('COUNT(*)', 'count')
       .groupBy('user.role')
-      .getRawMany();
+      .getRawMany<{ role: Role; count: string }>();
 
-    const roleCounts = {};
+    // Every role is present (0 when nobody has it yet, e.g. STAFF).
+    const roleCounts = Object.fromEntries(
+      Object.values(Role).map((r) => [r, 0]),
+    ) as Record<Role, number>;
     for (const row of roleCountsRaw) {
       roleCounts[row.role] = Number(row.count);
     }
