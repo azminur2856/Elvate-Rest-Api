@@ -110,6 +110,7 @@ describe('SubscriptionService webhooks', () => {
       amount_paid: 10000,
       currency: 'bdt',
       hosted_invoice_url: 'https://invoice.example/in_renew',
+      status_transitions: { paid_at: ts('2026-10-29T00:05:00Z') },
       parent: { subscription_details: { subscription: 'sub_1' } },
       lines: {
         data: [
@@ -148,6 +149,7 @@ describe('SubscriptionService webhooks', () => {
         currency: 'bdt',
         stripeInvoiceId: 'in_renew',
         subscription: { id: 'Subscription-id' },
+        paidAt: new Date('2026-10-29T00:05:00Z'),
       });
       expect(activityLogs.createActivityLog).toHaveBeenCalledWith(
         expect.objectContaining({ activity: ActivityType.SUBSCRIPTION_RENEW }),

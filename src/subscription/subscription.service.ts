@@ -59,6 +59,12 @@ function invoicePeriod(invoice: Stripe.Invoice) {
   };
 }
 
+/** When Stripe marked the invoice paid (late or retried deliveries keep the real date). */
+function invoicePaidAt(invoice: Stripe.Invoice): Date | undefined {
+  const t = invoice.status_transitions?.paid_at;
+  return t ? new Date(t * 1000) : undefined;
+}
+
 /** Postgres unique_violation, as surfaced by TypeORM QueryFailedError. */
 function isUniqueViolation(err: unknown): boolean {
   const e = err as { code?: string; driverError?: { code?: string } };
@@ -186,6 +192,7 @@ export class SubscriptionService {
       currency: session.currency || invoice.currency || 'usd',
       invoiceId,
       invoiceUrl: invoice.hosted_invoice_url,
+      paidAt: invoicePaidAt(invoice),
     });
     if (!saved) return;
 
@@ -245,6 +252,7 @@ export class SubscriptionService {
       currency: invoice.currency || 'usd',
       invoiceId: invoice.id,
       invoiceUrl: invoice.hosted_invoice_url ?? '',
+      paidAt: invoicePaidAt(invoice),
     });
     if (!saved) return;
 
@@ -307,6 +315,8 @@ export class SubscriptionService {
     currency: string;
     invoiceId: string;
     invoiceUrl: string;
+    /** When Stripe charged the invoice; defaults to now. */
+    paidAt?: Date;
   }): Promise<{ subscription: Subscription; payment: Payment } | null> {
     try {
       return await this.subRepo.manager.transaction(async (m) => {
@@ -327,6 +337,7 @@ export class SubscriptionService {
             currency: p.currency,
             stripeInvoiceId: p.invoiceId,
             invoiceUrl: p.invoiceUrl,
+            paidAt: p.paidAt,
           }),
         );
         return { subscription, payment };
@@ -389,19 +400,14 @@ export class SubscriptionService {
       order: { paidAt: 'DESC' },
     });
 
-    return payments.map((payment) => {
-      // Add 6 hours to paidAt
-      const paidAtWithOffset = new Date(payment.paidAt);
-      paidAtWithOffset.setHours(paidAtWithOffset.getHours() + 6);
-
-      return {
-        id: payment.id,
-        amount: payment.amount,
-        currency: payment.currency,
-        paidAt: paidAtWithOffset,
-        invoiceUrl: payment.invoiceUrl,
-      };
-    });
+    // paidAt is true UTC; the frontend formats it in the viewer's time zone.
+    return payments.map((payment) => ({
+      id: payment.id,
+      amount: Number(payment.amount),
+      currency: payment.currency,
+      paidAt: payment.paidAt,
+      invoiceUrl: payment.invoiceUrl,
+    }));
   }
 
   async getAllSubscriptions(userId: string) {
@@ -481,31 +487,35 @@ export class SubscriptionService {
     return { message: 'Subscription cancelled successfully.' };
   }
 
+  /**
+   * A subscription has one row per paid period (renewals add rows, see
+   * B-02), so every count here is per Stripe subscription, not per row.
+   */
   async getSubscriptionStats() {
-    // 1. Total subscriptions
-    const totalSubscriptions = await this.subRepo.count();
+    const now = new Date();
+    const counts = await this.subRepo
+      .createQueryBuilder('sub')
+      .select('COUNT(DISTINCT sub.stripeSubscriptionId)', 'total')
+      .addSelect(
+        'COUNT(DISTINCT sub.stripeSubscriptionId) FILTER (WHERE sub.isCancelled = false AND sub.endDate > :now)',
+        'active',
+      )
+      .addSelect(
+        'COUNT(DISTINCT sub.stripeSubscriptionId) FILTER (WHERE sub.isCancelled = true)',
+        'cancelled',
+      )
+      .setParameter('now', now)
+      .getRawOne<{ total: string; active: string; cancelled: string }>();
 
-    // 2. Count by plan
-    const countByPlanRaw = await this.subRepo
+    const byPlan = await this.subRepo
       .createQueryBuilder('sub')
       .select('sub.plan', 'plan')
-      .addSelect('COUNT(*)', 'count')
+      .addSelect('COUNT(DISTINCT sub.stripeSubscriptionId)', 'count')
       .groupBy('sub.plan')
-      .getRawMany();
+      .getRawMany<{ plan: string; count: string }>();
     const countByPlan: Record<string, number> = {};
-    for (const row of countByPlanRaw) {
-      countByPlan[row.plan] = Number(row.count);
-    }
+    for (const row of byPlan) countByPlan[row.plan] = Number(row.count);
 
-    // 3. Active vs Cancelled
-    const activeCount = await this.subRepo.count({
-      where: { isCancelled: false },
-    });
-    const cancelledCount = await this.subRepo.count({
-      where: { isCancelled: true },
-    });
-
-    // 4. Recent subscriptions (last 7 days)
     const recentSubscriptions = await this.subRepo.find({
       relations: ['user'],
       order: { startDate: 'DESC' },
@@ -513,10 +523,10 @@ export class SubscriptionService {
     });
 
     return {
-      totalSubscriptions,
+      totalSubscriptions: Number(counts?.total ?? 0),
       countByPlan,
-      activeCount,
-      cancelledCount,
+      activeCount: Number(counts?.active ?? 0),
+      cancelledCount: Number(counts?.cancelled ?? 0),
       recentSubscriptions: recentSubscriptions.map((sub) => ({
         id: sub.id,
         plan: sub.plan,
@@ -539,7 +549,7 @@ export class SubscriptionService {
     const totalAmountRaw = await this.payRepo
       .createQueryBuilder('p')
       .select('SUM(p.amount)', 'sum')
-      .getRawOne();
+      .getRawOne<{ sum: string | null }>();
     const totalAmount = Number(totalAmountRaw?.sum || 0);
 
     // Group by currency
@@ -549,7 +559,7 @@ export class SubscriptionService {
       .addSelect('COUNT(*)', 'count')
       .addSelect('SUM(p.amount)', 'sum')
       .groupBy('p.currency')
-      .getRawMany();
+      .getRawMany<{ currency: string; count: string; sum: string }>();
 
     const amountByCurrency = amountByCurrencyRaw.map((x) => ({
       currency: x.currency,
@@ -566,7 +576,7 @@ export class SubscriptionService {
       .where("p.paidAt >= NOW() - INTERVAL '7 days'")
       .groupBy('date')
       .orderBy('date', 'ASC')
-      .getRawMany();
+      .getRawMany<{ date: string; count: string; sum: string }>();
 
     // Recent 10 payments
     const recentPayments = await this.payRepo.find({
@@ -579,7 +589,11 @@ export class SubscriptionService {
       totalPayments,
       totalAmount,
       amountByCurrency,
-      byDay,
+      byDay: byDay.map((d) => ({
+        date: d.date,
+        count: Number(d.count),
+        sum: Number(d.sum),
+      })),
       recentPayments: recentPayments.map((p) => ({
         id: p.id,
         userId: p.user?.id,
@@ -592,69 +606,62 @@ export class SubscriptionService {
     };
   }
 
+  /**
+   * Payment totals per plan. Each payment counts towards the plan of the
+   * subscription period it paid for (`payment.subscriptionId`, set since
+   * B-02). Older rows have no link and fall back to the user's subscription
+   * that started most recently at or before `paidAt` (+7 h tolerance: rows
+   * written before the process was pinned to UTC have startDate = paidAt + 6 h).
+   */
   async getPaymentAndPlanStats() {
-    const payments = await this.payRepo.find({ relations: ['user'] });
-    const plans = await this.subRepo.find({ relations: ['user'] });
+    const zero = (): Record<Plan, number> => ({ '1m': 0, '6m': 0, '12m': 0 });
 
-    const planStats = {
-      '1m': 0,
-      '6m': 0,
-      '12m': 0,
-    };
+    const totals = await this.payRepo
+      .createQueryBuilder('p')
+      .select('COUNT(*)', 'count')
+      .addSelect('COALESCE(SUM(p.amount), 0)', 'sum')
+      .getRawOne<{ count: string; sum: string }>();
 
-    let totalAmount = 0;
-    const totalPayments = payments.length;
-
-    // Plan-wise payment stats
-    const planPaymentStats: Record<'1m' | '6m' | '12m', number> = {
-      '1m': 0,
-      '6m': 0,
-      '12m': 0,
-    };
-
-    // Map userId to latest plan
-    const userLatestPlan: Record<string, '1m' | '6m' | '12m' | undefined> = {};
-    for (const sub of plans) {
-      if (
-        !userLatestPlan[sub.user.id] ||
-        sub.endDate >
-          (plans.find(
-            (s) =>
-              s.user.id === sub.user.id &&
-              userLatestPlan[sub.user.id] === s.plan,
-          )?.endDate || new Date(0))
-      ) {
-        userLatestPlan[sub.user.id] = sub.plan;
-      }
-      if (sub.plan === '1m') planStats['1m']++;
-      if (sub.plan === '6m') planStats['6m']++;
-      if (sub.plan === '12m') planStats['12m']++;
+    const planStats = zero();
+    const byPlan = await this.subRepo
+      .createQueryBuilder('s')
+      .select('s.plan', 'plan')
+      .addSelect('COUNT(DISTINCT s.stripeSubscriptionId)', 'count')
+      .groupBy('s.plan')
+      .getRawMany<{ plan: string; count: string }>();
+    for (const row of byPlan) {
+      if (isPlan(row.plan)) planStats[row.plan] = Number(row.count);
     }
 
-    for (const payment of payments) {
-      totalAmount += payment.amount;
-      const plan = userLatestPlan[payment.user.id];
-      if (plan) {
-        planPaymentStats[plan] += payment.amount;
-      }
+    const planPaymentStats = zero();
+    const paidByPlan = (await this.payRepo.query(`
+        SELECT COALESCE(s.plan, legacy.plan) AS plan, SUM(p.amount) AS sum
+        FROM payment p
+        LEFT JOIN subscription s ON s.id = p."subscriptionId"
+        LEFT JOIN LATERAL (
+          SELECT s2.plan FROM subscription s2
+          WHERE p."subscriptionId" IS NULL
+            AND s2."userId" = p."userId"
+            AND s2."startDate" <= p."paidAt" + INTERVAL '7 hours'
+          ORDER BY s2."startDate" DESC
+          LIMIT 1
+        ) legacy ON TRUE
+        GROUP BY 1`)) as { plan: string | null; sum: string }[];
+    for (const row of paidByPlan) {
+      if (isPlan(row.plan)) planPaymentStats[row.plan] = Number(row.sum);
     }
 
-    // Calculate plan percentage
-    const planPercent: Record<'1m' | '6m' | '12m', number> = {
-      '1m': 0,
-      '6m': 0,
-      '12m': 0,
-    };
+    const planPercent = zero();
     const totalPlans = planStats['1m'] + planStats['6m'] + planStats['12m'];
     if (totalPlans > 0) {
-      planPercent['1m'] = Math.round((planStats['1m'] / totalPlans) * 100);
-      planPercent['6m'] = Math.round((planStats['6m'] / totalPlans) * 100);
-      planPercent['12m'] = Math.round((planStats['12m'] / totalPlans) * 100);
+      for (const plan of ['1m', '6m', '12m'] as const) {
+        planPercent[plan] = Math.round((planStats[plan] / totalPlans) * 100);
+      }
     }
 
     return {
-      totalPayments,
-      totalAmount,
+      totalPayments: Number(totals?.count ?? 0),
+      totalAmount: Number(totals?.sum ?? 0),
       planStats,
       planPercent,
       planPaymentStats,
@@ -675,7 +682,7 @@ export class SubscriptionService {
       userName: p.user
         ? `${p.user.firstName ?? ''} ${p.user.lastName ?? ''}`.trim()
         : null,
-      amount: p.amount,
+      amount: Number(p.amount),
       currency: p.currency,
       invoiceUrl: p.invoiceUrl,
       paidAt: p.paidAt,

@@ -84,9 +84,7 @@ export class ActivityLogsService {
       id: log.id,
       activity: log.activity,
       description: log.description,
-      createdAt: new Date(
-        new Date(log.createdAt).getTime() + 6 * 60 * 60 * 1000,
-      ),
+      createdAt: log.createdAt, // true UTC; the frontend formats it locally
       userId: log.user ? log.user.id : null,
     }));
 
