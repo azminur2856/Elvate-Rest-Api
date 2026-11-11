@@ -180,16 +180,6 @@ export class AuthService {
     };
   }
 
-  // Generate new access token using the refresh token
-  // refreshToken(userId: string) {
-  //   const payload: AuthJwtPayload = { sub: userId };
-  //   const accessToken = this.jwtService.sign(payload);
-  //   return {
-  //     id: userId,
-  //     accessToken,
-  //   };
-  // }
-
   //Generate new access and refresh tokens using the refresh token
   async refreshToken(userId: string, sessionId: string) {
     const { accessToken, refreshToken } = await this.generateToken(

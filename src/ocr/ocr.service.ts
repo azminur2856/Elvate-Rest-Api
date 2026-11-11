@@ -125,53 +125,6 @@ export class OcrService {
     };
   }
 
-  // async removeBackground(buffer: Buffer, mimetype: string, userId: string) {
-  //   // 1. Check subscription
-  //   const status = await this.subscriptionService.getSubscriptionStatus(userId);
-  //   if (!status.isSubscribed) {
-  //     throw new ForbiddenException(
-  //       'You must be subscribed to use this feature.',
-  //     );
-  //   }
-
-  //   // 2. Check user existence
-  //   const user = await this.usersService.findOne(userId);
-  //   if (!user) {
-  //     throw new BadRequestException('User not found');
-  //   }
-
-  //   // Add activity log for background removal
-  //   await this.activityLogService.createActivityLog({
-  //     activity: ActivityType.REMOVE_BACKGROUND,
-  //     description: `User ${userId} removed background from an image.`,
-  //     user: user,
-  //   });
-
-  //   // 2. Validate file type
-  //   // Accepts: jpg, jpeg, png, heic (HEIC may require sharp@latest)
-  //   if (!/^image\/(jpeg|png|jpg|heic)$/i.test(mimetype)) {
-  //     throw new BadRequestException(
-  //       'Only JPG, JPEG, PNG, or HEIC images are allowed.',
-  //     );
-  //   }
-
-  //   // 3. Remove background
-  //   try {
-  //     const rembg = new Rembg();
-  //     // Convert buffer to Sharp instance before removing background
-  //     const sharpImage = sharp(buffer);
-  //     // `remove` returns a PNG buffer with transparent background
-  //     const resultSharp = await rembg.remove(sharpImage);
-  //     const outputBuffer = await resultSharp.png().toBuffer(); // Always return buffer
-  //     return outputBuffer;
-  //   } catch (err) {
-  //     // Optionally log the error
-  //     throw new BadRequestException(
-  //       'Failed to process image for background removal.',
-  //     );
-  //   }
-  // }
-
   async editImage(
     buffer: Buffer,
     options: EditOptions,

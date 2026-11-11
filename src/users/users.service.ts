@@ -15,8 +15,6 @@ import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import * as fs from 'fs';
-import { deleteTempDirectory } from 'src/auth/utility/delete-directory.util';
 import { MailService } from 'src/auth/services/mail.services';
 import { generateVerificationToken } from 'src/auth/utility/token.util';
 import { Verification } from 'src/auth/entities/verification.entity';
@@ -120,8 +118,6 @@ export class UsersService {
       user: savedUser,
     });
 
-    //const { password, refreshToken, ...result } = savedUser;
-    //return result;
     const maskedEmail = maskEmail(savedUser.email);
     return {
       message: `Registration verification link sent to your email ${maskedEmail}`,
@@ -475,13 +471,6 @@ export class UsersService {
       throw new BadGatewayException('Failed to delete user');
     }
 
-    if (result.affected) {
-      const userImageDirectory = `./assets/user_profile_image/user_${id}`;
-      if (fs.existsSync(userImageDirectory)) {
-        deleteTempDirectory(userImageDirectory);
-      }
-    }
-
     const activityLog = {
       activity: ActivityType.ADMIN_DELETE_USER,
       description: `Admin ${adminId} deleted user ${id}`,
@@ -495,48 +484,7 @@ export class UsersService {
     };
   }
 
-  // Update user profile image locally
-  // async updateProfileImage(userId: string, profileImageFileName: string) {
-  //   const user = await this.userRepository.findOne({ where: { id: userId } });
-
-  //   if (!user) {
-  //     throw new NotFoundException(`User not found`);
-  //   }
-
-  //   const result = await this.userRepository.update(userId, {
-  //     profileImage: profileImageFileName,
-  //     isFaceVerified: false, // Reset face verification status when profile image is updated
-  //   });
-
-  //   const uploadPath = path.join(
-  //     '..',
-  //     '..',
-  //     'assets',
-  //     'user_profile_image',
-  //     `user_${userId}`,
-  //   );
-
-  //   // Something went wrong while updating the user.
-  //   if (result.affected === 0) {
-  //     clearDirectory(uploadPath, user.profileImage, 'profileImage-');
-  //     throw new NotFoundException(`User not found`);
-  //   }
-
   //   clearDirectory(uploadPath, profileImageFileName, 'profileImage-'); // Delete old files starting with "profileImage-" except the new file
-
-  //   // Update Action Log
-  //   const activityLog = {
-  //     activity: ActivityType.USER_UPDATE_PROFILE,
-  //     description: 'User Changed Profile Image',
-  //     user: user,
-  //   };
-  //   await this.activityLogsService.createActivityLog(activityLog);
-
-  //   return {
-  //     message: `Profile Image Updated Successfully`,
-  //     userAffected: result.affected,
-  //   };
-  // }
 
   // Upload profile image to ImageKit
   async uploadProfileImage(
@@ -615,53 +563,6 @@ export class UsersService {
     };
   }
 
-  // Get user profile image from local storage
-  // async getUserProfileImage(userId: string, res: any) {
-  //   const user = await this.userRepository.findOne({ where: { id: userId } });
-  //   if (!user) {
-  //     throw new NotFoundException(`User not found`);
-  //   }
-
-  //   let imagePath = path.join(
-  //     __dirname,
-  //     '..',
-  //     '..',
-  //     'assets',
-  //     'user_profile_image',
-  //     `user_${userId}`,
-  //     `${user.profileImage}`,
-  //   );
-
-  //   if (user.profileImage === 'profile.png') {
-  //     imagePath = path.join(
-  //       __dirname,
-  //       '..',
-  //       '..',
-  //       'assets',
-  //       'user_profile_image',
-  //       `${user.profileImage}`,
-  //     );
-  //   }
-
-  //   // Check if the image exists
-  //   if (!fs.existsSync(imagePath)) {
-  //     throw new NotFoundException(`Image file not found`);
-  //   }
-
-  //   // Stream the image file to the client
-  //   res.sendFile(imagePath, (err: any) => {
-  //     if (err) {
-  //       throw new HttpException(
-  //         'Unable to retrieve the profile image',
-  //         HttpStatus.INTERNAL_SERVER_ERROR,
-  //       );
-  //     }
-  //   });
-  //   return {
-  //     message: `Profile Image Sent Successfully`,
-  //   };
-  // }
-
   //Get user profile image from ImageKit
   async getUserProfileImage(userId: string, res: any) {
     const user = await this.userRepository.findOne({ where: { id: userId } });
@@ -693,12 +594,6 @@ export class UsersService {
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
-
-    // Option 2: Send as JSON response (for frontend to handle)
-    // return {
-    //   message: 'Profile image URL retrieved successfully',
-    //   imageUrl: imagePath,
-    // };
   }
 
   async findByEmail(email: string) {

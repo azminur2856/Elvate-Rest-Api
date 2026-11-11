@@ -24,13 +24,6 @@ export class ReviewsService {
       throw new NotFoundException(`User with id ${userId} not found`);
     }
 
-    // const product = await this.productsRepository.findOne({
-    //   where: { id: productId },
-    // });
-    // if (!product) {
-    //   throw new NotFoundException(`Product with id ${productId} not found`);
-    // }
-
     // Create the review
     const review = this.reviewsRepository.create({
       rating,

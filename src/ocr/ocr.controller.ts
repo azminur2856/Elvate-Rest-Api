@@ -11,7 +11,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { EditOptions, OcrService } from './ocr.service';
 import { extname } from 'path';
 
-//@Public()
 @Controller('ocr')
 export class OcrController {
   constructor(private readonly ocrService: OcrService) {}
@@ -92,28 +91,6 @@ export class OcrController {
       req.user.id,
     );
   }
-
-  // @Post('image/remove-bg')
-  // @UseInterceptors(FileInterceptor('file'))
-  // async removeBackground(
-  //   @UploadedFile() file: Express.Multer.File,
-  //   @Req() req: any,
-  // ) {
-  //   if (!file) {
-  //     throw new BadRequestException('No file uploaded.');
-  //   }
-
-  //   const resultBuffer = await this.ocrService.removeBackground(
-  //     file.buffer,
-  //     file.mimetype,
-  //     req.user.id,
-  //   );
-
-  //   return {
-  //     contentType: 'image/png',
-  //     data: resultBuffer.toString('base64'),
-  //   };
-  // }
 
   @Post('image/edit')
   @UseInterceptors(FileInterceptor('file'))

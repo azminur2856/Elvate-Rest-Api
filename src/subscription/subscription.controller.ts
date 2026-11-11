@@ -59,20 +59,6 @@ export class SubscriptionController {
     }
   }
 
-  // @Get('session/:sessionId')
-  // async getCheckoutSession(@Param('sessionId') sessionId: string, @Req() req) {
-  //   const session = await this.subService.getCheckoutSessionDetails(sessionId);
-
-  //   // Secure: Only allow user to see their session!
-  //   if (!session.metadata || session.metadata.userId !== req.user.id) {
-  //     throw new UnauthorizedException(
-  //       'This payment session does not belong to you!',
-  //     );
-  //   }
-
-  //   return session;
-  // }
-
   @Get('session/:sessionId')
   async getCheckoutSession(@Param('sessionId') sessionId: string, @Req() req) {
     if (!req.user) throw new UnauthorizedException('User not authenticated');
