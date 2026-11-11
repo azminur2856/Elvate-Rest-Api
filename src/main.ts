@@ -35,6 +35,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
+import helmet from 'helmet';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -54,6 +55,10 @@ async function bootstrap() {
   // Render (and most PaaS) terminate TLS at a reverse proxy; trust the first
   // hop so req.secure / req.protocol reflect the original https request.
   app.set('trust proxy', 1);
+
+  // Security headers. CORP cross-origin so images/files served by the API
+  // still load if a page ever embeds them from the API origin directly.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
   app.use(cookieParser());
 

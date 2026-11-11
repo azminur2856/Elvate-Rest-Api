@@ -21,6 +21,7 @@ import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
 import { Public } from './decorators/public.decorator';
+import { RATE_LIMITS, RateLimit } from './throttle/rate-limit';
 import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -65,6 +66,7 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @UseGuards(LocalAuthGuard)
   @Post('login')
+  @RateLimit(RATE_LIMITS.login)
   async login(@Request() req, @Res({ passthrough: true }) res: Response) {
     const cookieData = await this.authService.login(
       req.user.id,
@@ -160,6 +162,7 @@ export class AuthController {
 
   @Public()
   @Post('forgotPassword')
+  @RateLimit(RATE_LIMITS.forgotPassword)
   async forgotPassword(
     @Body(ValidationPipe) forgotPasswordDto: ForgotPasswordDto,
   ) {
@@ -168,6 +171,7 @@ export class AuthController {
 
   @Public()
   @Put('resetPassword')
+  @RateLimit(RATE_LIMITS.resetPassword)
   async resetPassword(
     @Body(ValidationPipe) resetPasswordDto: ResetPasswordDto,
   ) {
@@ -175,11 +179,13 @@ export class AuthController {
   }
 
   @Post('getOtpForPhoneVerification')
+  @RateLimit(RATE_LIMITS.phoneOtp)
   async phoneVerification(@Request() req) {
     return await this.authService.phoneVerification(req.user.id);
   }
 
   @Post('verifyPhone')
+  @RateLimit(RATE_LIMITS.verifyPhone)
   async verifyPhone(@Body(ValidationPipe) verifyPhoneDto: VerifyPhoneDto) {
     return this.authService.verifyPhone(verifyPhoneDto);
   }
@@ -294,6 +300,7 @@ export class AuthController {
   @Public()
   @Post('login-with-face')
   @UseInterceptors(FileInterceptor('liveImage'))
+  @RateLimit(RATE_LIMITS.loginWithFace)
   async loginWithFace(
     @Request() req,
     @Body('email') email: string,

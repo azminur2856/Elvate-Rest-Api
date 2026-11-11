@@ -25,6 +25,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Public } from 'src/auth/decorators/public.decorator';
+import { RATE_LIMITS, RateLimit } from 'src/auth/throttle/rate-limit';
 import { FaceVerificationService } from './services/face-verification.service';
 import { resizeToBase64 } from 'src/auth/utility/resize-to-base64.util';
 import axios from 'axios';
@@ -38,6 +39,7 @@ export class UsersController {
 
   @Public()
   @Post('createUser')
+  @RateLimit(RATE_LIMITS.createUser)
   createUser(@Body(ValidationPipe) createUserDto: CreateUserDto) {
     return this.usersService.createUser(createUserDto);
   }

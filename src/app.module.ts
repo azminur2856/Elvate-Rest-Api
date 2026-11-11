@@ -12,6 +12,8 @@ import { OcrModule } from './ocr/ocr.module';
 import { DecryptSessionMiddleware } from './auth/middleware/decrypt-session.middleware';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { HealthModule } from './health/health.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { throttlerTracker } from './auth/throttle/rate-limit';
 
 @Module({
   imports: [
@@ -21,6 +23,12 @@ import { HealthModule } from './health/health.module';
       load: [dbConfig],
     }),
     TypeOrmModule.forRootAsync({ useFactory: dbConfig }),
+    // Not a global guard: only the routes marked @RateLimit are throttled.
+    ThrottlerModule.forRoot({
+      throttlers: [{ name: 'default', ttl: 60_000, limit: 10 }],
+      errorMessage: 'Too many attempts. Please wait a moment and try again.',
+      getTracker: (req) => throttlerTracker(req),
+    }),
     UsersModule,
     AuthModule,
     ActivityLogsModule,
