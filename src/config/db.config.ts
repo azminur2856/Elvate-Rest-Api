@@ -21,7 +21,6 @@ import * as path from 'path';
 export default (): PostgresConnectionOptions => ({
   url: process.env.DATABASE_URL,
   type: 'postgres',
-  port: 3306,
   entities: [path.resolve(__dirname, '..') + '/**/*.entity{.ts,.js}'],
   synchronize: true,
 });
