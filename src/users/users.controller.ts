@@ -17,6 +17,7 @@ import {
   ValidationPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { AccountService } from 'src/account/account.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from './enums/role.enum';
@@ -35,6 +36,7 @@ export class UsersController {
   constructor(
     private readonly faceVerificationService: FaceVerificationService,
     private readonly usersService: UsersService,
+    private readonly account: AccountService,
   ) {}
 
   @Public()
@@ -68,9 +70,14 @@ export class UsersController {
     );
   }
 
+  /** `hasPassword: false` = Google-only sign-up (delete-account asks to type DELETE). */
   @Get('profile')
-  getUserProfile(@Req() req: any) {
-    return this.usersService.getUserById(req.user.id);
+  async getUserProfile(@Req() req: any) {
+    const [user, hasPassword] = await Promise.all([
+      this.usersService.getUserById(req.user.id),
+      this.account.hasPassword(req.user.id),
+    ]);
+    return { ...user, hasPassword };
   }
 
   @Get('profileImage')

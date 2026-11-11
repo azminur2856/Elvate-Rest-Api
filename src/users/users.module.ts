@@ -8,9 +8,13 @@ import { ActivityLog } from 'src/activity-logs/entities/activity-logs.entity';
 import { MailService } from 'src/auth/services/mail.services';
 import { Verification } from 'src/auth/entities/verification.entity';
 import { FaceVerificationService } from './services/face-verification.service';
+import { AccountModule } from 'src/account/account.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Users, ActivityLog, Verification])],
+  imports: [
+    TypeOrmModule.forFeature([Users, ActivityLog, Verification]),
+    AccountModule,
+  ],
   controllers: [UsersController],
   providers: [
     UsersService,
