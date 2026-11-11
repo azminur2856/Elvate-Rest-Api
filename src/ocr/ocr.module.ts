@@ -7,6 +7,10 @@ import { SubscriptionModule } from 'src/subscription/subscription.module';
 import { ActivityLog } from 'src/activity-logs/entities/activity-logs.entity';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { UsersModule } from 'src/users/users.module';
+import {
+  BACKGROUND_REMOVER,
+  RemoveBgProvider,
+} from './background/background-remover';
 
 @Module({
   imports: [
@@ -15,6 +19,10 @@ import { UsersModule } from 'src/users/users.module';
     UsersModule,
   ],
   controllers: [OcrController],
-  providers: [OcrService, ActivityLogsService],
+  providers: [
+    OcrService,
+    ActivityLogsService,
+    { provide: BACKGROUND_REMOVER, useClass: RemoveBgProvider },
+  ],
 })
 export class OcrModule {}

@@ -10,6 +10,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { EditOptions, OcrService } from './ocr.service';
 import { extname } from 'path';
+import type { AuthRequest } from 'src/common/auth-user';
 
 @Controller('ocr')
 export class OcrController {
@@ -90,6 +91,25 @@ export class OcrController {
       file.mimetype,
       req.user.id,
     );
+  }
+
+  /** BE-21. Multipart field `file`: JPG / PNG / WebP / HEIC up to 10 MB. */
+  @Post('image/remove-bg')
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
+  )
+  async removeBackground(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: AuthRequest,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded.');
+    const extension = extname(file.originalname).toLowerCase();
+    if (!['.jpg', '.jpeg', '.png', '.webp', '.heic'].includes(extension)) {
+      throw new BadRequestException(
+        'Only JPG, PNG, WebP or HEIC images are allowed.',
+      );
+    }
+    return this.ocrService.removeBackground(file, req.user.id);
   }
 
   @Post('image/edit')

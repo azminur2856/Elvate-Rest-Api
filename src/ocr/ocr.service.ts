@@ -1,8 +1,14 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
+  ServiceUnavailableException,
   Injectable,
 } from '@nestjs/common';
+import {
+  BACKGROUND_REMOVER,
+  BackgroundRemover,
+} from './background/background-remover';
 import * as pdfParse from 'pdf-parse';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import * as Tesseract from 'tesseract.js';
@@ -30,7 +36,40 @@ export class OcrService {
     private readonly activityLogService: ActivityLogsService,
     private usersService: UsersService,
     private subscriptionService: SubscriptionService,
+    @Inject(BACKGROUND_REMOVER) private readonly remover: BackgroundRemover,
   ) {}
+
+  /** BE-21: subscribed users only; PNG with a transparent background, as base64. */
+  async removeBackground(
+    file: Pick<Express.Multer.File, 'buffer' | 'mimetype' | 'originalname'>,
+    userId: string,
+  ): Promise<{ contentType: 'image/png'; data: string }> {
+    const status = await this.subscriptionService.getSubscriptionStatus(userId);
+    if (!status.isSubscribed) {
+      throw new ForbiddenException(
+        'You must be subscribed to use this feature.',
+      );
+    }
+    if (!this.remover.isConfigured()) {
+      throw new ServiceUnavailableException(
+        'Background removal is not available right now (the provider is not configured)',
+      );
+    }
+    const user = await this.usersService.findOne(userId);
+    if (!user) throw new BadRequestException('User not found');
+
+    const png = await this.remover.remove(
+      file.buffer,
+      file.mimetype,
+      file.originalname || 'image',
+    );
+    await this.activityLogService.createActivityLog({
+      activity: ActivityType.REMOVE_BACKGROUND,
+      description: `User ${userId} removed the background from an image.`,
+      user,
+    });
+    return { contentType: 'image/png', data: png.toString('base64') };
+  }
   async extractTextFromPdf(
     buffer: Buffer,
     userId: string,
