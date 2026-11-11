@@ -2,6 +2,7 @@ import {
   Injectable,
   Inject,
   BadRequestException,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import Stripe from 'stripe';
@@ -15,8 +16,58 @@ import stripeConfig from './config/stripe.config';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 
+type Plan = '1m' | '6m' | '12m';
+
+const isPlan = (v: unknown): v is Plan =>
+  v === '1m' || v === '6m' || v === '12m';
+
+const SUBSCRIBE_ACTIVITY: Record<Plan, ActivityType> = {
+  '1m': ActivityType.SUBSCRIPTION1M,
+  '6m': ActivityType.SUBSCRIPTION6M,
+  '12m': ActivityType.SUBSCRIPTION12M,
+};
+
+const PAYMENT_ACTIVITY: Record<Plan, ActivityType> = {
+  '1m': ActivityType.PAYMENT1M,
+  '6m': ActivityType.PAYMENT6M,
+  '12m': ActivityType.PAYMENT12M,
+};
+
+/** Fallback period length when Stripe does not report one. */
+function addPlanPeriod(from: Date, plan: Plan): Date {
+  const end = new Date(from);
+  if (plan === '12m') end.setFullYear(end.getFullYear() + 1);
+  else end.setMonth(end.getMonth() + (plan === '6m' ? 6 : 1));
+  return end;
+}
+
+/** Stripe fields are either an id or an expanded object. */
+function stripeId(ref: string | { id?: string } | null | undefined) {
+  if (!ref) return null;
+  return typeof ref === 'string' ? ref : (ref.id ?? null);
+}
+
+/** The service period an invoice pays for (its longest-running line). */
+function invoicePeriod(invoice: Stripe.Invoice) {
+  const lines = invoice.lines?.data ?? [];
+  if (lines.length === 0) return null;
+  const line = lines.reduce((a, b) => (b.period.end > a.period.end ? b : a));
+  if (!line.period.start || !line.period.end) return null;
+  return {
+    start: new Date(line.period.start * 1000),
+    end: new Date(line.period.end * 1000),
+  };
+}
+
+/** Postgres unique_violation, as surfaced by TypeORM QueryFailedError. */
+function isUniqueViolation(err: unknown): boolean {
+  const e = err as { code?: string; driverError?: { code?: string } };
+  return e?.code === '23505' || e?.driverError?.code === '23505';
+}
+
 @Injectable()
 export class SubscriptionService {
+  private readonly logger = new Logger(SubscriptionService.name);
   private stripe: Stripe;
 
   constructor(
@@ -67,38 +118,46 @@ export class SubscriptionService {
     return { url: session.url };
   }
 
+  /**
+   * Stripe webhook entry point for subscription events. Dispatches on the
+   * event type *before* any metadata validation, so events that belong to
+   * other features (order payments, BE-15) or that we don't act on are
+   * acknowledged instead of rejected.
+   *
+   * Every handler is idempotent: Stripe retries deliveries and may send the
+   * same event more than once.
+   */
   async handleWebhook(event: Stripe.Event) {
-    if (event.type !== 'checkout.session.completed') return;
-
-    const session = event.data.object;
-
-    // Validate metadata
-    if (
-      !session.metadata ||
-      !session.metadata.userId ||
-      !session.metadata.plan
-    ) {
-      throw new BadRequestException('Missing metadata in Stripe session.');
-    }
-
-    const userId = session.metadata.userId;
-    const plan = session.metadata.plan as '1m' | '6m' | '12m';
-
-    const now = new Date();
-    const end = new Date(now);
-
-    switch (plan) {
-      case '1m':
-        end.setMonth(now.getMonth() + 1);
-        break;
-      case '6m':
-        end.setMonth(now.getMonth() + 6);
-        break;
-      case '12m':
-        end.setFullYear(now.getFullYear() + 1);
-        break;
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object;
+        if (session.mode !== 'subscription') return; // e.g. order payments
+        return this.handleSubscriptionCheckout(session);
+      }
+      case 'invoice.paid':
+        return this.handleInvoicePaid(event.data.object);
+      case 'customer.subscription.deleted':
+        return this.handleSubscriptionDeleted(event.data.object);
       default:
-        throw new BadRequestException('Invalid plan metadata.');
+        return;
+    }
+  }
+
+  /** First payment of a new subscription (Stripe Checkout, mode `subscription`). */
+  private async handleSubscriptionCheckout(session: Stripe.Checkout.Session) {
+    const userId = session.metadata?.userId;
+    const plan = session.metadata?.plan;
+    if (!userId || !isPlan(plan)) {
+      throw new BadRequestException(
+        'Missing or invalid metadata in Stripe session.',
+      );
+    }
+    const invoiceId = stripeId(session.invoice);
+    if (!invoiceId) {
+      throw new BadRequestException('Missing invoice in session.');
+    }
+    if (await this.payRepo.exists({ where: { stripeInvoiceId: invoiceId } })) {
+      return; // already recorded (retried delivery)
     }
 
     const user = await this.usersService.findOne(userId);
@@ -106,52 +165,176 @@ export class SubscriptionService {
       throw new BadRequestException('User not found');
     }
 
-    // Retrieve invoice to get the invoice URL
-    if (!session.invoice) {
-      throw new BadRequestException('Missing invoice in session.');
-    }
-
-    const invoice = await this.stripe.invoices.retrieve(
-      session.invoice as string,
-    );
-
+    const invoice = await this.stripe.invoices.retrieve(invoiceId);
     if (!invoice.hosted_invoice_url) {
       throw new Error('Stripe invoice missing hosted_invoice_url.');
     }
 
-    // Create subscription
-    const subscription = this.subRepo.create({
-      user: { id: user.id },
+    const now = new Date();
+    const period = invoicePeriod(invoice) ?? {
+      start: now,
+      end: addPlanPeriod(now, plan),
+    };
+
+    const saved = await this.recordPaidPeriod({
+      userId: user.id,
       plan,
-      startDate: now,
-      endDate: end,
-      stripeSubscriptionId: session.subscription as string,
-    });
-    await this.subRepo.save(subscription);
-
-    // Log activity for subscription creation
-    await this.activityLogService.createActivityLog({
-      activity: ActivityType[`SUBSCRIPTION${plan.toUpperCase()}`],
-      description: `User ${user.id} subscribed to plan ${plan} (Subscription ID: ${subscription.id})`,
-      user: user,
-    });
-
-    // Create payment
-    const payment = this.payRepo.create({
-      user: { id: user.id },
-      amount: session.amount_total ? session.amount_total / 100 : 0,
-      currency: session.currency || 'usd',
-      stripeInvoiceId: session.invoice as string,
+      stripeSubscriptionId: stripeId(session.subscription) ?? '',
+      start: period.start,
+      end: period.end,
+      amount: (session.amount_total ?? invoice.amount_paid) / 100,
+      currency: session.currency || invoice.currency || 'usd',
+      invoiceId,
       invoiceUrl: invoice.hosted_invoice_url,
     });
-    await this.payRepo.save(payment);
+    if (!saved) return;
 
-    // Log activity for payment creation
     await this.activityLogService.createActivityLog({
-      activity: ActivityType[`PAYMENT${plan.toUpperCase()}`],
-      description: `User ${user.id} made a payment of ${payment.amount} ${payment.currency} (Payment ID: ${payment.id})`,
-      user: user,
+      activity: SUBSCRIBE_ACTIVITY[plan],
+      description: `User ${user.id} subscribed to plan ${plan} (Subscription ID: ${saved.subscription.id})`,
+      user,
     });
+    await this.activityLogService.createActivityLog({
+      activity: PAYMENT_ACTIVITY[plan],
+      description: `User ${user.id} made a payment of ${saved.payment.amount} ${saved.payment.currency} (Payment ID: ${saved.payment.id})`,
+      user,
+    });
+  }
+
+  /**
+   * Renewal charge. Only `subscription_cycle` invoices are handled here; the
+   * first invoice (`subscription_create`) is recorded by
+   * `checkout.session.completed`, which carries the user + plan metadata.
+   */
+  private async handleInvoicePaid(invoice: Stripe.Invoice) {
+    if (invoice.billing_reason !== 'subscription_cycle' || !invoice.id) return;
+
+    const stripeSubscriptionId = stripeId(
+      invoice.parent?.subscription_details?.subscription,
+    );
+    if (!stripeSubscriptionId) return;
+
+    if (await this.payRepo.exists({ where: { stripeInvoiceId: invoice.id } })) {
+      return; // already recorded (retried delivery)
+    }
+
+    const previous = await this.subRepo.findOne({
+      where: { stripeSubscriptionId },
+      relations: ['user'],
+      order: { endDate: 'DESC' },
+    });
+    if (!previous?.user) {
+      this.logger.warn(
+        `invoice.paid ${invoice.id}: no local subscription for ${stripeSubscriptionId}, ignored`,
+      );
+      return;
+    }
+
+    const period = invoicePeriod(invoice) ?? {
+      start: previous.endDate,
+      end: addPlanPeriod(previous.endDate, previous.plan),
+    };
+
+    const saved = await this.recordPaidPeriod({
+      userId: previous.user.id,
+      plan: previous.plan,
+      stripeSubscriptionId,
+      start: period.start,
+      end: period.end,
+      amount: invoice.amount_paid / 100,
+      currency: invoice.currency || 'usd',
+      invoiceId: invoice.id,
+      invoiceUrl: invoice.hosted_invoice_url ?? '',
+    });
+    if (!saved) return;
+
+    await this.activityLogService.createActivityLog({
+      activity: ActivityType.SUBSCRIPTION_RENEW,
+      description: `Subscription ${stripeSubscriptionId} of user ${previous.user.id} renewed (plan ${previous.plan}, Subscription ID: ${saved.subscription.id})`,
+      user: previous.user,
+    });
+    await this.activityLogService.createActivityLog({
+      activity: PAYMENT_ACTIVITY[previous.plan],
+      description: `User ${previous.user.id} renewal payment of ${saved.payment.amount} ${saved.payment.currency} (Payment ID: ${saved.payment.id})`,
+      user: previous.user,
+    });
+  }
+
+  /**
+   * Stripe ended the subscription (at period end after a cancel, after failed
+   * renewals, or when cancelled immediately). Marks every local period as
+   * cancelled and cuts access at `ended_at` if that is earlier.
+   */
+  private async handleSubscriptionDeleted(stripeSub: Stripe.Subscription) {
+    const rows = await this.subRepo.find({
+      where: { stripeSubscriptionId: stripeSub.id },
+      relations: ['user'],
+    });
+    if (rows.length === 0) return;
+
+    const endedAt = stripeSub.ended_at
+      ? new Date(stripeSub.ended_at * 1000)
+      : new Date();
+    const changed = rows.filter((s) => !s.isCancelled || s.endDate > endedAt);
+    if (changed.length === 0) return; // already processed
+
+    for (const s of changed) {
+      s.isCancelled = true;
+      if (s.endDate > endedAt) s.endDate = endedAt;
+    }
+    await this.subRepo.save(changed);
+
+    const user = rows[0].user;
+    await this.activityLogService.createActivityLog({
+      activity: ActivityType.SUBSCRIPTION_ENDED,
+      description: `Stripe ended subscription ${stripeSub.id} of user ${user?.id ?? 'unknown'}`,
+      user: user ?? null,
+    });
+  }
+
+  /**
+   * Inserts one paid period (Subscription row + Payment row) atomically.
+   * Returns null when the invoice was already recorded by a concurrent
+   * delivery of the same event (unique `stripeInvoiceId`).
+   */
+  private async recordPaidPeriod(p: {
+    userId: string;
+    plan: Plan;
+    stripeSubscriptionId: string;
+    start: Date;
+    end: Date;
+    amount: number;
+    currency: string;
+    invoiceId: string;
+    invoiceUrl: string;
+  }): Promise<{ subscription: Subscription; payment: Payment } | null> {
+    try {
+      return await this.subRepo.manager.transaction(async (m) => {
+        const subscription = await m.save(
+          m.create(Subscription, {
+            user: { id: p.userId },
+            plan: p.plan,
+            startDate: p.start,
+            endDate: p.end,
+            stripeSubscriptionId: p.stripeSubscriptionId,
+          }),
+        );
+        const payment = await m.save(
+          m.create(Payment, {
+            user: { id: p.userId },
+            subscription: { id: subscription.id },
+            amount: p.amount,
+            currency: p.currency,
+            stripeInvoiceId: p.invoiceId,
+            invoiceUrl: p.invoiceUrl,
+          }),
+        );
+        return { subscription, payment };
+      });
+    } catch (err) {
+      if (isUniqueViolation(err)) return null;
+      throw err;
+    }
   }
 
   async getCheckoutSessionDetails(sessionId: string, userId: string) {
