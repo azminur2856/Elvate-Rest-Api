@@ -27,10 +27,11 @@ import { slugify } from '../common/slug';
 import { imagekit } from '../auth/utility/imagekit';
 import { AppSetting } from '../settings/app-setting.entity';
 import { SETTINGS } from '../settings/settings.registry';
+import { demoPasswordProblem } from './demo-password';
 
 const args = new Set(process.argv.slice(2));
 const DAY = 24 * 3600 * 1000;
-const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD || 'Demo@12345';
+const DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD ?? '';
 const DEMO_USERS = [
   {
     firstName: 'Demo',
@@ -75,6 +76,12 @@ async function main() {
     console.log(
       'Nothing written. Re-run with --yes to confirm this is the right database.',
     );
+    return;
+  }
+  const problem = demoPasswordProblem(process.env.SEED_DEMO_PASSWORD);
+  if (problem) {
+    console.error(`Nothing written: ${problem}.`);
+    process.exitCode = 1;
     return;
   }
 
@@ -308,7 +315,7 @@ async function seedUsers(m: EntityManager) {
       }),
     );
     console.log(
-      `User: ${u.email} (${u.role}), password ${process.env.SEED_DEMO_PASSWORD ? 'from SEED_DEMO_PASSWORD' : DEMO_PASSWORD}`,
+      `User: ${u.email} (${u.role}), password from SEED_DEMO_PASSWORD`,
     );
   }
 }
