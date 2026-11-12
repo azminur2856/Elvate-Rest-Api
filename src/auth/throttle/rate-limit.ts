@@ -17,6 +17,9 @@ export const RATE_LIMITS = {
   // SEC-11: per user (orders need a login); stops scripted hoarding
   placeOrder: { limit: 5, ttl: 10 * MINUTE },
   orderQuote: { limit: 30, ttl: MINUTE },
+  // SEC-17: digital tools, per user and hour (OCR is CPU-heavy, remove.bg paid)
+  heavyTool: { limit: 20, ttl: 60 * MINUTE },
+  imageTool: { limit: 60, ttl: 60 * MINUTE },
   createUser: { limit: 10, ttl: 10 * MINUTE },
   forgotPassword: { limit: 5, ttl: 15 * MINUTE }, // sends an e-mail / SMS
   resetPassword: { limit: 10, ttl: 15 * MINUTE }, // OTP / token guessing

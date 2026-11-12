@@ -13,6 +13,7 @@ import { ResizeImageDto, parseEditOptions } from './dto/edit-image.dto';
 import { extname } from 'path';
 import type { AuthRequest } from 'src/common/auth-user';
 import { SingleFileUpload } from 'src/common/upload';
+import { RATE_LIMITS, RateLimit } from 'src/auth/throttle/rate-limit';
 
 @ApiTags('Digital tools')
 @Controller('ocr')
@@ -21,6 +22,7 @@ export class OcrController {
 
   @Post('upload/pdf')
   @UseInterceptors(SingleFileUpload('file'))
+  @RateLimit(RATE_LIMITS.heavyTool)
   async uploadPdf(@UploadedFile() file: Express.Multer.File, @Req() req) {
     if (!file) {
       throw new BadRequestException('No file uploaded.');
@@ -36,6 +38,7 @@ export class OcrController {
 
   @Post('upload/image')
   @UseInterceptors(SingleFileUpload('file'))
+  @RateLimit(RATE_LIMITS.heavyTool)
   async uploadImage(@UploadedFile() file: Express.Multer.File, @Req() req) {
     if (!file) {
       throw new BadRequestException('No file uploaded.');
@@ -56,6 +59,7 @@ export class OcrController {
 
   @Post('image/resize')
   @UseInterceptors(SingleFileUpload('file'))
+  @RateLimit(RATE_LIMITS.imageTool)
   async resizeImage(
     @UploadedFile() file: Express.Multer.File,
     @Req() req,
@@ -84,6 +88,7 @@ export class OcrController {
   /** BE-21. Multipart field `file`: JPG / PNG / WebP / HEIC up to 10 MB. */
   @Post('image/remove-bg')
   @UseInterceptors(SingleFileUpload('file'))
+  @RateLimit(RATE_LIMITS.heavyTool)
   async removeBackground(
     @UploadedFile() file: Express.Multer.File,
     @Req() req: AuthRequest,
@@ -100,6 +105,7 @@ export class OcrController {
 
   @Post('image/edit')
   @UseInterceptors(SingleFileUpload('file'))
+  @RateLimit(RATE_LIMITS.imageTool)
   async editImage(
     @UploadedFile() file: Express.Multer.File,
     @Body('options') options: string, // should be JSON string
