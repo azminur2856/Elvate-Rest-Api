@@ -7,7 +7,6 @@ import {
   Get,
   HttpException,
   HttpStatus,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -27,21 +26,20 @@ import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { RATE_LIMITS, RateLimit } from 'src/auth/throttle/rate-limit';
-import { FaceVerificationService } from './services/face-verification.service';
-import { resizeToBase64 } from 'src/auth/utility/resize-to-base64.util';
-import axios from 'axios';
 import {
   FACE_PHOTO_UPLOAD,
   MB,
   NO_FACE_PHOTO,
   SingleFileUpload,
 } from 'src/common/upload';
+import { FaceReferenceService } from 'src/face/face-reference.service';
+import type { AuthRequest } from 'src/common/auth-user';
 
 @ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(
-    private readonly faceVerificationService: FaceVerificationService,
+    private readonly faceReferences: FaceReferenceService,
     private readonly usersService: UsersService,
     private readonly account: AccountService,
   ) {}
@@ -169,51 +167,45 @@ export class UsersController {
     return this.usersService.getUserById(id);
   }
 
-  // Face verification endpoint using ImageKit
+  /**
+   * SEC-04 face setup: a live camera photo (multipart `photo`) becomes the
+   * private reference face login compares against.
+   */
+  @Post('face-reference')
+  @UseInterceptors(SingleFileUpload('photo', FACE_PHOTO_UPLOAD))
+  @RateLimit(RATE_LIMITS.faceSetup)
+  setFaceReference(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: AuthRequest,
+  ) {
+    if (!file) {
+      throw new BadRequestException(
+        'No photo uploaded (multipart field "photo").',
+      );
+    }
+    return this.faceReferences.enroll(req.user.id, file.buffer);
+  }
+
+  /** Turns face login off and deletes the private photo. */
+  @Delete('face-reference')
+  removeFaceReference(@Req() req: AuthRequest) {
+    return this.faceReferences.remove(req.user.id);
+  }
+
+  /**
+   * Deprecated alias of POST /users/face-reference (field `liveImage`).
+   * Before SEC-04 this compared against the public profile picture.
+   */
   @Post('verify-face')
   @UseInterceptors(SingleFileUpload('liveImage', FACE_PHOTO_UPLOAD))
-  async verifyFace(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+  @RateLimit(RATE_LIMITS.faceSetup)
+  async verifyFace(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: AuthRequest,
+  ) {
     if (!file) throw new BadRequestException(NO_FACE_PHOTO);
-    const user = await this.usersService.findOne(req.user.id);
-    if (!user) throw new NotFoundException('User not found');
-
-    if (!user.profileImage || user.profileImage === 'profile.png') {
-      throw new NotFoundException(
-        'Profile image not found. Upload a profile image first.',
-      );
-    }
-
-    const imageKitUrl = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/user_${user.id}/${user.profileImage}`;
-
-    // Step 1: Download profile image from ImageKit
-    let profileImageBuffer: Buffer;
-    try {
-      const response = await axios.get(imageKitUrl, {
-        responseType: 'arraybuffer',
-      });
-      profileImageBuffer = Buffer.from(response.data as ArrayBuffer);
-    } catch {
-      throw new NotFoundException(
-        'Failed to download profile image from ImageKit',
-      );
-    }
-
-    // Step 2: Resize/compress both images to base64
-    const profileImageBase64 = await resizeToBase64(profileImageBuffer);
-    const liveImageBase64 = await resizeToBase64(file.buffer);
-
-    // Step 3: Compare face
-    const isMatch = await this.faceVerificationService.compareFaces(
-      profileImageBase64,
-      liveImageBase64,
-    );
-
-    // Step 4: Update DB if match
-    if (isMatch) {
-      await this.usersService.markFaceAsVerified(user.id);
-    }
-
-    return { verified: isMatch };
+    const state = await this.faceReferences.enroll(req.user.id, file.buffer);
+    return { verified: true, ...state };
   }
 
   @Roles(Role.ADMIN)

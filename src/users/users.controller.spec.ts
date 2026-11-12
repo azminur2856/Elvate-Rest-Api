@@ -2,7 +2,7 @@ import { Test } from '@nestjs/testing';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
-import { FaceVerificationService } from './services/face-verification.service';
+import { FaceReferenceService } from 'src/face/face-reference.service';
 import { AccountService } from 'src/account/account.service';
 
 describe('UsersController', () => {
@@ -18,7 +18,7 @@ describe('UsersController', () => {
           provide: UsersService,
           useValue: { getUserById: jest.fn().mockResolvedValue({ id: 'u1' }) },
         },
-        { provide: FaceVerificationService, useValue: {} },
+        { provide: FaceReferenceService, useValue: {} },
         {
           provide: AccountService,
           useValue: { hasPassword: jest.fn().mockResolvedValue(false) },
