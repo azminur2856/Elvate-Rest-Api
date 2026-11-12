@@ -21,7 +21,6 @@ import { ACTIVE_DELIVERY, ON_THE_WAY } from 'src/orders/admin-orders.service';
 import { DeliveryOrdersQueryDto, DeliveryStatusDto } from './dto/delivery.dto';
 import { AddressSnapshot } from 'src/addresses/addresses.service';
 import { AuthUser } from 'src/common/auth-user';
-import { Role } from 'src/users/enums/role.enum';
 import { Paginated, pageParams, paginated } from 'src/common/pagination';
 
 export type DeliveryOrder = OrderSummary & {
@@ -43,7 +42,7 @@ function startOfDhakaToday(now = new Date()) {
 
 /**
  * Delivery man views (BE-17). A DELIVERY_MAN only ever sees orders assigned
- * to him; an ADMIN calling the same routes sees every assigned order.
+ * to him (BE-29: the routes are for delivery men only).
  */
 @Injectable()
 export class DeliveryService {
@@ -101,14 +100,9 @@ export class DeliveryService {
   ): Promise<OrderDetail> {
     const order = await this.orders.findOne({ where: { id: orderId } });
     // someone else's order looks like no order at all
-    if (
-      !order ||
-      (viewer.role !== Role.ADMIN && order.deliveryManId !== viewer.id)
-    ) {
+    if (!order || order.deliveryManId !== viewer.id) {
       throw new NotFoundException('Order not found');
     }
-    if (!order.deliveryManId)
-      throw new BadRequestException('This order has no delivery man yet');
 
     const allowed = allowedNextStatuses(order, viewer).filter((s) =>
       ACTIVE_DELIVERY.concat(COMPLETED).includes(s),
@@ -163,11 +157,10 @@ export class DeliveryService {
     };
   }
 
-  /** Orders this viewer may see in the delivery app. */
+  /** Orders assigned to this delivery man. */
   private mine(viewer: AuthUser) {
-    const qb = this.orders.createQueryBuilder('o');
-    if (viewer.role === Role.ADMIN) qb.where('o.deliveryManId IS NOT NULL');
-    else qb.where('o.deliveryManId = :me', { me: viewer.id });
-    return qb;
+    return this.orders
+      .createQueryBuilder('o')
+      .where('o.deliveryManId = :me', { me: viewer.id });
   }
 }

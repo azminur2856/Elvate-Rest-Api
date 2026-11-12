@@ -15,9 +15,9 @@ import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/users/enums/role.enum';
 import type { AuthRequest } from 'src/common/auth-user';
 
-/** Delivery app (BE-17). ADMIN may call these too. */
+/** Delivery app (BE-17). BE-29: DELIVERY_MAN only; admins manage deliveries via /admin/*. */
 @ApiTags('Delivery')
-@Roles(Role.DELIVERY_MAN, Role.ADMIN)
+@Roles(Role.DELIVERY_MAN)
 @Controller('delivery')
 export class DeliveryController {
   constructor(private readonly delivery: DeliveryService) {}
