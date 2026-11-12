@@ -49,6 +49,7 @@ import { Role, SHOP_MANAGER_ROLES } from 'src/users/enums/role.enum';
 import { AuthUser } from 'src/common/auth-user';
 import { money } from 'src/common/decimal.transformer';
 import { Paginated, pageParams, paginated } from 'src/common/pagination';
+import { ownAvatarUrl, staffAvatarUrl } from 'src/common/media';
 import stripeConfig from 'src/subscription/config/stripe.config';
 import { ReviewsService } from 'src/reviews/reviews.service';
 
@@ -64,7 +65,13 @@ export type OrderSummary = {
   itemCount: number;
   firstItemImage: string | null;
   createdAt: Date;
-  customer?: { id: string; name: string; email: string };
+  /** BE-28: `avatarUrl` is a /media path (or null), never an ImageKit address. */
+  customer?: {
+    id: string;
+    name: string;
+    email: string;
+    avatarUrl: string | null;
+  };
   deliveryMan?: { id: string; name: string } | null;
 };
 
@@ -98,7 +105,13 @@ export type OrderDetail = Omit<OrderSummary, 'customer' | 'deliveryMan'> & {
     by: { name: string; role: string } | null;
   }[];
   deliveryMan: { id: string; name: string; phone: string | null } | null;
-  customer: { id: string; name: string; email: string; phone: string | null };
+  customer: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    avatarUrl: string | null;
+  };
   allowedNextStatuses: OrderStatus[];
   canCancel: boolean;
   canPay: boolean;
@@ -1292,6 +1305,10 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
         name: fullName(order.user),
         email: order.user?.email ?? '',
         phone: order.user?.phone ?? order.shippingAddress?.phone ?? null,
+        // the owner cannot open /media/users/..., so they get their own path
+        avatarUrl: isOwner
+          ? ownAvatarUrl(order.user, 'sm')
+          : staffAvatarUrl(order.user, 'sm'),
       },
       allowedNextStatuses: allowedNextStatuses(order, viewer),
       canCancel: isOwner && CUSTOMER_CANCELLABLE.has(order.status),
@@ -1353,6 +1370,7 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
           id: c?.id ?? '',
           name: fullName(c),
           email: c?.email ?? '',
+          avatarUrl: staffAvatarUrl(c, 'sm'),
         };
         summary.deliveryMan = d ? { id: d.id, name: fullName(d) } : null;
       }
