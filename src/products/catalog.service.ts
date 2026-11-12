@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { ViewDedupe } from './view-dedupe';
 import { Brackets, In, Not, Repository, SelectQueryBuilder } from 'typeorm';
 import { Product } from './entities/product.entity';
 import { ProductVariant } from './entities/product-variant.entity';
@@ -107,6 +108,9 @@ const likePattern = (q: string) =>
 
 @Injectable()
 export class CatalogService {
+  /** SEC-23: one counted view per visitor and product per hour. */
+  private readonly views = new ViewDedupe();
+
   constructor(
     @InjectRepository(Product)
     private readonly products: Repository<Product>,
@@ -256,6 +260,8 @@ export class CatalogService {
   async detailBySlug(
     slug: string,
     viewer?: AuthUser | null,
+    /** user id or client IP; a view counts once per visitor per hour */
+    visitor?: string,
   ): Promise<ProductDetail> {
     const product = await this.products.findOne({
       where: { slug },
@@ -265,7 +271,11 @@ export class CatalogService {
     if (!product || (!product.isActive && !manager)) {
       throw new NotFoundException('Product not found');
     }
-    if (product.isActive && !manager) {
+    if (
+      product.isActive &&
+      !manager &&
+      this.views.shouldCount(product.id, viewer?.id ?? visitor ?? 'anonymous')
+    ) {
       await this.products.increment({ id: product.id }, 'viewCount', 1);
       product.viewCount += 1;
     }

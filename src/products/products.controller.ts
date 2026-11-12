@@ -9,6 +9,7 @@ import {
 import { Public } from 'src/auth/decorators/public.decorator';
 import { OptionalAuth } from 'src/auth/decorators/optional-auth.decorator';
 import type { AuthUser } from 'src/common/auth-user';
+import { clientIp } from 'src/auth/throttle/rate-limit';
 
 /** Public catalog (BE-11). Only active products are visible to shoppers. */
 @ApiTags('Products')
@@ -32,8 +33,16 @@ export class ProductsController {
   /** Inactive products 404 for shoppers; ADMIN/STAFF see them (OptionalAuth). */
   @OptionalAuth()
   @Get(':slug')
-  detail(@Param('slug') slug: string, @Req() req: { user?: AuthUser }) {
-    return this.catalog.detailBySlug(slug, req.user);
+  detail(
+    @Param('slug') slug: string,
+    @Req()
+    req: {
+      user?: AuthUser;
+      headers?: Record<string, string | string[] | undefined>;
+      ip?: string;
+    },
+  ) {
+    return this.catalog.detailBySlug(slug, req.user, clientIp(req));
   }
 
   @Public()
