@@ -20,6 +20,14 @@ export const UPLOAD_LIMITS = {
 /** Photo types the face routes accept (Face++ and sharp read all three). */
 export const PHOTO_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
+/** Options for the face photo field `liveImage`. */
+export const FACE_PHOTO_UPLOAD: SingleFileUploadOptions = {
+  mimeTypes: PHOTO_MIME_TYPES,
+  typeError: 'Only JPG, PNG or WebP photos are allowed.',
+};
+
+export const NO_FACE_PHOTO = 'No photo uploaded (multipart field "liveImage").';
+
 export interface SingleFileUploadOptions {
   /** Upper bound in bytes; never above `UPLOAD_LIMITS.fileSize`. */
   maxBytes?: number;

@@ -1,5 +1,6 @@
 import { ApiTags } from '@nestjs/swagger';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -31,6 +32,11 @@ import { RATE_LIMITS, RateLimit } from 'src/auth/throttle/rate-limit';
 import { FaceVerificationService } from './services/face-verification.service';
 import { resizeToBase64 } from 'src/auth/utility/resize-to-base64.util';
 import axios from 'axios';
+import {
+  FACE_PHOTO_UPLOAD,
+  NO_FACE_PHOTO,
+  SingleFileUpload,
+} from 'src/common/upload';
 
 @ApiTags('Users')
 @Controller('users')
@@ -177,8 +183,9 @@ export class UsersController {
 
   // Face verification endpoint using ImageKit
   @Post('verify-face')
-  @UseInterceptors(FileInterceptor('liveImage'))
+  @UseInterceptors(SingleFileUpload('liveImage', FACE_PHOTO_UPLOAD))
   async verifyFace(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
+    if (!file) throw new BadRequestException(NO_FACE_PHOTO);
     const user = await this.usersService.findOne(req.user.id);
     if (!user) throw new NotFoundException('User not found');
 

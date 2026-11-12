@@ -1,5 +1,6 @@
 import { ApiTags } from '@nestjs/swagger';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
@@ -30,7 +31,11 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyPhoneDto } from './dto/verify-Phone.dto';
 import { resizeToBase64 } from './utility/resize-to-base64.util';
 import { FaceVerificationService } from 'src/users/services/face-verification.service';
-import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  FACE_PHOTO_UPLOAD,
+  NO_FACE_PHOTO,
+  SingleFileUpload,
+} from 'src/common/upload';
 import { Response } from 'express';
 import { encryptSessionCookie } from './utility/jose-cookie';
 import {
@@ -171,7 +176,7 @@ export class AuthController {
   // face login endpoint using imagekit image URL and live image
   @Public()
   @Post('login-with-face')
-  @UseInterceptors(FileInterceptor('liveImage'))
+  @UseInterceptors(SingleFileUpload('liveImage', FACE_PHOTO_UPLOAD))
   @RateLimit(RATE_LIMITS.loginWithFace)
   async loginWithFace(
     @Request() req,
@@ -179,6 +184,7 @@ export class AuthController {
     @UploadedFile() file: Express.Multer.File,
     @Res({ passthrough: true }) res: Response,
   ) {
+    if (!file) throw new BadRequestException(NO_FACE_PHOTO);
     const user = await this.authService.getVerifiedFaceUserByEmail(email);
 
     if (user.isActive === false) {
