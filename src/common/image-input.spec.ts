@@ -1,7 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import sharp from './sharp';
 import { MAX_INPUT_PIXELS, openImage, sharpInput } from './image-input';
-import { resizeToBase64 } from 'src/auth/utility/resize-to-base64.util';
+import { faceJpeg } from 'src/face/face-photo';
+import { FaceCheckFailure } from 'src/users/services/face-check';
 
 const solid = (width: number, height: number) =>
   sharp({ create: { width, height, channels: 3, background: '#fff' } });
@@ -56,16 +57,26 @@ describe('openImage', () => {
   });
 });
 
-describe('resizeToBase64 (face photos)', () => {
-  it('returns a 300x300 JPEG', async () => {
-    const out = await resizeToBase64(await solid(640, 480).png().toBuffer());
-    const meta = await sharp(Buffer.from(out, 'base64')).metadata();
-    expect(meta).toMatchObject({ format: 'jpeg', width: 300, height: 300 });
+describe('faceJpeg (face photos for Face++)', () => {
+  it('returns a JPEG of at most 640 px, keeping the aspect ratio', async () => {
+    const out = await faceJpeg(await solid(1280, 960).png().toBuffer());
+    const meta = await sharp(out).metadata();
+    expect(meta).toMatchObject({ format: 'jpeg', width: 640, height: 480 });
   });
 
-  it('answers 400 for an unreadable photo instead of crashing', async () => {
-    await expect(resizeToBase64(Buffer.from('nope'))).rejects.toBeInstanceOf(
-      BadRequestException,
+  it('does not enlarge small photos', async () => {
+    const meta = await sharp(
+      await faceJpeg(await solid(320, 240).png().toBuffer()),
+    ).metadata();
+    expect(meta).toMatchObject({ width: 320, height: 240 });
+  });
+
+  it('turns an unreadable photo into BAD_IMAGE instead of crashing', async () => {
+    await expect(faceJpeg(Buffer.from('nope'))).rejects.toMatchObject({
+      reason: 'BAD_IMAGE',
+    });
+    await expect(faceJpeg(Buffer.from('nope'))).rejects.toBeInstanceOf(
+      FaceCheckFailure,
     );
   });
 });

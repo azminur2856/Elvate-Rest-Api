@@ -625,20 +625,6 @@ export class UsersService {
     });
   }
 
-  async markFaceAsVerified(id: string) {
-    await this.userRepository.update(id, { isFaceVerified: true });
-
-    const user = await this.getUserById(id);
-
-    // Update Action Log
-    const activityLog = {
-      activity: ActivityType.USER_VERIFY_FACE,
-      description: 'User verified face successfully',
-      user: user,
-    };
-    await this.activityLogsService.createActivityLog(activityLog);
-  }
-
   async getUserStats() {
     // Total users
     const total = await this.userRepository.count();
