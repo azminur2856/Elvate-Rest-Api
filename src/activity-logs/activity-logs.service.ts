@@ -35,6 +35,10 @@ function fullName(user?: { firstName?: string; lastName?: string } | null) {
   return user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : null;
 }
 
+/** SEC-16: biggest CSV export and longest stored description. */
+export const MAX_EXPORT_ROWS = 10_000;
+export const MAX_DESCRIPTION_LENGTH = 500;
+
 /**
  * RFC 4180 cell: quote when it contains a comma, quote or line break.
  * SEC-16: text starting with = + - @ tab or CR would run as a formula in
@@ -58,6 +62,11 @@ export class ActivityLogsService {
   async createActivityLog(createActivityLogDto: CreateActivityLogDto) {
     const dataToCreate = {
       ...createActivityLogDto,
+      // SEC-16: descriptions can carry user-typed text; keep them short
+      description: createActivityLogDto.description?.slice(
+        0,
+        MAX_DESCRIPTION_LENGTH,
+      ),
       user: createActivityLogDto.user ?? undefined,
     };
     const activityLog = this.activityLogsRepository.create(dataToCreate);
@@ -210,9 +219,17 @@ export class ActivityLogsService {
   // Export activity logs to CSV (RFC 4180 quoting, so commas/quotes/newlines
   // in descriptions no longer break the columns).
   async exportLogsToCSV(filters: LogFilters) {
-    const logs = await this.filteredLogsQuery(filters, 'ASC').getMany();
+    const logs = await this.filteredLogsQuery(filters, 'ASC')
+      .take(MAX_EXPORT_ROWS + 1)
+      .getMany();
     if (logs.length === 0) {
       throw new NotFoundException('No logs found for the provided filters.');
+    }
+    // SEC-16: no unbounded file built in memory; ask for a narrower filter
+    if (logs.length > MAX_EXPORT_ROWS) {
+      throw new BadRequestException(
+        `More than ${MAX_EXPORT_ROWS.toLocaleString('en-US')} logs match. Narrow the date range or add a user / activity filter.`,
+      );
     }
 
     const header = [
