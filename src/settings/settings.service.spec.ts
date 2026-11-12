@@ -121,6 +121,13 @@ describe('SettingsService', () => {
         updatedBy: { name: 'Test Admin' },
         available: true,
       }),
+      // BE-27: no row yet -> its default (on), never changed by anyone
+      expect.objectContaining({
+        key: 'face_login',
+        enabled: true,
+        label: 'Face login',
+        updatedBy: null,
+      }),
     ]);
   });
 });

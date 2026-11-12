@@ -10,6 +10,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { AppSetting } from './app-setting.entity';
 import {
+  FACE_LOGIN,
   SETTINGS,
   SMS_OTP,
   SettingDefinition,
@@ -24,6 +25,7 @@ import { AuthUser, actorLabel } from 'src/common/auth-user';
 export const SETTINGS_CACHE_MS = 30_000;
 
 export const SMS_TURNED_OFF = 'SMS verification is turned off';
+export const FACE_LOGIN_TURNED_OFF = 'Face login is turned off';
 
 /** One row of GET /admin/settings. */
 export interface SettingView {
@@ -66,8 +68,12 @@ export class SettingsService implements OnApplicationBootstrap {
       .execute();
   }
 
-  /** Cached for 30 s; an unknown or missing switch counts as its default. */
+  /**
+   * Cached for 30 s; an unknown or missing switch counts as its default, and
+   * a switch whose service is not configured (available=false) counts as off.
+   */
   async isEnabled(key: string): Promise<boolean> {
+    if (settingDefinition(key)?.available() === false) return false;
     const hit = this.cache.get(key);
     if (hit && Date.now() - hit.at < SETTINGS_CACHE_MS) return hit.value;
     const row = await this.settings.findOne({ where: { key } });
@@ -84,8 +90,14 @@ export class SettingsService implements OnApplicationBootstrap {
   }
 
   /** GET /settings/public: no secrets, just what the UI needs. */
-  async publicSettings(): Promise<{ smsOtpEnabled: boolean }> {
-    return { smsOtpEnabled: await this.isEnabled(SMS_OTP) };
+  async publicSettings(): Promise<{
+    smsOtpEnabled: boolean;
+    faceLoginEnabled: boolean;
+  }> {
+    return {
+      smsOtpEnabled: await this.isEnabled(SMS_OTP),
+      faceLoginEnabled: await this.isEnabled(FACE_LOGIN),
+    };
   }
 
   /** GET /admin/settings */
@@ -145,6 +157,13 @@ export class SettingsService implements OnApplicationBootstrap {
         : null,
       available: def.available(),
     };
+  }
+
+  /** BE-27: 403 "Face login is turned off" unless the switch is on. */
+  async assertFaceLoginEnabled(): Promise<void> {
+    if (!(await this.isEnabled(FACE_LOGIN))) {
+      throw new ForbiddenException(FACE_LOGIN_TURNED_OFF);
+    }
   }
 
   /** 403 "SMS verification is turned off" unless the admin switched SMS on. */
