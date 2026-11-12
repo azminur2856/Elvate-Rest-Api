@@ -27,8 +27,12 @@ export class SettingsController {
   /** What the UI needs to show or hide features (no secrets). */
   @Public()
   @Get('settings/public')
-  publicSettings() {
-    return this.settings.publicSettings();
+  async publicSettings() {
+    return {
+      ...(await this.settings.publicSettings()),
+      // BE-30: for the free-delivery notes (freeThreshold 0 = off)
+      shipping: await this.shipping.rules(),
+    };
   }
 
   /** ADMIN only (not STAFF). */
