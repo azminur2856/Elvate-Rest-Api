@@ -120,6 +120,24 @@ export type Quote = {
 /** Stripe Checkout sessions must live ≥ 30 min; a little slack for clock skew. */
 const CHECKOUT_TTL_SECONDS = 31 * 60;
 
+/** Taka -> paisa (Stripe amounts are in the smallest unit). */
+export const paisa = (n: number) => Math.round(n * 100);
+
+/**
+ * SEC-10: a Checkout payment must be in BDT and for the order total
+ * (one paisa of rounding allowed). Anything else is never marked paid.
+ */
+export function paidAmountMatches(
+  session: Pick<Stripe.Checkout.Session, 'amount_total' | 'currency'>,
+  order: Pick<Order, 'total'>,
+): boolean {
+  return (
+    session.currency?.toLowerCase() === 'bdt' &&
+    typeof session.amount_total === 'number' &&
+    Math.abs(session.amount_total - paisa(order.total)) <= 1
+  );
+}
+
 export const fullName = (u?: Pick<Users, 'firstName' | 'lastName'> | null) =>
   u ? `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim() : 'Deleted user';
 
@@ -724,13 +742,29 @@ export class OrdersService {
         ? session.payment_intent
         : (session.payment_intent?.id ?? null);
     let refundAfterCancel: Order | null = null;
+    // SEC-10: payments to give back without touching the order
+    let strayPayment: { order: Order; reason: string } | null = null;
 
     const result = await this.dataSource.transaction(async (m) => {
       const order = await m.findOne(Order, {
         where: { id: orderId },
         lock: { mode: 'pessimistic_write' },
       });
-      if (!order || order.paymentStatus !== PaymentStatus.UNPAID) return null;
+      if (!order) return null;
+      if (!paidAmountMatches(session, order)) {
+        strayPayment = {
+          order,
+          reason: `paid ${session.amount_total ?? '?'} ${session.currency ?? '?'} instead of ${paisa(order.total)} bdt`,
+        };
+        return null;
+      }
+      if (order.paymentStatus !== PaymentStatus.UNPAID) {
+        // already paid (or refunded): a different payment is a duplicate
+        if (paymentIntent && paymentIntent !== order.stripePaymentIntentId) {
+          strayPayment = { order, reason: 'second payment for the order' };
+        }
+        return null;
+      }
       order.stripePaymentIntentId = paymentIntent;
       order.stripeSessionId = session.id;
 
@@ -789,6 +823,18 @@ export class OrdersService {
         `Order ${toRefund.orderNumber} was paid after it had been cancelled; ৳${toRefund.total} refunded`,
       );
     }
+    const stray = strayPayment as { order: Order; reason: string } | null;
+    if (stray && paymentIntent) {
+      this.logger.warn(
+        `Order ${stray.order.orderNumber}: refunding payment ${paymentIntent} (${stray.reason})`,
+      );
+      await this.refundPayment(paymentIntent, stray.order);
+      await this.log(
+        stray.order.userId,
+        ActivityType.ORDER_REFUND,
+        `Order ${stray.order.orderNumber}: card payment refunded (${stray.reason})`,
+      );
+    }
   }
 
   /** Session expired unpaid → cancel + restock, unless a newer session (POST /pay) replaced it. */
@@ -824,7 +870,6 @@ export class OrdersService {
             .findOne({ where: { id: order.userId } })
         : null,
     ]);
-    const paisa = (n: number) => Math.round(n * 100);
     const units = items.reduce((n, i) => n + i.quantity, 0);
 
     // Stripe line items cannot be negative, so a discounted order is one summary line.
@@ -921,6 +966,26 @@ export class OrdersService {
       throw new BadGatewayException(
         'The card refund failed, so the order was not changed. Please try again.',
       );
+    }
+  }
+
+  /** SEC-10: refund one specific payment (duplicate or wrong amount). */
+  private async refundPayment(paymentIntentId: string, order: Order) {
+    if (!this.stripe) return;
+    try {
+      await this.stripe.refunds.create(
+        {
+          payment_intent: paymentIntentId,
+          metadata: { orderId: order.id, reason: 'not-for-this-order' },
+        },
+        { idempotencyKey: `refund-pi-${paymentIntentId}` },
+      );
+    } catch (err) {
+      this.logger.error(
+        `Refund of ${paymentIntentId} for ${order.orderNumber} failed`,
+        err as Error,
+      );
+      throw err; // let Stripe retry the webhook
     }
   }
 
