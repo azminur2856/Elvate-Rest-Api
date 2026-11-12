@@ -17,7 +17,6 @@ import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { MailService } from 'src/auth/services/mail.services';
 import { imagekit } from 'src/auth/utility/imagekit';
 import { faceJpeg } from './face-photo';
-import { escapeHtml } from 'src/common/html';
 
 /** ImageKit folder of a user's private face reference. */
 export const faceReferenceFolder = (userId: string) =>
@@ -121,7 +120,7 @@ export class FaceReferenceService implements OnApplicationBootstrap {
     });
     void this.mail.sendNotificationEmail(
       user.email,
-      escapeHtml(`${user.firstName} ${user.lastName ?? ''}`.trim()),
+      `${user.firstName} ${user.lastName ?? ''}`.trim(), // escaped by MailService
       'Face login was set up on your Elvate account',
       'Face login was just set up on your account. If this was not you, change your password and remove face login in Settings.',
     );

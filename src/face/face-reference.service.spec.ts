@@ -81,10 +81,8 @@ describe('FaceReferenceService', () => {
     });
     expect(users.update).toHaveBeenCalledWith('u1', { isFaceVerified: true });
     expect(deleteFile).toHaveBeenCalledWith('old-file');
-    // the e-mail gets an escaped name
-    expect(mail.sendNotificationEmail.mock.calls[0][1]).toBe(
-      '&lt;b&gt;Bo&lt;/b&gt;',
-    );
+    // the raw name goes to MailService, which escapes it (SEC-15)
+    expect(mail.sendNotificationEmail.mock.calls[0][1]).toBe('<b>Bo</b>');
   });
 
   it.each([

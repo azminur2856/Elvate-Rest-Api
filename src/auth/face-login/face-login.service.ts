@@ -194,7 +194,7 @@ export class FaceLoginService {
     const device = userAgent ? ` (${escapeHtml(userAgent.slice(0, 160))})` : '';
     void this.mail.sendNotificationEmail(
       user.email,
-      escapeHtml(`${user.firstName} ${user.lastName ?? ''}`.trim()),
+      `${user.firstName} ${user.lastName ?? ''}`.trim(), // escaped by MailService
       'New sign-in to Elvate with face login',
       `Someone signed in to your account with face login on ${escapeHtml(when)} (Bangladesh time)${device}. If this was not you, change your password and turn face login off in Settings.`,
     );

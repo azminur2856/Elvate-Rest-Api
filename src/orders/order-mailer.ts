@@ -50,7 +50,7 @@ export class OrderMailer {
     try {
       await this.mail.sendOrderEmail(
         to.email,
-        esc(to.name),
+        to.name, // MailService escapes the name (SEC-15)
         subject,
         heading,
         body,
