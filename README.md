@@ -78,7 +78,7 @@
 - Search, filters (category, price, size, colour, brand, on sale, in stock), sorting and related products
 - **Cart** for signed-in users, plus pricing for a guest cart that is merged after login
 - **Address book** with a default address
-- **Checkout**: server-side price quote, coupon codes, delivery fee (inside / outside Dhaka, free above a threshold);
+- **Checkout**: server-side price quote, coupon codes, delivery fee (inside / outside Dhaka, free above a threshold, set by an admin);
   pay by **cash on delivery** or **card (Stripe Checkout)**
 - Stock is reserved inside a database transaction; unpaid or unconfirmed orders are cancelled automatically and their stock returns
 
@@ -106,6 +106,8 @@
 - User management (roles, activation, deletion), products, categories, coupons, flash sales and review moderation
 - Full **activity log** of user and admin actions with filters and CSV export
 - **Feature switches** stored in the database: SMS codes (off by default) and face login (on by default)
+- **Delivery fees** (inside Dhaka, outside Dhaka, free delivery from an amount or off) changed in Settings without a deploy;
+  new quotes use them within 30 seconds and orders already placed keep their fee
 
 ### Photos
 - Profile photos are **private files**, served through `/media/*` with access rules (the owner, admins and staff, and a delivery man for
@@ -213,7 +215,7 @@ stateDiagram-v2
 | `BUYER` | Shop, cart, checkout, own orders and reviews, subscriptions, digital tools, own profile and settings |
 | `STAFF` | Everything a buyer can, plus orders, deliveries, products, stock, categories and review moderation |
 | `DELIVERY_MAN` | Only the orders assigned to him: delivery progress and cash collection |
-| `ADMIN` | Everything staff can, plus users and roles, coupons and flash sales, payments, subscriptions, statistics, activity logs, feature switches and delivery corrections. Admins manage deliveries but do not perform them |
+| `ADMIN` | Everything staff can, plus users and roles, coupons and flash sales, payments, subscriptions, statistics, activity logs, feature switches, delivery fees and delivery corrections. Admins manage deliveries but do not perform them |
 
 Only an admin can change a user's role.
 
@@ -229,7 +231,7 @@ All routes are JSON and use the `session` cookie for authentication. **Interacti
 | Auth | `/auth` | `login`, `refresh`, `logout`, `logout-all`, `sessions`, `google/login`, `face-login/challenge`, `login-with-face`, `forgotPassword`, `resetPassword`, `verifyPhone`, `changePassword` |
 | Users | `/users` | `createUser`, `profile`, `updateUser`, `updateProfileImage`, `face-reference`, `me` (delete); admin user management and stats |
 | Media | `/media` | private profile photos: `avatar/:key`, `me/avatar`, `users/:id/avatar` |
-| Settings | `/settings`, `/admin/settings` | public feature flags; admin switches |
+| Settings | `/settings`, `/admin/settings` | public feature flags and delivery fees; admin switches, `admin/settings/shipping` (delivery fees) |
 | Categories | `/categories` | category tree; admin create, update, delete |
 | Products | `/products`, `/admin/products` | list with filters and sorting, filter options, detail, related; admin CRUD, photos, variants |
 | Cart | `/cart` | view, add, update, remove, clear, guest `preview`, `merge` after login |
@@ -309,7 +311,7 @@ Put the `whsec_…` secret that `stripe listen` prints into `STRIPE_WEBHOOK_SECR
 | `FACEPP_API_KEY`, `FACEPP_API_SECRET` | Face login |
 | `IMAGEKIT_PUBLIC_KEY`, `IMAGEKIT_PRIVATE_KEY`, `IMAGEKIT_URL_ENDPOINT` | Photo storage |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `PRICE_1M`, `PRICE_6M`, `PRICE_12M` | Payments and subscription price IDs |
-| `SHIPPING_FEE_INSIDE_DHAKA`, `SHIPPING_FEE_OUTSIDE_DHAKA`, `FREE_SHIPPING_THRESHOLD` | Delivery fees in BDT |
+| `SHIPPING_FEE_INSIDE_DHAKA`, `SHIPPING_FEE_OUTSIDE_DHAKA`, `FREE_SHIPPING_THRESHOLD` | Delivery fees in BDT: first-start defaults only (60 / 120 / 3000 when empty), then change them in Admin → Settings |
 | `REMOVE_BG_API_KEY`, `REMOVE_BG_SIZE` | Background removal (the tool says it is unavailable when the key is empty) |
 | `SWAGGER_ENABLED` | `true` / `false`; Swagger is on in development and off in production unless this is `true` |
 | `SEED_DEMO_PASSWORD` | Password for the demo accounts created by `npm run seed` |
