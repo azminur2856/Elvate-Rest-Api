@@ -1,5 +1,7 @@
 import { applyDecorators, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { timingSafeEqual } from 'crypto';
+import { isIP } from 'net';
 
 const MINUTE = 60_000;
 
@@ -31,21 +33,51 @@ export const RateLimit = (rule: { limit: number; ttl: number }) =>
     Throttle({ default: { limit: rule.limit, ttl: rule.ttl } }),
   );
 
-/**
- * Best-effort client address. In production a request arrives through the
- * Vercel rewrite and then Render's proxy, so `req.ip` (trust proxy = 1) is a
- * shared Vercel egress address and would throttle every user together. The
- * left-most X-Forwarded-For entry is the client as seen by the first proxy.
- * Someone calling Render directly can forge it; fine for rate limiting, never
- * use it for authorization.
- */
-export function clientIp(req: {
+/** SEC-06: headers the frontend proxy adds (server side, never the browser). */
+export const PROXY_SECRET_HEADER = 'x-elvate-proxy-secret';
+export const PROXY_CLIENT_IP_HEADER = 'x-elvate-client-ip';
+
+type IpRequest = {
   headers?: Record<string, string | string[] | undefined>;
   ip?: string;
-}): string {
-  const xff = req.headers?.['x-forwarded-for'];
-  const first = (Array.isArray(xff) ? xff[0] : xff)?.split(',')[0]?.trim();
-  return first || req.ip || 'unknown';
+};
+
+const header = (req: IpRequest, name: string): string | undefined => {
+  const v = req.headers?.[name];
+  return (Array.isArray(v) ? v[0] : v)?.trim() || undefined;
+};
+
+const sameSecret = (given: string | undefined, secret: string): boolean => {
+  if (!given) return false;
+  const a = Buffer.from(given);
+  const b = Buffer.from(secret);
+  return a.length === b.length && timingSafeEqual(a, b);
+};
+
+/**
+ * Client address for rate limits and sign-in locks (never for authorization).
+ *
+ * With `PROXY_SHARED_SECRET` set (SEC-06): the browser's address is taken from
+ * `x-elvate-client-ip` **only** when `x-elvate-proxy-secret` matches, i.e. the
+ * request came through our own frontend proxy. Anyone else is keyed on the
+ * address that connected to Render (`req.ip`, trust proxy = 1), which they
+ * cannot forge.
+ *
+ * Without the secret (until both sides are configured) it keeps the old
+ * behaviour: the left-most X-Forwarded-For entry, which a direct caller can
+ * forge. Keying on `req.ip` there would put every Vercel user in one bucket.
+ */
+export function clientIp(req: IpRequest): string {
+  const secret = process.env.PROXY_SHARED_SECRET?.trim();
+  if (secret) {
+    if (sameSecret(header(req, PROXY_SECRET_HEADER), secret)) {
+      const forwarded = header(req, PROXY_CLIENT_IP_HEADER);
+      if (forwarded && isIP(forwarded)) return forwarded;
+    }
+    return req.ip || 'unknown';
+  }
+  const xff = header(req, 'x-forwarded-for');
+  return xff?.split(',')[0]?.trim() || req.ip || 'unknown';
 }
 
 export function throttlerTracker(req: {

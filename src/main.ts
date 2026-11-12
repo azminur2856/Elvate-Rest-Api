@@ -27,6 +27,15 @@ async function bootstrap() {
   // Render (and most PaaS) terminate TLS at a reverse proxy; trust the first
   // hop so req.secure / req.protocol reflect the original https request.
   app.set('trust proxy', 1);
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !process.env.PROXY_SHARED_SECRET?.trim()
+  ) {
+    // SEC-06: without it, rate limits trust a forgeable X-Forwarded-For
+    console.warn(
+      'PROXY_SHARED_SECRET is not set: rate limits fall back to X-Forwarded-For, which direct callers can forge.',
+    );
+  }
 
   // Security headers. CORP cross-origin so images/files served by the API
   // still load if a page ever embeds them from the API origin directly.
