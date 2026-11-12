@@ -443,9 +443,9 @@ export class AuthService {
       const maskedEmail = maskEmail(user.email);
 
       if (response.accepted.length > 0 && response.rejected.length === 0) {
+        // Security: never return the reset token; it must only reach the user's inbox.
         return {
           message: `Password reset link sent to your email ${maskedEmail}`,
-          resetToken: resetToken,
         };
       } else {
         return {
