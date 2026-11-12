@@ -21,6 +21,16 @@ import { TesseractPool } from './tesseract-pool';
 /** SEC-17: pages of a PDF that are read for text. */
 export const MAX_PDF_PAGES = 20;
 
+/** pdf-parse ships no type declarations; this is the part we use. */
+const parsePdf = pdfParse as unknown as (
+  data: Buffer,
+  options: { max: number },
+) => Promise<{ text: string }>;
+
+/** A damaged, encrypted or non-PDF upload: a 400, not a 500. */
+export const PDF_UNREADABLE =
+  "We couldn't read this PDF. It may be damaged or password-protected. Try another file.";
+
 /** Validated edit options (see `EditOptionsDto` for the limits). */
 export type EditOptions = EditOptionsDto;
 
@@ -83,14 +93,20 @@ export class OcrService {
       throw new BadRequestException('User not found');
     }
 
-    //Add activity log for PDF text extraction
+    // SEC-17: a 5 000-page PDF must not be parsed in full on a small server
+    let data: { text: string };
+    try {
+      data = await parsePdf(buffer, { max: MAX_PDF_PAGES });
+    } catch {
+      throw new BadRequestException(PDF_UNREADABLE);
+    }
+
+    // Activity log only for a PDF that was actually read
     await this.activityLogService.createActivityLog({
       activity: ActivityType.OCR_EXTRACT_TEXT_FROM_PDF,
       description: `User ${userId} extracted text from a PDF document.`,
       user: user,
     });
-    // SEC-17: a 5 000-page PDF must not be parsed in full on a small server
-    const data = await pdfParse(buffer, { max: MAX_PDF_PAGES });
     return { text: data.text.trim() };
   }
 

@@ -1,10 +1,45 @@
 import {
+  BadRequestException,
   ForbiddenException,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import sharp from 'src/common/sharp';
-import { OcrService } from './ocr.service';
+import { OcrService, PDF_UNREADABLE } from './ocr.service';
 import { BackgroundRemover } from './background/background-remover';
+
+describe('OcrService.extractTextFromPdf', () => {
+  const make = (subscribed: boolean) => {
+    const createActivityLog = jest.fn();
+    const service = new OcrService(
+      { createActivityLog } as never,
+      { findOne: jest.fn().mockResolvedValue({ id: 'u1' }) } as never,
+      {
+        getSubscriptionStatus: jest
+          .fn()
+          .mockResolvedValue({ isSubscribed: subscribed }),
+      } as never,
+      {} as never, // BackgroundRemover
+      {} as never, // TesseractPool
+    );
+    return { service, createActivityLog };
+  };
+
+  it('403 when the user is not subscribed', async () => {
+    await expect(
+      make(false).service.extractTextFromPdf(Buffer.from('%PDF-1.4'), 'u1'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('a damaged PDF is a 400 with a clear message, and is not logged', async () => {
+    const { service, createActivityLog } = make(true);
+    const err: unknown = await service
+      .extractTextFromPdf(Buffer.from('not really a PDF'), 'u1')
+      .catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(BadRequestException);
+    expect((err as BadRequestException).message).toBe(PDF_UNREADABLE);
+    expect(createActivityLog).not.toHaveBeenCalled();
+  });
+});
 
 describe('OcrService.removeBackground (BE-21)', () => {
   const file = {
