@@ -3,6 +3,7 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnApplicationBootstrap,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -33,7 +34,7 @@ export interface FaceLoginState {
 }
 
 @Injectable()
-export class FaceReferenceService {
+export class FaceReferenceService implements OnApplicationBootstrap {
   private readonly logger = new Logger(FaceReferenceService.name);
 
   constructor(
@@ -44,6 +45,30 @@ export class FaceReferenceService {
     private readonly activityLogs: ActivityLogsService,
     private readonly mail: MailService,
   ) {}
+
+  /**
+   * Users who set up face login before SEC-04 were matched against their
+   * public profile picture. They must set it up once more: without a private
+   * reference, face login counts as off. Idempotent; runs on every boot.
+   */
+  async onApplicationBootstrap(): Promise<void> {
+    try {
+      const reset: unknown[] = await this.users.query(
+        `UPDATE users SET "isFaceVerified" = false
+          WHERE "isFaceVerified" = true
+            AND NOT EXISTS (SELECT 1 FROM face_references f WHERE f."userId" = users.id)
+          RETURNING id`,
+      );
+      const count = Array.isArray(reset[0]) ? reset[0].length : reset.length;
+      if (count) {
+        this.logger.log(
+          `Face login switched off for ${count} user(s) without a private reference (they must set it up again).`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(`Could not normalise face login flags: ${String(err)}`);
+    }
+  }
 
   /**
    * Face setup: checks the photo with Face++ (one clear, frontal face with
