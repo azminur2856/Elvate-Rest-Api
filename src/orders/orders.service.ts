@@ -1497,30 +1497,47 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
     );
   }
 
+  /**
+   * Customer e-mail after a change was saved. Never throws: the order
+   * already changed, so the request must not fail because of the e-mail.
+   */
   async notify(orderId: string, kind: OrderMailKind, note?: string | null) {
-    const order = await this.orders.findOne({
-      where: { id: orderId },
-      relations: { user: true, items: true },
-    });
-    if (!order?.user) return;
-    await this.mailer.send(
-      kind,
-      order,
-      { email: order.user.email, name: fullName(order.user) },
-      order.items,
-      note,
-    );
+    try {
+      const order = await this.orders.findOne({
+        where: { id: orderId },
+        relations: { user: true, items: true },
+      });
+      if (!order?.user) return;
+      await this.mailer.send(
+        kind,
+        order,
+        { email: order.user.email, name: fullName(order.user) },
+        order.items,
+        note,
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Order e-mail (${kind}) for ${orderId} failed: ${(err as Error).message}`,
+      );
+    }
   }
 
-  private log(
+  /** Activity log after a change was saved. Never throws (like notify). */
+  private async log(
     userId: string | null,
     activity: ActivityType,
     description: string,
   ) {
-    return this.activityLogs.createActivityLog({
-      activity,
-      description,
-      user: userId ? ({ id: userId } as Users) : null,
-    });
+    try {
+      await this.activityLogs.createActivityLog({
+        activity,
+        description,
+        user: userId ? ({ id: userId } as Users) : null,
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Activity log ${activity} failed: ${(err as Error).message} (${description})`,
+      );
+    }
   }
 }
