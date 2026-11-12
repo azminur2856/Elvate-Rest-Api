@@ -644,7 +644,9 @@ export class SubscriptionService {
     }
 
     const planPaymentStats = zero();
-    const paidByPlan = (await this.payRepo.query(`
+    const paidByPlan = await this.payRepo.query<
+      { plan: string | null; sum: string }[]
+    >(`
         SELECT COALESCE(s.plan, legacy.plan) AS plan, SUM(p.amount) AS sum
         FROM payment p
         LEFT JOIN subscription s ON s.id = p."subscriptionId"
@@ -656,7 +658,7 @@ export class SubscriptionService {
           ORDER BY s2."startDate" DESC
           LIMIT 1
         ) legacy ON TRUE
-        GROUP BY 1`)) as { plan: string | null; sum: string }[];
+        GROUP BY 1`);
     for (const row of paidByPlan) {
       if (isPlan(row.plan)) planPaymentStats[row.plan] = Number(row.sum);
     }
