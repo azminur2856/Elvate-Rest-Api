@@ -6,12 +6,14 @@ import {
   Injectable,
   Logger,
   NotFoundException,
+  OnApplicationBootstrap,
+  OnModuleDestroy,
 } from '@nestjs/common';
 import { ConfigService, ConfigType } from '@nestjs/config';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { randomInt } from 'crypto';
 import Stripe from 'stripe';
-import { DataSource, EntityManager, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, LessThan, Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { OrderItem } from './entities/order-item.entity';
 import { OrderStatusHistory } from './entities/order-status-history.entity';
@@ -120,6 +122,14 @@ export type Quote = {
 /** Stripe Checkout sessions must live ≥ 30 min; a little slack for clock skew. */
 const CHECKOUT_TTL_SECONDS = 31 * 60;
 
+/** SEC-11: unpaid PENDING orders a customer may have at once. */
+export const MAX_UNPAID_PENDING = 3;
+/** SEC-11: an unconfirmed COD order gives its stock back after 48 h. */
+export const COD_PENDING_MAX_MS = 48 * 60 * 60_000;
+/** Card checkout lasts 31 min; after 2 h an unpaid card order is dead. */
+export const CARD_PENDING_MAX_MS = 2 * 60 * 60_000;
+const STALE_SWEEP_MS = 60 * 60_000;
+
 /** Same lines (variant + quantity) in both carts, in any order. */
 export function sameCart(
   a: Pick<CartItem, 'variantId' | 'quantity'>[],
@@ -198,7 +208,7 @@ export function makeOrderNumber(now = new Date()): string {
 }
 
 @Injectable()
-export class OrdersService {
+export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly logger = new Logger(OrdersService.name);
   private readonly stripe: Stripe | null;
   private readonly frontendUrl = (
@@ -288,12 +298,91 @@ export class OrdersService {
     };
   }
 
+  // ---------- stale unpaid orders (SEC-11) ----------
+
+  private sweepTimer: NodeJS.Timeout | null = null;
+
+  onApplicationBootstrap() {
+    // once shortly after boot (the free tier sleeps and wakes often), then
+    // hourly while awake; place() also sweeps the customer's own orders
+    const sweep = () =>
+      void this.cancelStaleOrders().catch((err: unknown) =>
+        this.logger.warn(`Stale order sweep failed: ${String(err)}`),
+      );
+    setTimeout(sweep, 30_000).unref();
+    this.sweepTimer = setInterval(sweep, STALE_SWEEP_MS);
+    this.sweepTimer.unref();
+  }
+
+  onModuleDestroy() {
+    if (this.sweepTimer) clearInterval(this.sweepTimer);
+  }
+
+  /**
+   * Gives back the stock held by orders nobody will complete: COD orders not
+   * confirmed within 48 h, and card orders whose checkout ended (31 min) over
+   * 2 h ago without a payment (e.g. a missed "expired" webhook).
+   */
+  async cancelStaleOrders(userId?: string): Promise<number> {
+    const now = Date.now();
+    const pending = {
+      status: OrderStatus.PENDING,
+      paymentStatus: PaymentStatus.UNPAID,
+      ...(userId ? { userId } : {}),
+    };
+    const stale = await this.orders.find({
+      select: ['id', 'paymentMethod'],
+      where: [
+        {
+          ...pending,
+          paymentMethod: PaymentMethod.COD,
+          placedAt: LessThan(new Date(now - COD_PENDING_MAX_MS)),
+        },
+        {
+          ...pending,
+          paymentMethod: PaymentMethod.STRIPE,
+          placedAt: LessThan(new Date(now - CARD_PENDING_MAX_MS)),
+        },
+      ],
+      take: 50,
+    });
+    for (const o of stale) {
+      const note =
+        o.paymentMethod === PaymentMethod.COD
+          ? 'Not confirmed within 48 hours'
+          : 'Card payment was not completed';
+      try {
+        await this.changeStatus(o.id, OrderStatus.CANCELLED, note, null);
+      } catch (err) {
+        this.logger.warn(
+          `Could not cancel stale order ${o.id}: ${String(err)}`,
+        );
+      }
+    }
+    return stale.length;
+  }
+
   // ---------- POST /orders ----------
 
   async place(
     user: AuthUser,
     dto: PlaceOrderDto,
   ): Promise<{ order: OrderDetail; checkoutUrl: string | null }> {
+    // SEC-11: no stock hoarding through piles of unpaid orders
+    await this.cancelStaleOrders(user.id);
+    const unpaid = await this.orders.count({
+      where: {
+        userId: user.id,
+        status: OrderStatus.PENDING,
+        paymentStatus: PaymentStatus.UNPAID,
+      },
+    });
+    if (unpaid >= MAX_UNPAID_PENDING) {
+      throw new ConflictException(
+        `You already have ${MAX_UNPAID_PENDING} unpaid orders waiting. Pay for or cancel one before placing another.`,
+      );
+    }
+
     const rows = await this.cart.entriesOf(user.id);
     if (rows.length === 0) throw new BadRequestException('Your cart is empty');
     const lines = await this.cart.priceLines(
