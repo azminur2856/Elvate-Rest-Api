@@ -18,6 +18,7 @@ import { UpdateUserRoleDto } from './dto/update-user-role.dto';
 import { MailService } from 'src/auth/services/mail.services';
 import { generateVerificationToken } from 'src/auth/utility/token.util';
 import { Verification } from 'src/auth/entities/verification.entity';
+import { UserSession } from 'src/auth/entities/user-session.entity';
 import { VerificationType } from 'src/auth/enums/verification-type.enum';
 import { maskEmail } from 'src/auth/utility/email-mask.util';
 import { imagekit } from 'src/auth/utility/imagekit';
@@ -442,7 +443,16 @@ export class UsersService {
       throw new UnauthorizedException(`Unauthorized to change admin status`);
     }
 
-    const result = await this.userRepository.update(id, { isActive });
+    // SEC-07: blocking ends every session; unblocking does not revive them
+    const result = await this.userRepository.manager.transaction(async (m) => {
+      const updated = await m.update(
+        Users,
+        id,
+        isActive ? { isActive } : { isActive, lastLogoutAt: new Date() },
+      );
+      if (!isActive) await m.delete(UserSession, { userId: id });
+      return updated;
+    });
 
     const activityLog = {
       activity: ActivityType.ADMIN_UPDATE_USER_STATUS,
