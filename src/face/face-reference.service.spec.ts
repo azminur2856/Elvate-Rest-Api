@@ -1,7 +1,12 @@
-import { BadRequestException } from '@nestjs/common';
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
 import sharp from 'src/common/sharp';
 import { imagekit } from 'src/auth/utility/imagekit';
-import { FaceReferenceService } from './face-reference.service';
+import {
+  FaceReferenceService,
+  NO_PROFILE_PICTURE,
+  PROFILE_PICTURE_MISMATCH,
+  RECENT_LOGIN_MS,
+} from './face-reference.service';
 import { FaceCheckFailure } from 'src/users/services/face-check';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import * as bcrypt from 'bcrypt';
@@ -145,6 +150,79 @@ describe('FaceReferenceService', () => {
       service.enroll('u1', Buffer.from('not an image'), AUTH),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(face.analyze).not.toHaveBeenCalled();
+  });
+
+  describe('BE-26 option A', () => {
+    it('needs a custom profile picture before anything else', async () => {
+      users.findOne.mockResolvedValueOnce({
+        id: 'u1',
+        profileImage: 'profile.png',
+        password: passwordHash,
+      });
+      await expect(service.enroll('u1', photo, AUTH)).rejects.toThrow(
+        NO_PROFILE_PICTURE,
+      );
+      expect(face.analyze).not.toHaveBeenCalled();
+    });
+
+    it('password accounts must send the right password (401)', async () => {
+      for (const password of [undefined, 'wrong-1']) {
+        await expect(service.enroll('u1', photo, { password })).rejects.toThrow(
+          new UnauthorizedException('Incorrect password.'),
+        );
+      }
+      expect(face.analyze).not.toHaveBeenCalled();
+    });
+
+    it('Google-only accounts need a session from the last 10 minutes', async () => {
+      users.findOne.mockResolvedValue({
+        id: 'u1',
+        email: 'g@e.test',
+        firstName: 'G',
+        profileImage: 'me.jpg',
+        password: '',
+      });
+      sessions.findOne.mockResolvedValueOnce({
+        id: 's1',
+        createdAt: new Date(Date.now() - RECENT_LOGIN_MS - 1000),
+      });
+      await expect(
+        service.enroll('u1', photo, { sessionId: 's1' }),
+      ).rejects.toThrow(/please sign in again/);
+      sessions.findOne.mockResolvedValueOnce({
+        id: 's1',
+        createdAt: new Date(Date.now() - 60_000),
+      });
+      await expect(
+        service.enroll('u1', photo, { sessionId: 's1' }),
+      ).resolves.toEqual({ faceLoginEnabled: true });
+    });
+
+    it('compares the live face with the profile picture (strict 1e-5)', async () => {
+      await service.enroll('u1', photo, AUTH);
+      expect(url).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: '/user_profile_image/user_u1/me.jpg',
+          signed: true,
+        }),
+      );
+      expect(face.compare).toHaveBeenCalledWith(
+        { imageUrl: 'https://ik/signed' },
+        { faceToken: 't' },
+      );
+    });
+
+    it('a different person is refused and nothing is stored', async () => {
+      face.compare.mockResolvedValueOnce({
+        confidence: 60,
+        thresholds: { '1e-5': 74 },
+      });
+      await expect(service.enroll('u1', photo, AUTH)).rejects.toThrow(
+        PROFILE_PICTURE_MISMATCH,
+      );
+      expect(upload).not.toHaveBeenCalled();
+      expect(users.update).not.toHaveBeenCalled();
+    });
   });
 
   it('remove: deletes the row and the file, turns face login off', async () => {
