@@ -244,7 +244,7 @@ All routes are JSON and use the `session` cookie for authentication. **Interacti
 | Subscriptions | `/subscriptions` | `checkout`, `webhook`, `status`, `subscriptionDetails`, `cancel`, `paymentsHistory`; admin stats and history |
 | Digital tools | `/ocr` | `upload/pdf`, `upload/image`, `image/resize`, `image/edit`, `image/remove-bg` |
 | Activity logs | `/activity-logs` | own log, admin list, filters, CSV export, stats |
-| Health | `/healthz` | uptime check |
+| Health | `/`, `/healthz` | `/`: welcome, database status (checked at most every 30 s), deployed version, links; `/healthz`: uptime check |
 
 ---
 
