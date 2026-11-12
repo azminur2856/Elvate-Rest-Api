@@ -1,11 +1,14 @@
 import { Transform, Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
   IsUUID,
+  Length,
   Max,
   MaxLength,
   Min,
@@ -71,6 +74,47 @@ export class OrderNotesDto {
   @IsString()
   @MaxLength(2000)
   adminNotes: string | null;
+}
+
+/** BE-29: why the admin corrects a stuck delivery. */
+export enum CorrectionReason {
+  DELIVERY_MAN_CONFIRMED_BY_PHONE = 'DELIVERY_MAN_CONFIRMED_BY_PHONE',
+  CUSTOMER_CONFIRMED = 'CUSTOMER_CONFIRMED',
+  DELIVERY_MAN_UNAVAILABLE = 'DELIVERY_MAN_UNAVAILABLE',
+  OTHER = 'OTHER',
+}
+
+export const CORRECTION_REASON_LABELS: Record<CorrectionReason, string> = {
+  [CorrectionReason.DELIVERY_MAN_CONFIRMED_BY_PHONE]:
+    'Delivery man confirmed by phone',
+  [CorrectionReason.CUSTOMER_CONFIRMED]: 'Customer confirmed',
+  [CorrectionReason.DELIVERY_MAN_UNAVAILABLE]: 'Delivery man unavailable',
+  [CorrectionReason.OTHER]: 'Other',
+};
+
+export const CORRECTION_ACTIONS = [
+  OrderStatus.DELIVERED,
+  OrderStatus.RETURN_REQUESTED,
+] as const;
+export type CorrectionAction = (typeof CORRECTION_ACTIONS)[number];
+
+/** POST /admin/orders/:id/correction (ADMIN only, OUT_FOR_DELIVERY only). */
+export class OrderCorrectionDto {
+  @IsIn(CORRECTION_ACTIONS)
+  action: CorrectionAction;
+
+  @IsEnum(CorrectionReason)
+  reason: CorrectionReason;
+
+  @trim
+  @IsString()
+  @Length(10, 500)
+  note: string;
+
+  /** Required for cash on delivery when action is DELIVERED. */
+  @IsOptional()
+  @IsBoolean()
+  cashCollected?: boolean;
 }
 
 export class OrderStatsQueryDto {
