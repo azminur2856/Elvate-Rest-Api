@@ -45,6 +45,28 @@ export const ON_THE_WAY = [
  */
 export const ACTIVE_DELIVERY = [...ON_THE_WAY, OrderStatus.RETURN_REQUESTED];
 const ASSIGNABLE = new Set([OrderStatus.PROCESSING, OrderStatus.SHIPPED]);
+
+/** GET /admin/deliveries/summary (BE-29). */
+export type DeliverySummary = {
+  /** PROCESSING / SHIPPED without a delivery man. */
+  waitingForDeliveryMan: number;
+  /** SHIPPED with a delivery man, not picked up yet. */
+  assignedNotPickedUp: number;
+  outForDelivery: number;
+  deliveredToday: number;
+  returnRequests: number;
+  /** Cash on delivery collected today (paid COD orders delivered today). */
+  cashCollectedToday: number;
+  deliveryMen: {
+    id: string;
+    name: string;
+    phone: string | null;
+    active: boolean;
+    outNow: number;
+    deliveredToday: number;
+    cashCollectedToday: number;
+  }[];
+};
 export const ONLY_DELIVERY_MAN =
   'Only the assigned delivery man can update delivery progress.';
 const LOW_STOCK = 5;
@@ -61,6 +83,14 @@ const isPlainDate = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s);
 /** Calendar day in Bangladesh for a timestamp column (stored as UTC wall clock). */
 const dhakaDay = (col: string) =>
   `to_char((${col} AT TIME ZONE 'UTC') AT TIME ZONE 'Asia/Dhaka', 'YYYY-MM-DD')`;
+
+/** Start of today in Bangladesh, as a UTC instant. */
+export function startOfDhakaToday(now = new Date()) {
+  const day = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Dhaka',
+  }).format(now);
+  return new Date(`${day}T00:00:00+06:00`);
+}
 
 const dhakaDate = (d: Date) =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Dhaka' }).format(d);
@@ -305,6 +335,96 @@ export class AdminOrdersService {
       phone: r.phone ?? null,
       activeOrders: count.get(r.id) ?? 0,
     }));
+  }
+
+  /** Overview cards and the delivery men panel (Bangladesh "today"). */
+  async deliverySummary(): Promise<DeliverySummary> {
+    const today = startOfDhakaToday();
+    const params = {
+      waiting: [OrderStatus.PROCESSING, OrderStatus.SHIPPED],
+      shipped: OrderStatus.SHIPPED,
+      out: OrderStatus.OUT_FOR_DELIVERY,
+      delivered: OrderStatus.DELIVERED,
+      returnRequested: OrderStatus.RETURN_REQUESTED,
+      cod: PaymentMethod.COD,
+      paid: PaymentStatus.PAID,
+      today,
+    };
+    const deliveredToday = 'o.status = :delivered AND o.deliveredAt >= :today';
+    const cashToday = `${deliveredToday} AND o.paymentMethod = :cod AND o.paymentStatus = :paid`;
+
+    const [totals, perRider, riders] = await Promise.all([
+      this.orders
+        .createQueryBuilder('o')
+        .select(
+          'COUNT(*) FILTER (WHERE o.status IN (:...waiting) AND o.deliveryManId IS NULL)',
+          'waiting',
+        )
+        .addSelect(
+          'COUNT(*) FILTER (WHERE o.status = :shipped AND o.deliveryManId IS NOT NULL)',
+          'assigned',
+        )
+        .addSelect('COUNT(*) FILTER (WHERE o.status = :out)', 'out')
+        .addSelect(`COUNT(*) FILTER (WHERE ${deliveredToday})`, 'delivered')
+        .addSelect(
+          'COUNT(*) FILTER (WHERE o.status = :returnRequested)',
+          'returns',
+        )
+        .addSelect(
+          `COALESCE(SUM(o.total) FILTER (WHERE ${cashToday}), 0)`,
+          'cash',
+        )
+        .where(
+          '(o.status IN (:...waiting, :out, :returnRequested) OR o.deliveredAt >= :today)',
+        )
+        .setParameters(params)
+        .getRawOne<Record<string, string>>(),
+      this.orders
+        .createQueryBuilder('o')
+        .select('o.deliveryManId', 'id')
+        .addSelect('COUNT(*) FILTER (WHERE o.status = :out)', 'out')
+        .addSelect(`COUNT(*) FILTER (WHERE ${deliveredToday})`, 'delivered')
+        .addSelect(
+          `COALESCE(SUM(o.total) FILTER (WHERE ${cashToday}), 0)`,
+          'cash',
+        )
+        .where('o.deliveryManId IS NOT NULL')
+        .andWhere('(o.status = :out OR o.deliveredAt >= :today)')
+        .setParameters(params)
+        .groupBy('o.deliveryManId')
+        .getRawMany<{
+          id: string;
+          out: string;
+          delivered: string;
+          cash: string;
+        }>(),
+      this.dataSource.getRepository(Users).find({
+        where: { role: Role.DELIVERY_MAN },
+        order: { isActive: 'DESC', firstName: 'ASC', lastName: 'ASC' },
+      }),
+    ]);
+
+    const byRider = new Map(perRider.map((r) => [r.id, r]));
+    return {
+      waitingForDeliveryMan: Number(totals?.waiting ?? 0),
+      assignedNotPickedUp: Number(totals?.assigned ?? 0),
+      outForDelivery: Number(totals?.out ?? 0),
+      deliveredToday: Number(totals?.delivered ?? 0),
+      returnRequests: Number(totals?.returns ?? 0),
+      cashCollectedToday: Number(totals?.cash ?? 0),
+      deliveryMen: riders.map((r) => {
+        const row = byRider.get(r.id);
+        return {
+          id: r.id,
+          name: fullName(r),
+          phone: r.phone ?? null,
+          active: r.isActive,
+          outNow: Number(row?.out ?? 0),
+          deliveredToday: Number(row?.delivered ?? 0),
+          cashCollectedToday: Number(row?.cash ?? 0),
+        };
+      }),
+    };
   }
 
   /**

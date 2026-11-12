@@ -17,7 +17,11 @@ import {
   OrderSummary,
   OrdersService,
 } from 'src/orders/orders.service';
-import { ACTIVE_DELIVERY, ON_THE_WAY } from 'src/orders/admin-orders.service';
+import {
+  ACTIVE_DELIVERY,
+  ON_THE_WAY,
+  startOfDhakaToday,
+} from 'src/orders/admin-orders.service';
 import { DeliveryOrdersQueryDto, DeliveryStatusDto } from './dto/delivery.dto';
 import { AddressSnapshot } from 'src/addresses/addresses.service';
 import { AuthUser } from 'src/common/auth-user';
@@ -31,14 +35,6 @@ export type DeliveryOrder = OrderSummary & {
 };
 
 const COMPLETED = [OrderStatus.DELIVERED, OrderStatus.RETURNED];
-
-/** Start of today in Bangladesh, as a UTC instant. */
-function startOfDhakaToday(now = new Date()) {
-  const day = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Dhaka',
-  }).format(now);
-  return new Date(`${day}T00:00:00+06:00`);
-}
 
 /**
  * Delivery man views (BE-17). A DELIVERY_MAN only ever sees orders assigned
