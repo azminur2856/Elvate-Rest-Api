@@ -35,7 +35,7 @@ export const CHALLENGE_TTL_MS = 2 * 60_000;
 
 /** One answer for every failure, so face login reveals nothing (SEC-12). */
 export const FACE_LOGIN_FAILED =
-  'Face login failed. Make sure only your face is in good light and follow the prompt, or sign in with your password.';
+  "We couldn't sign you in with your face. If you haven't set up face login yet, sign in with your password and set it up from your profile. Otherwise, make sure your face is clearly visible in good light and follow the on-screen prompt.";
 
 export interface FaceChallenge {
   challengeId: string;
