@@ -5,15 +5,21 @@ import {
   IsString,
   IsDateString,
   IsPhoneNumber,
+  MaxLength,
 } from 'class-validator';
+
+/** SEC-15: names appear in e-mails and on reviews. */
+export const MAX_NAME_LENGTH = 50;
 
 export class CreateUserDto {
   @IsNotEmpty()
   @IsString()
+  @MaxLength(MAX_NAME_LENGTH)
   firstName: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(MAX_NAME_LENGTH)
   lastName?: string;
 
   @IsOptional()
