@@ -18,6 +18,9 @@ import { MAX_EDGE, type EditOptionsDto } from './dto/edit-image.dto';
 import { openImage } from 'src/common/image-input';
 import { TesseractPool } from './tesseract-pool';
 
+/** SEC-17: pages of a PDF that are read for text. */
+export const MAX_PDF_PAGES = 20;
+
 /** Validated edit options (see `EditOptionsDto` for the limits). */
 export type EditOptions = EditOptionsDto;
 
@@ -86,7 +89,8 @@ export class OcrService {
       description: `User ${userId} extracted text from a PDF document.`,
       user: user,
     });
-    const data = await pdfParse(buffer);
+    // SEC-17: a 5 000-page PDF must not be parsed in full on a small server
+    const data = await pdfParse(buffer, { max: MAX_PDF_PAGES });
     return { text: data.text.trim() };
   }
 
