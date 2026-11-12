@@ -29,6 +29,10 @@ import { VerificationType } from './enums/verification-type.enum';
 import { maskEmail } from './utility/email-mask.util';
 import { generateOtp } from './utility/otp.util';
 import { useSmsCode } from './utility/sms-code';
+import {
+  LoginAttemptsService,
+  emailKey,
+} from './attempts/login-attempts.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { generateVerificationToken } from './utility/token.util';
 import { VerifyPhoneDto } from './dto/verify-Phone.dto';
@@ -55,6 +59,7 @@ export class AuthService {
     private verificationRepository: Repository<Verification>,
     @InjectRepository(UserSession)
     private sessionRepository: Repository<UserSession>,
+    private loginAttempts: LoginAttemptsService,
   ) {}
 
   // Verify Registration after user sign up
@@ -85,14 +90,20 @@ export class AuthService {
 
   // Validate user credentials
   async validateUser(email: string, password: string) {
+    // SEC-06: per-account limit, so rotating IPs does not help a guesser
+    const keys = [emailKey('password-email', email)];
+    await this.loginAttempts.assertNotLocked(keys);
     const user = await this.usersService.findByEmail(email);
     if (!user) {
+      await this.loginAttempts.recordFailure(keys);
       throw new UnauthorizedException('User not found');
     }
     const isPasswordMatch = await compare(password, user.password);
     if (!isPasswordMatch) {
+      await this.loginAttempts.recordFailure(keys);
       throw new UnauthorizedException('Invalid password');
     }
+    await this.loginAttempts.clear(keys);
     if (!user.isEmailVerified) {
       throw new UnauthorizedException(
         'Email not verified. Please check your inbox and verify your email address to proceed.',
