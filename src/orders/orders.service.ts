@@ -134,6 +134,27 @@ export type Quote = {
   freeShippingThreshold: number | null;
 };
 
+/** BE-29: an admin correction of a delivery stuck in OUT_FOR_DELIVERY. */
+export type StatusCorrection = {
+  /** Reason label for the activity log. */
+  reason: string;
+  /** COD + DELIVERED: false leaves the order UNPAID. */
+  cashCollected?: boolean;
+};
+
+const correctionDetails = (
+  order: Pick<Order, 'paymentMethod'>,
+  c: StatusCorrection | undefined,
+) =>
+  c
+    ? ` (correction: ${c.reason}${
+        order.paymentMethod === PaymentMethod.COD &&
+        c.cashCollected !== undefined
+          ? `; cash collected: ${c.cashCollected ? 'yes' : 'no'}`
+          : ''
+      })`
+    : '';
+
 /** Stripe Checkout sessions must live ≥ 30 min; a little slack for clock skew. */
 const CHECKOUT_TTL_SECONDS = 31 * 60;
 
@@ -701,12 +722,14 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
    * The one place an order changes status: validates the transition, refunds
    * a paid card order on CANCELLED/RETURNED, restocks, releases the coupon,
    * marks COD paid on DELIVERED, writes history, logs and e-mails.
+   * `correction` (BE-29) marks the history row and logs it as a correction.
    */
   async changeStatus(
     orderId: string,
     to: OrderStatus,
     note: string | null,
     actor: AuthUser | null,
+    correction?: StatusCorrection,
   ) {
     const current = await this.orders.findOne({ where: { id: orderId } });
     if (!current) throw new NotFoundException('Order not found');
@@ -742,7 +765,14 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
           refunded = true;
           order.paymentStatus = PaymentStatus.REFUNDED;
         }
-        return this.applyStatus(m, order, to, note, actor?.id ?? null);
+        return this.applyStatus(
+          m,
+          order,
+          to,
+          note,
+          actor?.id ?? null,
+          correction,
+        );
       });
     } catch (err) {
       // the money already went back: never leave the order claiming PAID
@@ -761,8 +791,9 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
       await this.expireSession(updated.stripeSessionId);
     }
 
-    const activity =
-      to === OrderStatus.CANCELLED && actor?.id === updated.userId
+    const activity = correction
+      ? ActivityType.ADMIN_ORDER_CORRECTION
+      : to === OrderStatus.CANCELLED && actor?.id === updated.userId
         ? ActivityType.ORDER_CANCEL
         : actor?.role === Role.DELIVERY_MAN
           ? ActivityType.DELIVERY_UPDATE_STATUS
@@ -772,7 +803,7 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
     await this.log(
       actor?.id ?? updated.userId,
       activity,
-      `${actor ? `${actor.role} ${actor.id}` : 'System'} moved order ${updated.orderNumber} to ${to}${refunded ? ' (card payment refunded)' : ''}`,
+      `${actor ? `${actor.role} ${actor.id}` : 'System'} ${correction ? 'corrected' : 'moved'} order ${updated.orderNumber} to ${to}${correctionDetails(updated, correction)}${refunded ? ' (card payment refunded)' : ''}`,
     );
     if (refunded) {
       await this.log(
@@ -798,6 +829,7 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
     to: OrderStatus,
     note: string | null,
     actorId: string | null,
+    correction?: StatusCorrection,
   ) {
     const now = new Date();
     order.status = to;
@@ -806,7 +838,8 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
       order.deliveredAt = now;
       if (
         order.paymentMethod === PaymentMethod.COD &&
-        order.paymentStatus === PaymentStatus.UNPAID
+        order.paymentStatus === PaymentStatus.UNPAID &&
+        correction?.cashCollected !== false
       ) {
         order.paymentStatus = PaymentStatus.PAID;
         order.paidAt = now;
@@ -854,6 +887,7 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
       status: to,
       note,
       changedById: actorId,
+      correction: !!correction,
     });
     return order;
   }
