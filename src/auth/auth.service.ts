@@ -646,29 +646,14 @@ export class AuthService {
   }
 
   // Verify Phone Number
-  async verifyPhone(verifyPhoneDto: VerifyPhoneDto) {
-    const verification = await this.verificationRepository.findOne({
-      where: {
-        tokenOrOtp: verifyPhoneDto.otp,
-        type: VerificationType.PHONE_VERIFICATION,
-      },
-      relations: ['user'],
-    });
-
-    if (!verification) {
-      throw new NotFoundException('OTP not found');
-    }
-
-    if (verification.isUsed) {
-      throw new BadRequestException('OTP has already been used');
-    }
-
-    if (new Date() > verification.expiresAt) {
-      throw new BadRequestException('OTP has expired');
-    }
-
-    verification.isUsed = true;
-    await this.verificationRepository.save(verification);
+  /** SEC-05: only the caller's own latest code counts, 5 guesses max. */
+  async verifyPhone(userId: string, verifyPhoneDto: VerifyPhoneDto) {
+    const verification = await useSmsCode(
+      this.verificationRepository,
+      userId,
+      VerificationType.PHONE_VERIFICATION,
+      verifyPhoneDto.otp,
+    );
 
     await this.usersService.verifyPhoneNumber(verification.user.id);
 

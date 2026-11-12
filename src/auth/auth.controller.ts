@@ -39,6 +39,7 @@ import {
 import { FaceLoginService } from './face-login/face-login.service';
 import { FaceChallengeDto, FaceLoginDto } from './face-login/face-login.dto';
 import { clientIp } from './throttle/rate-limit';
+import type { AuthRequest } from 'src/common/auth-user';
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -170,8 +171,11 @@ export class AuthController {
 
   @Post('verifyPhone')
   @RateLimit(RATE_LIMITS.verifyPhone)
-  async verifyPhone(@Body(ValidationPipe) verifyPhoneDto: VerifyPhoneDto) {
-    return this.authService.verifyPhone(verifyPhoneDto);
+  async verifyPhone(
+    @Req() req: AuthRequest,
+    @Body(ValidationPipe) verifyPhoneDto: VerifyPhoneDto,
+  ) {
+    return this.authService.verifyPhone(req.user.id, verifyPhoneDto);
   }
 
   /**
