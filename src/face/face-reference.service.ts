@@ -52,9 +52,12 @@ export interface FaceSetupAuth {
   sessionId?: string;
 }
 
-/** A real profile picture, not the default placeholder. */
-export const hasProfilePicture = (user: Pick<Users, 'profileImage'>) =>
-  !!user.profileImage && user.profileImage !== 'profile.png';
+/** A real profile picture (private since BE-28, or a legacy public one). */
+export const hasProfilePicture = (
+  user: Pick<Users, 'profileImage' | 'profileImagePath'>,
+) =>
+  !!user.profileImagePath ||
+  (!!user.profileImage && user.profileImage !== 'profile.png');
 
 export interface FaceLoginState {
   faceLoginEnabled: boolean;
@@ -219,7 +222,9 @@ export class FaceReferenceService implements OnApplicationBootstrap {
   /** Short-lived signed URL Face++ fetches the profile picture from. */
   private profilePictureUrl(user: Users): string {
     return imagekit.url({
-      path: `/user_profile_image/user_${user.id}/${user.profileImage}`,
+      path:
+        user.profileImagePath ??
+        `/user_profile_image/user_${user.id}/${user.profileImage}`,
       signed: true,
       expireSeconds: SIGNED_URL_SECONDS,
     });

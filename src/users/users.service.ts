@@ -4,6 +4,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -23,12 +24,19 @@ import { UserSession } from 'src/auth/entities/user-session.entity';
 import { VerificationType } from 'src/auth/enums/verification-type.enum';
 import { maskEmail } from 'src/auth/utility/email-mask.util';
 import { imagekit } from 'src/auth/utility/imagekit';
+import { newAvatarKey, ownAvatarUrl } from 'src/common/media';
 import type { FileObject } from 'imagekit/dist/libs/interfaces';
 import { Role } from './enums/role.enum';
 import axios from 'axios';
 
+/** ImageKit folder of a user's profile pictures. */
+export const profileImageFolder = (userId: string) =>
+  `/user_profile_image/user_${userId}`;
+
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private activityLogsService: ActivityLogsService,
     @InjectRepository(Users) private userRepository: Repository<Users>,
@@ -498,6 +506,11 @@ export class UsersService {
   //   clearDirectory(uploadPath, profileImageFileName, 'profileImage-'); // Delete old files starting with "profileImage-" except the new file
 
   // Upload profile image to ImageKit
+  /**
+   * BE-28: profile pictures are private ImageKit files. Each upload gets a
+   * new avatarKey (so old review-photo links stop working) and the previous
+   * file is deleted. The reply carries our own path, never an ImageKit URL.
+   */
   async uploadProfileImage(
     userId: string,
     fileBuffer: Buffer,
@@ -509,70 +522,66 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const folder = `/user_profile_image/user_${userId}`;
-
-    // Upload image to ImageKit
-    const uploadResponse = await imagekit.upload({
+    const upload = await imagekit.upload({
       file: fileBuffer,
       fileName: `${fileName}.jpg`,
-      folder: folder,
-      useUniqueFileName: false,
-      isPrivateFile: false,
+      folder: profileImageFolder(userId),
+      useUniqueFileName: true,
+      isPrivateFile: true,
     });
-
-    if (user.profileImage && user.profileImage !== 'profile.png') {
-      try {
-        // `path` limits the search to this user's folder (`folder` is not a
-        // listFiles option and was silently ignored, searching the whole library).
-        const files = await imagekit.listFiles({ path: folder });
-
-        const fileToDelete = files.find(
-          (file): file is FileObject =>
-            file.type === 'file' && file.name === user.profileImage,
-        );
-
-        if (fileToDelete) {
-          await imagekit.deleteFile(fileToDelete.fileId);
-          try {
-            const cleanUrl = fileToDelete.url.split('?')[0];
-            await imagekit.purgeCache(cleanUrl);
-            console.log('Cache purged for old image:', cleanUrl);
-            console.log('Cache purged for old image:', fileToDelete.url);
-          } catch (purgeError) {
-            console.warn('Failed to purge cache for old image:', purgeError);
-          }
-        } else {
-          console.warn('Old image not found in ImageKit folder');
-        }
-      } catch (err) {
-        console.warn('Failed to fetch or delete old image from ImageKit:', err);
-      }
-    }
-
-    // Save new image file name
+    const avatarKey = newAvatarKey();
     // BE-26: face login compares with its own private reference, so a new
-    // profile picture no longer switches it off
+    // profile picture does not switch it off
     const result = await this.userRepository.update(userId, {
-      profileImage: uploadResponse.name,
+      profileImage: upload.name,
+      profileImageFileId: upload.fileId,
+      profileImagePath: upload.filePath,
+      avatarKey,
     });
-
     if (result.affected === 0) {
       throw new NotFoundException('Failed to update profile image');
     }
+    await this.deleteProfilePictureFile(user);
 
-    // Log activity
-    const activityLog = {
+    await this.activityLogsService.createActivityLog({
       activity: ActivityType.USER_UPDATE_PROFILE,
       description: 'User Changed Profile Image',
       user,
-    };
-    await this.activityLogsService.createActivityLog(activityLog);
+    });
 
     return {
       message: 'Profile Image Updated Successfully',
-      imageUrl: uploadResponse.url,
+      avatarUrl: ownAvatarUrl({
+        id: userId,
+        avatarKey,
+        profileImagePath: upload.filePath,
+      }),
       userAffected: result.affected,
     };
+  }
+
+  /** Deletes the user's current picture file (private by id, legacy by name). */
+  private async deleteProfilePictureFile(user: Users): Promise<void> {
+    try {
+      if (user.profileImageFileId) {
+        await imagekit.deleteFile(user.profileImageFileId);
+        return;
+      }
+      if (!user.profileImage || user.profileImage === 'profile.png') return;
+      // legacy public file: find it by name in the user's folder
+      const files = await imagekit.listFiles({
+        path: profileImageFolder(user.id),
+      });
+      const old = files.find(
+        (f): f is FileObject =>
+          f.type === 'file' && f.name === user.profileImage,
+      );
+      if (old) await imagekit.deleteFile(old.fileId);
+    } catch (err) {
+      this.logger.warn(
+        `Could not delete the old profile picture of ${user.id}: ${String(err)}`,
+      );
+    }
   }
 
   //Get user profile image from ImageKit
