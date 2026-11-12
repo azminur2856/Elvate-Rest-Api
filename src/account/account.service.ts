@@ -26,6 +26,7 @@ import { imagekit } from 'src/auth/utility/imagekit';
 import stripeConfig from 'src/subscription/config/stripe.config';
 import { DeleteAccountDto } from './dto/account.dto';
 import { FaceReferenceService } from 'src/face/face-reference.service';
+import { hasUsablePassword } from 'src/common/password';
 
 /** Contract `DeviceSession`. */
 export type DeviceSession = {
@@ -37,8 +38,10 @@ export type DeviceSession = {
   current: boolean;
 };
 
-// moved to src/common/password.ts (face setup needs it too)
-export { hasUsablePassword } from 'src/common/password';
+// moved to src/common/password.ts (face setup needs it too); re-exported
+// for old imports. A plain `export { … } from` here crashes the TypeScript
+// emitter next to the decorated class below, hence import + export.
+export { hasUsablePassword };
 
 @Injectable()
 export class AccountService {
