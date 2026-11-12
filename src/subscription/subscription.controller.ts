@@ -19,6 +19,11 @@ import { Public } from 'src/auth/decorators/public.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/users/enums/role.enum';
 import { OrdersService } from 'src/orders/orders.service';
+import {
+  CancelSubscriptionDto,
+  CreateCheckoutDto,
+} from './dto/subscription.dto';
+import { PaginationQueryDto, pageParams } from 'src/common/pagination';
 
 @ApiTags('Subscriptions')
 @Controller('subscriptions')
@@ -30,8 +35,8 @@ export class SubscriptionController {
   ) {}
 
   @Post('checkout')
-  createCheckout(@Req() req, @Body('plan') plan: '1m' | '6m' | '12m') {
-    return this.subService.createCheckoutSession(req.user.id, plan);
+  createCheckout(@Req() req, @Body() dto: CreateCheckoutDto) {
+    return this.subService.createCheckoutSession(req.user.id, dto.plan);
   }
 
   @Public() // or remove guard for this route
@@ -91,11 +96,8 @@ export class SubscriptionController {
   }
 
   @Post('cancel')
-  async cancelSubscription(
-    @Req() req,
-    @Body('subscriptionId') subscriptionId: string,
-  ) {
-    return this.subService.cancelSubscription(req.user.id, subscriptionId);
+  async cancelSubscription(@Req() req, @Body() dto: CancelSubscriptionDto) {
+    return this.subService.cancelSubscription(req.user.id, dto.subscriptionId);
   }
 
   @Roles(Role.ADMIN)
@@ -118,27 +120,17 @@ export class SubscriptionController {
 
   @Roles(Role.ADMIN)
   @Get('getAllPayments')
-  getAllPayments(
-    @Query('page') page = '1',
-    @Query('pageSize') pageSize = '10',
-  ) {
-    return this.subService.getAllPayments(
-      parseInt(page, 10) || 1,
-      parseInt(pageSize, 10) || 10,
-    );
+  getAllPayments(@Query() query: PaginationQueryDto) {
+    const { page, pageSize } = pageParams(query); // pageSize capped at 100
+    return this.subService.getAllPayments(page, pageSize);
   }
 
   // subscriptions.controller.ts
 
   @Roles(Role.ADMIN)
   @Get('getAllSubscriptions')
-  getAllSubscriptionsAdmin(
-    @Query('page') page = '1',
-    @Query('pageSize') pageSize = '10',
-  ) {
-    return this.subService.getAllSubscriptionsAdmin(
-      parseInt(page, 10) || 1,
-      parseInt(pageSize, 10) || 10,
-    );
+  getAllSubscriptionsAdmin(@Query() query: PaginationQueryDto) {
+    const { page, pageSize } = pageParams(query); // pageSize capped at 100
+    return this.subService.getAllSubscriptionsAdmin(page, pageSize);
   }
 }

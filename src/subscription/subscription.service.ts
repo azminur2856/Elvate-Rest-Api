@@ -97,7 +97,7 @@ export class SubscriptionService {
 
   private readonly FRONTEND_URL = process.env.FRONTEND_URL;
 
-  async createCheckoutSession(userId: string, plan: '1m' | '6m' | '12m') {
+  async createCheckoutSession(userId: string, plan: Plan) {
     const priceMap = {
       '1m': this.stripeSettings.price1m,
       '6m': this.stripeSettings.price6m,
