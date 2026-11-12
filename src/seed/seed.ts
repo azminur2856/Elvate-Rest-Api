@@ -25,6 +25,8 @@ import { CATEGORIES, PRODUCTS, SeedProduct } from './catalog-data';
 import { productArt } from './product-art';
 import { slugify } from '../common/slug';
 import { imagekit } from '../auth/utility/imagekit';
+import { AppSetting } from '../settings/app-setting.entity';
+import { SETTINGS } from '../settings/settings.registry';
 
 const args = new Set(process.argv.slice(2));
 const DAY = 24 * 3600 * 1000;
@@ -90,6 +92,7 @@ async function main() {
     await seedCoupons(ds.manager);
     await seedFlashSale(ds.manager, products);
     await seedUsers(ds.manager);
+    await seedSettings(ds.manager);
     console.log('Done.');
   } finally {
     await ds.destroy();
@@ -308,6 +311,21 @@ async function seedUsers(m: EntityManager) {
       `User: ${u.email} (${u.role}), password ${process.env.SEED_DEMO_PASSWORD ? 'from SEED_DEMO_PASSWORD' : DEMO_PASSWORD}`,
     );
   }
+}
+
+/** BE-25: create missing switches with their default (SMS stays OFF). */
+async function seedSettings(m: EntityManager) {
+  const result = await m
+    .createQueryBuilder()
+    .insert()
+    .into(AppSetting)
+    .values(SETTINGS.map((s) => ({ key: s.key, enabled: s.defaultEnabled })))
+    .orIgnore()
+    .execute();
+  const created = (result.raw as unknown[] | undefined)?.length ?? 0;
+  console.log(
+    `Settings: ${created} created (existing switches are left as they are)`,
+  );
 }
 
 main().catch((err) => {
