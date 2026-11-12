@@ -123,8 +123,11 @@ async function deleteLegacyFile(userId: string, name: string) {
 }
 
 if (require.main === module) {
-  main().catch((err) => {
-    console.error('Migration failed:', err);
-    process.exit(1);
-  });
+  main()
+    // the ImageKit client keeps sockets open; leave once the work is done
+    .then(() => process.exit(0))
+    .catch((err) => {
+      console.error('Migration failed:', err);
+      process.exit(1);
+    });
 }
