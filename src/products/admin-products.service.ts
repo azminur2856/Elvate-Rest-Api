@@ -35,6 +35,7 @@ import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { actorLabel, AuthUser } from 'src/common/auth-user';
 import { Users } from 'src/users/entities/users.entity';
 import { imagekit } from 'src/auth/utility/imagekit';
+import { openImage } from 'src/common/image-input';
 
 export type AdminProductDetail = ProductDetail & {
   salePrice: number | null;
@@ -374,6 +375,9 @@ export class AdminProductsService {
       );
     }
 
+    // SEC-18: the file content decides, not the MIME type the client sent
+    const formats = await Promise.all(files.map((f) => productImageFormat(f)));
+
     let nextOrder = existing.reduce((m, i) => Math.max(m, i.sortOrder + 1), 0);
     const hasMain = existing.some((i) => i.isMain);
     const uploaded: ProductImage[] = [];
@@ -381,7 +385,7 @@ export class AdminProductsService {
       for (const [index, file] of files.entries()) {
         const res = await imagekit.upload({
           file: file.buffer,
-          fileName: `${product.slug}-${Date.now()}-${index}${extensionOf(file.mimetype)}`,
+          fileName: `${product.slug}-${Date.now()}-${index}${EXTENSIONS[formats[index]]}`,
           folder: `/products/${id}`,
           useUniqueFileName: true,
         });
@@ -712,10 +716,28 @@ export class AdminProductsService {
   }
 }
 
-function extensionOf(mimetype: string) {
-  return mimetype === 'image/png'
-    ? '.png'
-    : mimetype === 'image/webp'
-      ? '.webp'
-      : '.jpg';
+/** Product photos browsers can show: JPG, PNG, WebP (no HEIC). */
+const EXTENSIONS = { jpeg: '.jpg', png: '.png', webp: '.webp' } as const;
+type ProductImageFormat = keyof typeof EXTENSIONS;
+
+/**
+ * SEC-18: reads the image header (real format, at most 25 MP) and refuses
+ * anything that is not a JPG, PNG or WebP picture, whatever its MIME type.
+ */
+export async function productImageFormat(
+  file: Pick<Express.Multer.File, 'buffer' | 'originalname'>,
+): Promise<ProductImageFormat> {
+  const wrongType = new BadRequestException(
+    `${file.originalname}: only JPG, PNG or WebP images are allowed`,
+  );
+  let format: string;
+  try {
+    format = (await openImage(file.buffer)).format;
+  } catch (err) {
+    const message = (err as Error).message;
+    if (message.startsWith('Only ')) throw wrongType; // e.g. GIF, TIFF
+    throw new BadRequestException(`${file.originalname}: ${message}`);
+  }
+  if (!(format in EXTENSIONS)) throw wrongType; // HEIC
+  return format as ProductImageFormat;
 }
