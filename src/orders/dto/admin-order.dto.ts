@@ -15,6 +15,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { PaginationQueryDto } from 'src/common/pagination';
+import { toBool, toList } from 'src/common/query';
 import { OrderStatus, PaymentMethod, PaymentStatus } from '../order.enums';
 
 const trim = Transform(({ value }: { value: unknown }) =>
@@ -50,6 +51,23 @@ export class AdminOrdersQueryDto extends PaginationQueryDto {
   @IsOptional()
   @IsDateString()
   toDate?: string;
+
+  /** BE-29: orders assigned to this delivery man. */
+  @IsOptional()
+  @IsUUID()
+  deliveryManId?: string;
+
+  /** BE-29: several statuses as CSV, e.g. "PROCESSING,SHIPPED" (list only, like `status`). */
+  @IsOptional()
+  @Transform(toList)
+  @IsEnum(OrderStatus, { each: true })
+  statuses?: OrderStatus[];
+
+  /** BE-29: `true` = orders without a delivery man. */
+  @IsOptional()
+  @Transform(toBool)
+  @IsBoolean()
+  unassigned?: boolean;
 }
 
 export class UpdateOrderStatusDto {
