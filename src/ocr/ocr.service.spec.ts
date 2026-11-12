@@ -30,6 +30,7 @@ describe('OcrService.removeBackground (BE-21)', () => {
           .mockResolvedValue({ isSubscribed: subscribed }),
       } as never,
       remover as BackgroundRemover,
+      {} as never, // TesseractPool
     );
 
   it('403 when the user is not subscribed', async () => {

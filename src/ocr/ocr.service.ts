@@ -11,12 +11,12 @@ import {
 } from './background/background-remover';
 import * as pdfParse from 'pdf-parse';
 import { SubscriptionService } from 'src/subscription/subscription.service';
-import * as Tesseract from 'tesseract.js';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { UsersService } from 'src/users/users.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { MAX_EDGE, type EditOptionsDto } from './dto/edit-image.dto';
 import { openImage } from 'src/common/image-input';
+import { TesseractPool } from './tesseract-pool';
 
 /** Validated edit options (see `EditOptionsDto` for the limits). */
 export type EditOptions = EditOptionsDto;
@@ -28,6 +28,7 @@ export class OcrService {
     private usersService: UsersService,
     private subscriptionService: SubscriptionService,
     @Inject(BACKGROUND_REMOVER) private readonly remover: BackgroundRemover,
+    private readonly tesseract: TesseractPool,
   ) {}
 
   /** BE-21: subscribed users only; PNG with a transparent background, as base64. */
@@ -113,11 +114,9 @@ export class OcrService {
       user: user,
     });
 
-    // Use Tesseract.js to extract text from image
-    const result = await Tesseract.recognize(buffer, 'eng', {
-      logger: (m) => console.log(m), // Optional progress log
-    });
-    return { text: result.data.text.trim() };
+    // SEC-17: the shared, queued worker (no per-request worker, no progress log)
+    const text = await this.tesseract.recognize(buffer);
+    return { text: text.trim() };
   }
 
   async resizeImage(

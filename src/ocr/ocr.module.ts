@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { OcrController } from './ocr.controller';
 import { OcrService } from './ocr.service';
+import { TesseractPool } from './tesseract-pool';
 import { Subscription } from 'src/subscription/entities/subscription.entity';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { SubscriptionModule } from 'src/subscription/subscription.module';
@@ -22,6 +23,7 @@ import {
   providers: [
     OcrService,
     ActivityLogsService,
+    TesseractPool,
     { provide: BACKGROUND_REMOVER, useClass: RemoveBgProvider },
   ],
 })
