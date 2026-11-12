@@ -16,6 +16,7 @@ import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { actorLabel, AuthUser } from 'src/common/auth-user';
 import { Users } from 'src/users/entities/users.entity';
+import { toImgPath } from 'src/common/media';
 
 /** Contract `Category`. `children` is present in tree responses. */
 export type CategoryView = {
@@ -297,7 +298,7 @@ export class CategoriesService implements OnApplicationBootstrap {
         id: r.id,
         name: r.name,
         slug: r.slug,
-        imageUrl: r.imageUrl,
+        imageUrl: toImgPath(r.imageUrl), // BE-28: never the ImageKit host
         parentId: r.parentId,
         sortOrder: r.sortOrder,
         productCount: counts.get(r.id) ?? 0,
