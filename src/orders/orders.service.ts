@@ -9,7 +9,7 @@ import {
   OnApplicationBootstrap,
   OnModuleDestroy,
 } from '@nestjs/common';
-import { ConfigService, ConfigType } from '@nestjs/config';
+import { ConfigType } from '@nestjs/config';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { randomInt } from 'crypto';
 import Stripe from 'stripe';
@@ -52,6 +52,8 @@ import { Paginated, pageParams, paginated } from 'src/common/pagination';
 import { ownAvatarUrl, staffAvatarUrl, toImgPath } from 'src/common/media';
 import stripeConfig from 'src/subscription/config/stripe.config';
 import { ReviewsService } from 'src/reviews/reviews.service';
+import { ShippingSettingsService } from 'src/settings/shipping-settings.service';
+import { shippingFeeFor } from 'src/settings/shipping-rules';
 
 // ---------- response shapes (contract "Shared types") ----------
 
@@ -287,7 +289,7 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
     private readonly activityLogs: ActivityLogsService,
     private readonly mailer: OrderMailer,
     private readonly reviews: ReviewsService,
-    private readonly config: ConfigService,
+    private readonly shipping: ShippingSettingsService,
     @Inject(stripeConfig.KEY) stripeSettings: ConfigType<typeof stripeConfig>,
   ) {
     this.stripe = stripeSettings.stripeSecretKey
@@ -295,29 +297,6 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
           apiVersion: '2025-05-28.basil',
         })
       : null;
-  }
-
-  // ---------- shipping ----------
-
-  shippingRules() {
-    const num = (key: string, fallback: number) => {
-      const raw = this.config.get<string>(key);
-      const v = raw === undefined || raw === '' ? NaN : Number(raw);
-      return Number.isFinite(v) && v >= 0 ? v : fallback;
-    };
-    return {
-      insideDhaka: num('SHIPPING_FEE_INSIDE_DHAKA', 60),
-      outsideDhaka: num('SHIPPING_FEE_OUTSIDE_DHAKA', 120),
-      freeThreshold: num('FREE_SHIPPING_THRESHOLD', 3000),
-    };
-  }
-
-  /** Free when the amount after the coupon reaches the threshold (contract `Quote`). */
-  shippingFee(insideDhaka: boolean, afterDiscount: number): number {
-    if (afterDiscount <= 0) return 0;
-    const r = this.shippingRules();
-    if (r.freeThreshold > 0 && afterDiscount >= r.freeThreshold) return 0;
-    return insideDhaka ? r.insideDhaka : r.outsideDhaka;
   }
 
   // ---------- POST /orders/quote ----------
@@ -342,11 +321,13 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
       };
     }
     const discount = coupon?.valid ? coupon.discount : 0;
-    const shippingFee = this.shippingFee(
+    // BE-30: the fees an ADMIN set in Settings
+    const rules = await this.shipping.rules();
+    const shippingFee = shippingFeeFor(
+      rules,
       address ? isInsideDhaka(address.city) : false,
       subtotal - discount,
     );
-    const threshold = this.shippingRules().freeThreshold;
 
     return {
       items: lines.map(lineView),
@@ -355,7 +336,8 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
       shippingFee,
       total: money(subtotal - discount + shippingFee),
       coupon,
-      freeShippingThreshold: threshold > 0 ? threshold : null,
+      freeShippingThreshold:
+        rules.freeThreshold > 0 ? rules.freeThreshold : null,
     };
   }
 
@@ -477,6 +459,9 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
       ).map((v) => [v.id, v.sku]),
     );
 
+    // BE-30: read the fees now, not while the stock rows are locked below
+    const shippingRules = await this.shipping.rules();
+
     const order = await this.dataSource.transaction(async (m) => {
       // SEC-11: lock the cart rows and make sure they are what we priced.
       // A double submit waits here and then finds the cart already emptied.
@@ -520,7 +505,8 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
       }
       if (conflicts.length) throw await this.stockConflict(conflicts, m);
 
-      const shippingFee = this.shippingFee(
+      const shippingFee = shippingFeeFor(
+        shippingRules,
         snapshot.isInsideDhaka,
         subtotal - discount,
       );
