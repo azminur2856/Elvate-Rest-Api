@@ -1,13 +1,7 @@
-export const generateOtp = (): string => {
-  const random1 = Math.floor(Math.random() * 900000);
-  const random2 = Math.floor(Math.random() * 900000);
-  const random3 = Math.floor(Math.random() * 900000);
+import { randomInt } from 'crypto';
 
-  let otpNumber = (random1 * random2 + random3) % 1000000;
-
-  if (otpNumber < 100000) {
-    otpNumber += 100000;
-  }
-
-  return otpNumber.toString();
-};
+/**
+ * 6-digit SMS code (100000-999999) from a cryptographically secure source
+ * (SEC-05). Math.random() codes can be predicted from earlier ones.
+ */
+export const generateOtp = (): string => randomInt(100000, 1000000).toString();
