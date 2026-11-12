@@ -42,6 +42,10 @@ import {
   clearSessionCookieOptions,
 } from './utility/session-cookie.options';
 
+/** Same text as the password-login check for a blocked account. */
+const ACCOUNT_BLOCKED =
+  'User account is inactive or has been blocked. Please contact support for assistance.';
+
 /** Hard cap on a login session; matches the session cookie's maxAge (7 days). */
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
@@ -251,6 +255,12 @@ export class AuthService {
       await this.sessionRepository.delete({ id: sessionId });
       throw new UnauthorizedException('Session expired, please log in again');
     }
+    // SEC-07: no new tokens for a blocked account; end this session too
+    const owner = await this.usersService.findOne(userId);
+    if (!owner?.isActive) {
+      await this.sessionRepository.delete({ id: sessionId });
+      throw new UnauthorizedException(ACCOUNT_BLOCKED);
+    }
     const refreshTokenMatches = await argon2.verify(
       session.hashedRefreshToken,
       refreshToken,
@@ -304,6 +314,8 @@ export class AuthService {
   ) {
     const user = await this.usersService.findOne(userId);
     if (!user) throw new UnauthorizedException('User not found');
+    // SEC-07: a blocked account loses access at once, not when tokens expire
+    if (!user.isActive) throw new UnauthorizedException(ACCOUNT_BLOCKED);
 
     if (
       user.lastLogoutAt &&
