@@ -37,9 +37,8 @@ export type DeviceSession = {
   current: boolean;
 };
 
-/** Google-only sign-ups are stored with an empty password. */
-export const hasUsablePassword = (hash: string | null | undefined) =>
-  !!hash && /^\$2[aby]\$/.test(hash);
+// moved to src/common/password.ts (face setup needs it too)
+export { hasUsablePassword } from 'src/common/password';
 
 @Injectable()
 export class AccountService {

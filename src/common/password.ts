@@ -8,6 +8,10 @@ export const PASSWORD_RULE =
 /** 8-72 characters (bcrypt ignores bytes past 72), a letter and a digit. */
 export const PASSWORD_PATTERN = /^(?=.*[A-Za-z])(?=.*\d).{8,72}$/s;
 
+/** Google-only sign-ups are stored with an empty password (no bcrypt hash). */
+export const hasUsablePassword = (hash: string | null | undefined) =>
+  !!hash && /^\$2[aby]\$/.test(hash);
+
 /** Property decorator for every field that sets a new password. */
 export const NewPassword = () =>
   applyDecorators(
