@@ -550,17 +550,7 @@ export class OrdersService {
       );
     }
 
-    // External side effect first: if the refund fails nothing changes.
     let refunded = false;
-    if (
-      RESTOCKING.has(to) &&
-      current.paymentMethod === PaymentMethod.STRIPE &&
-      current.paymentStatus === PaymentStatus.PAID
-    ) {
-      await this.refund(current);
-      refunded = true;
-    }
-
     let updated: Order;
     try {
       updated = await this.dataSource.transaction(async (m) => {
@@ -573,7 +563,19 @@ export class OrdersService {
             'The order changed meanwhile, please reload it',
           );
         }
-        if (refunded) order.paymentStatus = PaymentStatus.REFUNDED;
+        // SEC-10: decide the refund under the row lock. markPaid() takes the
+        // same lock, so a card payment landing meanwhile is either seen here
+        // (and refunded) or waits and then sees the cancelled order.
+        // If the refund fails, the transaction rolls back: nothing changes.
+        if (
+          RESTOCKING.has(to) &&
+          order.paymentMethod === PaymentMethod.STRIPE &&
+          order.paymentStatus === PaymentStatus.PAID
+        ) {
+          await this.refund(order);
+          refunded = true;
+          order.paymentStatus = PaymentStatus.REFUNDED;
+        }
         return this.applyStatus(m, order, to, note, actor?.id ?? null);
       });
     } catch (err) {
