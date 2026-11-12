@@ -550,9 +550,10 @@ export class UsersService {
     }
 
     // Save new image file name
+    // BE-26: face login compares with its own private reference, so a new
+    // profile picture no longer switches it off
     const result = await this.userRepository.update(userId, {
       profileImage: uploadResponse.name,
-      isFaceVerified: false,
     });
 
     if (result.affected === 0) {
