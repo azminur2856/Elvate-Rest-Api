@@ -23,7 +23,7 @@ import {
   pageParams,
   paginated,
 } from 'src/common/pagination';
-import { publicAvatarUrl } from 'src/common/media';
+import { publicAvatarUrl, toImgPath } from 'src/common/media';
 
 /** Contract `Review`. */
 export type ReviewView = {
@@ -384,7 +384,7 @@ export class ReviewsService {
               id: r.product.id,
               name: r.product.name,
               slug: r.product.slug,
-              image: image.get(r.product.id) ?? null,
+              image: toImgPath(image.get(r.product.id)), // BE-28
             },
           }
         : {}),
