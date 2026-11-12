@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsString } from 'class-validator';
+import { NewPassword } from 'src/common/password';
 
 export class ChangePasswordDto {
   @IsNotEmpty()
@@ -6,7 +7,6 @@ export class ChangePasswordDto {
   oldPassword: string;
 
   @IsNotEmpty()
-  @IsString()
-  //@IsStrongPassword()
+  @NewPassword() // SEC-21
   newPassword: string;
 }

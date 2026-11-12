@@ -7,6 +7,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 import { VerificationMethod } from '../enums/verification-method.enum';
+import { NewPassword } from 'src/common/password';
 
 export class ResetPasswordDto {
   @IsNotEmpty()
@@ -14,8 +15,7 @@ export class ResetPasswordDto {
   resetTokenOrOTP: string;
 
   @IsNotEmpty()
-  @IsString()
-  //@IsStrongPassword()
+  @NewPassword() // SEC-21
   newPassword: string;
 
   @IsOptional()

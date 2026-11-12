@@ -93,7 +93,7 @@ describe('ResetPasswordDto', () => {
     );
 
   it('requires the e-mail with SMS codes only', async () => {
-    const base = { resetTokenOrOTP: '482913', newPassword: 'x' };
+    const base = { resetTokenOrOTP: '482913', newPassword: 'Valid1234' };
     expect(
       await errors({ ...base, verificationMethod: VerificationMethod.SMS }),
     ).toEqual(['email']);

@@ -7,6 +7,7 @@ import {
   IsPhoneNumber,
   MaxLength,
 } from 'class-validator';
+import { NewPassword } from 'src/common/password';
 
 /** SEC-15: names appear in e-mails and on reviews. */
 export const MAX_NAME_LENGTH = 50;
@@ -42,6 +43,6 @@ export class CreateUserDto {
   phone?: string;
 
   @IsNotEmpty()
-  @IsString()
+  @NewPassword() // SEC-21
   password: string;
 }
