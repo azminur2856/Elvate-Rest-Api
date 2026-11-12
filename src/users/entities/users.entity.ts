@@ -62,6 +62,17 @@ export class Users {
   @Column({ default: false })
   isFaceVerified: boolean;
 
+  /** BE-28: private ImageKit file of the profile picture (never served directly). */
+  @Column({ type: 'varchar', length: 64, nullable: true })
+  profileImageFileId: string | null;
+
+  @Column({ type: 'varchar', length: 512, nullable: true })
+  profileImagePath: string | null;
+
+  /** BE-28: random, new on every upload; the public review-photo key. */
+  @Column({ type: 'varchar', length: 64, nullable: true, unique: true })
+  avatarKey: string | null;
+
   @CreateDateColumn()
   createdAt: Date;
 
