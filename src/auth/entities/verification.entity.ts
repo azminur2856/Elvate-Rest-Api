@@ -30,6 +30,10 @@ export class Verification {
   @Index()
   expiresAt: Date;
 
+  /** SEC-05: wrong guesses against this code; the 5th one voids it. */
+  @Column({ type: 'int', default: 0 })
+  attempts: number;
+
   @CreateDateColumn()
   createdAt: Date;
 

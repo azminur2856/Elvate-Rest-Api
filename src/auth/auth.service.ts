@@ -28,6 +28,7 @@ import { VerificationMethod } from './enums/verification-method.enum';
 import { VerificationType } from './enums/verification-type.enum';
 import { maskEmail } from './utility/email-mask.util';
 import { generateOtp } from './utility/otp.util';
+import { useSmsCode } from './utility/sms-code';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { generateVerificationToken } from './utility/token.util';
 import { VerifyPhoneDto } from './dto/verify-Phone.dto';
@@ -531,25 +532,16 @@ export class AuthService {
         throw new BadRequestException('This password reset link has expired');
       }
     } else if (resetPasswordDto.verificationMethod === VerificationMethod.SMS) {
-      verification = await this.verificationRepository.findOne({
-        where: {
-          tokenOrOtp: resetPasswordDto.resetTokenOrOTP,
-          type: VerificationType.PASSWORD_RESET_OTP,
-        },
-        relations: ['user'],
-      });
-
-      if (!verification) {
-        throw new NotFoundException('OTP not found');
-      }
-
-      if (verification.isUsed) {
-        throw new BadRequestException('This OTP has already been used');
-      }
-
-      if (verification.expiresAt < new Date()) {
-        throw new BadRequestException('This OTP has expired');
-      }
+      // SEC-05: only the latest code sent to *this* account, 5 guesses max
+      const owner = resetPasswordDto.email
+        ? await this.usersService.findByEmail(resetPasswordDto.email)
+        : null;
+      verification = await useSmsCode(
+        this.verificationRepository,
+        owner?.id,
+        VerificationType.PASSWORD_RESET_OTP,
+        resetPasswordDto.resetTokenOrOTP,
+      );
     } else {
       throw new BadRequestException('Invalid verification method');
     }
