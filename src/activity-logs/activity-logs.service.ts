@@ -35,9 +35,15 @@ function fullName(user?: { firstName?: string; lastName?: string } | null) {
   return user ? `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() : null;
 }
 
-/** RFC 4180 cell: quote when it contains a comma, quote or line break. */
-function csvCell(value: string | number): string {
-  const s = String(value);
+/**
+ * RFC 4180 cell: quote when it contains a comma, quote or line break.
+ * SEC-16: text starting with = + - @ tab or CR would run as a formula in
+ * Excel / Sheets (descriptions contain names users typed), so it gets a
+ * leading apostrophe and is shown as plain text.
+ */
+export function csvCell(value: string | number): string {
+  let s = String(value);
+  if (typeof value === 'string' && /^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return /[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
