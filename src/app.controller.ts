@@ -9,10 +9,10 @@ import { Public } from './auth/decorators/public.decorator';
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
-  /** Welcome message, deployed version, server time and useful links. */
+  /** Welcome message, database status, deployed version, server time and useful links. */
   @Public()
   @Get()
-  root(@Req() req: Request): RootInfo {
+  root(@Req() req: Request): Promise<RootInfo> {
     // trust proxy is on (main.ts), so Render's https shows as https here
     return this.appService.info(`${req.protocol}://${req.get('host')}`);
   }
