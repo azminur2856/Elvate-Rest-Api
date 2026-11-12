@@ -32,7 +32,7 @@ import {
   QuoteDto,
 } from './dto/order.dto';
 import { OrderMailer, OrderMailKind } from './order-mailer';
-import { CartLine, CartService } from 'src/cart/cart.service';
+import { CartLine, CartService, lineView } from 'src/cart/cart.service';
 import { CartItem } from 'src/cart/entities/cart-item.entity';
 import {
   AddressesService,
@@ -312,7 +312,7 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
     const threshold = this.shippingRules().freeThreshold;
 
     return {
-      items: lines,
+      items: lines.map(lineView),
       subtotal,
       discount,
       shippingFee,

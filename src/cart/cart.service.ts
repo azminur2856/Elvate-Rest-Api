@@ -19,6 +19,7 @@ import {
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { Users } from 'src/users/entities/users.entity';
+import { toImgPath } from 'src/common/media';
 
 /** Contract `CartLine`. */
 export type CartLine = {
@@ -49,6 +50,16 @@ export type CartView = {
 };
 
 type Entry = { id: string | null; variantId: string; quantity: number };
+
+/**
+ * BE-28: a cart line as the API returns it (image as an /img/ path). The
+ * priced lines themselves keep the full URL: orders store it and Stripe
+ * Checkout needs an absolute address.
+ */
+export const lineView = (l: CartLine): CartLine => ({
+  ...l,
+  image: toImgPath(l.image),
+});
 
 const isUniqueViolation = (err: unknown) =>
   (err as { code?: string })?.code === '23505' ||
@@ -122,7 +133,7 @@ export class CartService {
 
   toView(lines: CartLine[]): CartView {
     return {
-      items: lines,
+      items: lines.map(lineView),
       itemCount: lines.reduce((n, l) => n + l.quantity, 0),
       subtotal: money(
         lines.filter((l) => l.available).reduce((s, l) => s + l.lineTotal, 0),
