@@ -529,6 +529,13 @@ export class OrdersService {
     if (!canPay(order))
       throw new BadRequestException('This order does not need a card payment');
     const previousSession = order.stripeSessionId;
+    // SEC-10: paid a moment ago but the webhook has not arrived yet? A new
+    // checkout would let the customer pay twice.
+    if (previousSession && (await this.sessionIsComplete(previousSession))) {
+      throw new ConflictException(
+        'This order has just been paid. Please wait a moment and reload it.',
+      );
+    }
     try {
       // Store the new session BEFORE expiring the old one: Stripe's
       // "expired" webhook for the old session must find it already replaced,
@@ -966,6 +973,17 @@ export class OrdersService {
       throw new BadGatewayException(
         'The card refund failed, so the order was not changed. Please try again.',
       );
+    }
+  }
+
+  /** True when Stripe already completed this Checkout session (paid). */
+  private async sessionIsComplete(sessionId: string): Promise<boolean> {
+    if (!this.stripe) return false;
+    try {
+      const s = await this.stripe.checkout.sessions.retrieve(sessionId);
+      return s.status === 'complete';
+    } catch {
+      return false; // unknown or expired session: a new checkout is fine
     }
   }
 
