@@ -28,12 +28,18 @@ import { actorLabel, AuthUser } from 'src/common/auth-user';
 import { money } from 'src/common/decimal.transformer';
 import { Paginated, pageParams, paginated } from 'src/common/pagination';
 
-/** Orders a delivery man is still working on (for `activeOrders`). */
-export const ACTIVE_DELIVERY = [
+/** Orders on their way to the customer (cash may still be collected). */
+export const ON_THE_WAY = [
   OrderStatus.PROCESSING,
   OrderStatus.SHIPPED,
   OrderStatus.OUT_FOR_DELIVERY,
 ];
+
+/**
+ * Orders a delivery man is still working on (for `activeOrders`): a
+ * RETURN_REQUESTED parcel stays with him until staff confirm it is back.
+ */
+export const ACTIVE_DELIVERY = [...ON_THE_WAY, OrderStatus.RETURN_REQUESTED];
 const ASSIGNABLE = new Set([OrderStatus.PROCESSING, OrderStatus.SHIPPED]);
 const LOW_STOCK = 5;
 
@@ -292,7 +298,11 @@ export class AdminOrdersService {
           .innerJoin('orders', 'o', 'o.id = i."orderId"')
           .where('o."placedAt" >= :since', { since })
           .andWhere('o.status NOT IN (:...gone)', {
-            gone: [OrderStatus.CANCELLED, OrderStatus.RETURNED],
+            gone: [
+              OrderStatus.CANCELLED,
+              OrderStatus.RETURN_REQUESTED,
+              OrderStatus.RETURNED,
+            ],
           })
           .andWhere('i."productId" IS NOT NULL')
           .groupBy('i."productId"')

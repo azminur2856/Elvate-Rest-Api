@@ -6,11 +6,12 @@ import { OrderStatus } from 'src/orders/order.enums';
 export const DELIVERY_STATUSES = [
   OrderStatus.OUT_FOR_DELIVERY,
   OrderStatus.DELIVERED,
-  OrderStatus.RETURNED,
+  // SEC-09: riders request a return; ADMIN / STAFF confirm RETURNED
+  OrderStatus.RETURN_REQUESTED,
 ] as const;
 
 export class DeliveryOrdersQueryDto extends PaginationQueryDto {
-  /** active = PROCESSING / SHIPPED / OUT_FOR_DELIVERY; completed = DELIVERED / RETURNED */
+  /** active = PROCESSING / SHIPPED / OUT_FOR_DELIVERY / RETURN_REQUESTED; completed = DELIVERED / RETURNED */
   @IsOptional()
   @IsIn(['active', 'completed'])
   scope?: 'active' | 'completed';

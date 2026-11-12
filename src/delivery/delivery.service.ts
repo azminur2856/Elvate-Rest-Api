@@ -17,7 +17,7 @@ import {
   OrderSummary,
   OrdersService,
 } from 'src/orders/orders.service';
-import { ACTIVE_DELIVERY } from 'src/orders/admin-orders.service';
+import { ACTIVE_DELIVERY, ON_THE_WAY } from 'src/orders/admin-orders.service';
 import { DeliveryOrdersQueryDto, DeliveryStatusDto } from './dto/delivery.dto';
 import { AddressSnapshot } from 'src/addresses/addresses.service';
 import { AuthUser } from 'src/common/auth-user';
@@ -83,7 +83,7 @@ export class DeliveryService {
           codDue:
             o.paymentMethod === PaymentMethod.COD &&
             o.paymentStatus === PaymentStatus.UNPAID &&
-            ACTIVE_DELIVERY.includes(o.status)
+            ON_THE_WAY.includes(o.status)
               ? o.total
               : 0,
         };
