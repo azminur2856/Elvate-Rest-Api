@@ -1,0 +1,57 @@
+import { BadRequestException } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+
+export const MB = 1024 * 1024;
+
+/**
+ * Ceilings for every single-file multipart route (SEC-02). Files are kept in
+ * memory, so without these one request could exhaust the 512 MB Render box.
+ * Multer errors become 413 (file too large) or 400 (too many files / fields).
+ */
+export const UPLOAD_LIMITS = {
+  fileSize: 10 * MB,
+  files: 1,
+  fieldSize: 64 * 1024,
+  fields: 10,
+  parts: 11,
+} as const;
+
+/** Photo types the face routes accept (Face++ and sharp read all three). */
+export const PHOTO_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+export interface SingleFileUploadOptions {
+  /** Upper bound in bytes; never above `UPLOAD_LIMITS.fileSize`. */
+  maxBytes?: number;
+  /** Allowed MIME types; omit to leave the type check to the route. */
+  mimeTypes?: readonly string[];
+  /** 400 message when the type is not allowed. */
+  typeError?: string;
+}
+
+/** `FileInterceptor` with memory storage and the SEC-02 limits. */
+export function SingleFileUpload(
+  field: string,
+  options: SingleFileUploadOptions = {},
+) {
+  const fileSize = Math.min(
+    options.maxBytes ?? UPLOAD_LIMITS.fileSize,
+    UPLOAD_LIMITS.fileSize,
+  );
+  return FileInterceptor(field, {
+    storage: memoryStorage(),
+    limits: { ...UPLOAD_LIMITS, fileSize },
+    fileFilter: (_req, file, cb) => {
+      if (!options.mimeTypes || options.mimeTypes.includes(file.mimetype)) {
+        cb(null, true);
+        return;
+      }
+      cb(
+        new BadRequestException(
+          options.typeError ?? 'This file type is not allowed.',
+        ),
+        false,
+      );
+    },
+  });
+}

@@ -8,10 +8,10 @@ import {
   Req,
   Body,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { EditOptions, OcrService } from './ocr.service';
 import { extname } from 'path';
 import type { AuthRequest } from 'src/common/auth-user';
+import { SingleFileUpload } from 'src/common/upload';
 
 @ApiTags('Digital tools')
 @Controller('ocr')
@@ -19,7 +19,7 @@ export class OcrController {
   constructor(private readonly ocrService: OcrService) {}
 
   @Post('upload/pdf')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(SingleFileUpload('file'))
   async uploadPdf(@UploadedFile() file: Express.Multer.File, @Req() req) {
     if (!file) {
       throw new BadRequestException('No file uploaded.');
@@ -34,7 +34,7 @@ export class OcrController {
   }
 
   @Post('upload/image')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(SingleFileUpload('file'))
   async uploadImage(@UploadedFile() file: Express.Multer.File, @Req() req) {
     if (!file) {
       throw new BadRequestException('No file uploaded.');
@@ -54,7 +54,7 @@ export class OcrController {
   }
 
   @Post('image/resize')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(SingleFileUpload('file'))
   async resizeImage(
     @UploadedFile() file: Express.Multer.File,
     @Req() req,
@@ -97,9 +97,7 @@ export class OcrController {
 
   /** BE-21. Multipart field `file`: JPG / PNG / WebP / HEIC up to 10 MB. */
   @Post('image/remove-bg')
-  @UseInterceptors(
-    FileInterceptor('file', { limits: { fileSize: 10 * 1024 * 1024 } }),
-  )
+  @UseInterceptors(SingleFileUpload('file'))
   async removeBackground(
     @UploadedFile() file: Express.Multer.File,
     @Req() req: AuthRequest,
@@ -115,7 +113,7 @@ export class OcrController {
   }
 
   @Post('image/edit')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(SingleFileUpload('file'))
   async editImage(
     @UploadedFile() file: Express.Multer.File,
     @Body('options') options: string, // should be JSON string
