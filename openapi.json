@@ -3,7 +3,7 @@
   "paths": {
     "/": {
       "get": {
-        "operationId": "App_getHello",
+        "operationId": "App_root",
         "parameters": [],
         "responses": {
           "200": {
@@ -11,12 +11,13 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "string"
+                  "type": "object"
                 }
               }
             }
           }
         },
+        "summary": "Welcome message, database status, deployed version, server time and useful links.",
         "tags": [
           "App"
         ],
