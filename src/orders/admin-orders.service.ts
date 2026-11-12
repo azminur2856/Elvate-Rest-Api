@@ -84,9 +84,12 @@ export class AdminOrdersService {
   > {
     const { page, pageSize, skip, take } = pageParams(query, 10);
 
-    /** Every filter except `status` (the tab counts share it). */
+    /** Every filter except `status` / `statuses` (the tab counts share it). */
     const filtered = () => {
       const qb = this.orders.createQueryBuilder('o').leftJoin('o.user', 'u');
+      if (query.deliveryManId)
+        qb.andWhere('o.deliveryManId = :dm', { dm: query.deliveryManId });
+      if (query.unassigned === true) qb.andWhere('o.deliveryManId IS NULL');
       if (query.paymentStatus)
         qb.andWhere('o.paymentStatus = :ps', { ps: query.paymentStatus });
       if (query.paymentMethod)
@@ -122,6 +125,10 @@ export class AdminOrdersService {
     const listQb = filtered();
     if (query.status)
       listQb.andWhere('o.status = :status', { status: query.status });
+    if (query.statuses?.length)
+      listQb.andWhere('o.status IN (:...statuses)', {
+        statuses: query.statuses,
+      });
     const [rows, total] = await listQb
       .orderBy('o.placedAt', 'DESC')
       .addOrderBy('o.id', 'ASC')
