@@ -44,6 +44,8 @@ import {
   clearSessionCookieOptions,
 } from './utility/session-cookie.options';
 import axios from 'axios';
+import { FaceLoginService } from './face-login/face-login.service';
+import { FaceChallengeDto } from './face-login/face-login.dto';
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
@@ -53,6 +55,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly faceVerificationService: FaceVerificationService,
+    private readonly faceLogin: FaceLoginService,
   ) {}
 
   @Public()
@@ -171,6 +174,17 @@ export class AuthController {
   @RateLimit(RATE_LIMITS.verifyPhone)
   async verifyPhone(@Body(ValidationPipe) verifyPhoneDto: VerifyPhoneDto) {
     return this.authService.verifyPhone(verifyPhoneDto);
+  }
+
+  /**
+   * SEC-04 face login, step 1: a random liveness prompt (TURN_HEAD or BLINK)
+   * valid for 2 minutes and one attempt. Same answer for every e-mail.
+   */
+  @Public()
+  @Post('face-login/challenge')
+  @RateLimit(RATE_LIMITS.faceChallenge)
+  faceLoginChallenge(@Body() dto: FaceChallengeDto) {
+    return this.faceLogin.createChallenge(dto.email);
   }
 
   // face login endpoint using imagekit image URL and live image

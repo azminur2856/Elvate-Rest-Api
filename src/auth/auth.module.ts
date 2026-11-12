@@ -26,6 +26,8 @@ import { UserSession } from './entities/user-session.entity';
 import { FaceVerificationService } from 'src/users/services/face-verification.service';
 import { LoginAttempt } from './attempts/login-attempt.entity';
 import { LoginAttemptsService } from './attempts/login-attempts.service';
+import { FaceLoginChallenge } from './face-login/face-login-challenge.entity';
+import { FaceLoginService } from './face-login/face-login.service';
 
 @Module({
   imports: [
@@ -35,6 +37,7 @@ import { LoginAttemptsService } from './attempts/login-attempts.service';
       Verification,
       UserSession,
       LoginAttempt,
+      FaceLoginChallenge,
     ]),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
@@ -55,6 +58,7 @@ import { LoginAttemptsService } from './attempts/login-attempts.service';
     SmsService,
     FaceVerificationService,
     LoginAttemptsService,
+    FaceLoginService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard, //@UseGards(JwtAuthGuard) Global guard for JWT authentication for all API endpoints
