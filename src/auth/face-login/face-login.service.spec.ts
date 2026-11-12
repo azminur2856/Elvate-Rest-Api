@@ -36,6 +36,7 @@ describe('FaceLoginService', () => {
   const references = { signedReferenceUrl: jest.fn() };
   const activityLogs = { createActivityLog: jest.fn() };
   const mail = { sendNotificationEmail: jest.fn() };
+  const settings = { assertFaceLoginEnabled: jest.fn() };
   const service = new FaceLoginService(
     challenges as never,
     users as never,
@@ -44,6 +45,7 @@ describe('FaceLoginService', () => {
     references as never,
     activityLogs as never,
     mail as never,
+    settings as never,
   );
   let photo: Buffer;
   const input = () => ({

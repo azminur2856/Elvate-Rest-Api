@@ -27,6 +27,7 @@ describe('FaceReferenceService', () => {
   };
   const activityLogs = { createActivityLog: jest.fn() };
   const mail = { sendNotificationEmail: jest.fn() };
+  const settings = { assertFaceLoginEnabled: jest.fn() };
   const service = new FaceReferenceService(
     refs as never,
     users as never,
@@ -34,6 +35,7 @@ describe('FaceReferenceService', () => {
     face as never,
     activityLogs as never,
     mail as never,
+    settings as never,
   );
   const upload = jest.spyOn(imagekit, 'upload') as unknown as jest.Mock;
   const deleteFile = jest.spyOn(imagekit, 'deleteFile') as unknown as jest.Mock;

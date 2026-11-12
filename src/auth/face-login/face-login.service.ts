@@ -29,6 +29,7 @@ import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { MailService } from '../services/mail.services';
 import { escapeHtml } from 'src/common/html';
+import { SettingsService } from 'src/settings/settings.service';
 
 /** How long the user has to take both photos. */
 export const CHALLENGE_TTL_MS = 2 * 60_000;
@@ -65,6 +66,7 @@ export class FaceLoginService {
     private readonly references: FaceReferenceService,
     private readonly activityLogs: ActivityLogsService,
     private readonly mail: MailService,
+    private readonly settings: SettingsService,
   ) {}
 
   /**
@@ -72,6 +74,7 @@ export class FaceLoginService {
    * reveal whether an account (or face login) exists.
    */
   async createChallenge(email: string): Promise<FaceChallenge> {
+    await this.settings.assertFaceLoginEnabled(); // BE-27, same for any e-mail
     // housekeeping: challenges are useless an hour after expiry
     await this.challenges.delete({
       expiresAt: LessThan(new Date(Date.now() - 60 * 60_000)),
@@ -125,6 +128,8 @@ export class FaceLoginService {
    * against the e-mail and the IP (5 per 15 minutes, then a 15-minute lock).
    */
   async verify(input: FaceLoginInput): Promise<Users> {
+    // BE-27: also stops challenges issued before the switch went off
+    await this.settings.assertFaceLoginEnabled();
     const keys: AttemptKey[] = [
       emailKey('face-email', input.email),
       { scope: 'face-ip', key: input.ip },

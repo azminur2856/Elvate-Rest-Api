@@ -22,6 +22,7 @@ import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { MailService } from 'src/auth/services/mail.services';
 import { imagekit } from 'src/auth/utility/imagekit';
 import { faceJpeg } from './face-photo';
+import { SettingsService } from 'src/settings/settings.service';
 import { UserSession } from 'src/auth/entities/user-session.entity';
 import { hasUsablePassword } from 'src/common/password';
 import * as bcrypt from 'bcrypt';
@@ -72,6 +73,7 @@ export class FaceReferenceService implements OnApplicationBootstrap {
     private readonly face: FaceVerificationService,
     private readonly activityLogs: ActivityLogsService,
     private readonly mail: MailService,
+    private readonly settings: SettingsService,
   ) {}
 
   /**
@@ -108,6 +110,7 @@ export class FaceReferenceService implements OnApplicationBootstrap {
     photo: Buffer,
     auth: FaceSetupAuth = {},
   ): Promise<FaceLoginState> {
+    await this.settings.assertFaceLoginEnabled(); // BE-27 admin switch
     if (!this.face.isConfigured()) {
       throw new ServiceUnavailableException(
         'Face login is not available right now.',
