@@ -27,6 +27,7 @@ describe('AuthService.forgotPassword never returns the secret', () => {
     phone: '01700000001',
     isEmailVerified: true,
     isPhoneVerified: true,
+    isActive: true,
   };
   const mailService = {
     sendPasswordResetEmail: jest

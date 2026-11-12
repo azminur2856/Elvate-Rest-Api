@@ -1,5 +1,5 @@
 import { ForbiddenException } from '@nestjs/common';
-import { AuthService } from './auth.service';
+import { AuthService, RESET_SENT } from './auth.service';
 import { VerificationMethod } from './enums/verification-method.enum';
 import { SMS_TURNED_OFF } from 'src/settings/settings.service';
 
@@ -58,19 +58,23 @@ describe('AuthService SMS routes and the admin switch', () => {
     users.findOne.mockResolvedValue(null);
     users.findByEmail.mockResolvedValue(null);
     verifications.findOne.mockResolvedValue(null);
-    // the user/code lookups now fail normally, but not with the 403
-    await expect(sms[k as keyof typeof sms]()).rejects.not.toThrow(
-      SMS_TURNED_OFF,
-    );
+    // past the switch the lookups run; forgot-password answers the generic
+    // SEC-12 text, the others fail on the missing user/code (not with 403)
+    const result = sms[k as keyof typeof sms]();
+    if (k === 'forgotSms') {
+      await expect(result).resolves.toEqual({ message: RESET_SENT });
+    } else {
+      await expect(result).rejects.not.toThrow(SMS_TURNED_OFF);
+    }
     expect(settings.assertSmsEnabled).toHaveBeenCalled();
   });
 
   it('e-mail flows never ask the switch', async () => {
     off();
     users.findByEmail.mockResolvedValue(null);
-    await expect(
-      service.forgotPassword({ email: 'a@b.co' }),
-    ).rejects.not.toThrow(SMS_TURNED_OFF);
+    await expect(service.forgotPassword({ email: 'a@b.co' })).resolves.toEqual({
+      message: RESET_SENT,
+    });
     verifications.findOne.mockResolvedValue(null);
     await expect(
       service.resetPassword({ resetTokenOrOTP: 't', newPassword: 'x' }),

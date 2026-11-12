@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -26,7 +27,6 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { VerificationMethod } from './enums/verification-method.enum';
 import { VerificationType } from './enums/verification-type.enum';
-import { maskEmail } from './utility/email-mask.util';
 import { generateOtp } from './utility/otp.util';
 import { useSmsCode } from './utility/sms-code';
 import { SettingsService } from 'src/settings/settings.service';
@@ -43,6 +43,10 @@ import {
   clearSessionCookieOptions,
 } from './utility/session-cookie.options';
 
+/** SEC-12: forgotPassword never says whether the account exists. */
+export const RESET_SENT =
+  'If an account exists for this e-mail, we have sent instructions to reset the password.';
+
 /** SEC-12: one answer for "no such account" and "wrong password". */
 export const INVALID_LOGIN = 'Invalid email or password';
 /** bcrypt hash of a random string: makes unknown-e-mail logins as slow as real ones. */
@@ -58,6 +62,8 @@ const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private activityLogsService: ActivityLogsService,
     private usersService: UsersService,
@@ -425,18 +431,13 @@ export class AuthService {
       await this.settings.assertSmsEnabled(); // BE-25 admin switch
     }
     const user = await this.usersService.findByEmail(forgotPasswordDto.email);
-    if (!user) {
-      throw new NotFoundException(`User not found`);
-    }
+    // SEC-12: the same answer whether or not the account exists or can reset
+    if (!user || !user.isActive) return { message: RESET_SENT };
 
     const fullName = user.firstName + ' ' + (user.lastName || '');
 
     if (forgotPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
-      if (!user.isEmailVerified) {
-        throw new BadRequestException(
-          'Email is not verified. Please verify your email address to proceed with password reset.',
-        );
-      }
+      if (!user.isEmailVerified) return { message: RESET_SENT };
       const resetToken = generateVerificationToken();
       const expiresAt = new Date();
       //expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
@@ -474,31 +475,15 @@ export class AuthService {
 
       await this.activityLogsService.createActivityLog(activityLog);
 
-      const maskedEmail = maskEmail(user.email);
-
-      if (response.accepted.length > 0 && response.rejected.length === 0) {
-        // Security: never return the reset token; it must only reach the user's inbox.
-        return {
-          message: `Password reset link sent to your email ${maskedEmail}`,
-        };
-      } else {
-        return {
-          message: `Failed to sent email to your email ${maskedEmail}`,
-        };
+      if (response.accepted.length === 0 || response.rejected.length > 0) {
+        this.logger.warn(`Password reset e-mail for user ${user.id} failed`);
       }
+      // never the token (SEC-01) and no masked address or send result (SEC-12)
+      return { message: RESET_SENT };
     } else if (
       forgotPasswordDto.verificationMethod === VerificationMethod.SMS
     ) {
-      if (!user.phone) {
-        throw new BadRequestException(
-          'Phone number not found. Please add a valid phone number to proceed with password reset.',
-        );
-      }
-      if (!user.isPhoneVerified) {
-        throw new BadRequestException(
-          'Phone number is not verified. Please verify your phone number to proceed with password reset.',
-        );
-      }
+      if (!user.phone || !user.isPhoneVerified) return { message: RESET_SENT };
       const otp = generateOtp();
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 2); // Expires in 2 minutes
@@ -531,17 +516,10 @@ export class AuthService {
 
       await this.activityLogsService.createActivityLog(activityLog);
 
-      const maskedPhone = `********${user.phone.slice(-2)}`;
-
-      if (response.success) {
-        return {
-          message: `OTP Successfully sent to your phone number ${maskedPhone}`,
-        };
-      } else {
-        return {
-          message: `Failed to send OTP to your phone number ${maskedPhone}`,
-        };
+      if (!response.success) {
+        this.logger.warn(`Password reset SMS for user ${user.id} failed`);
       }
+      return { message: RESET_SENT };
     } else {
       throw new BadRequestException('Invalid verification method');
     }
