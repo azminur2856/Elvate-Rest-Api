@@ -18,6 +18,7 @@ import { Paginated, pageParams, paginated } from 'src/common/pagination';
 import { ProductListQueryDto } from './dto/product-query.dto';
 import { AuthUser } from 'src/common/auth-user';
 import { SHOP_MANAGER_ROLES } from 'src/users/enums/role.enum';
+import { toImgPath } from 'src/common/media';
 
 // ---------- response shapes (contract "Shared types") ----------
 
@@ -392,7 +393,7 @@ export class CatalogService {
       price: priced.price,
       effectivePrice: priced.effectivePrice,
       discountPercent: priced.discountPercent,
-      mainImage,
+      mainImage: toImgPath(mainImage), // BE-28: /img/..., never the ImageKit host
       rating: p.ratingAvg,
       reviewCount: p.reviewCount,
       inStock,
@@ -415,7 +416,7 @@ export class CatalogService {
     });
     return rows.map((i) => ({
       id: i.id,
-      url: i.url,
+      url: toImgPath(i.url) ?? i.url,
       isMain: i.isMain,
       sortOrder: i.sortOrder,
     }));
