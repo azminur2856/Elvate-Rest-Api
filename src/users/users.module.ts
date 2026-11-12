@@ -9,12 +9,14 @@ import { MailService } from 'src/auth/services/mail.services';
 import { Verification } from 'src/auth/entities/verification.entity';
 import { AccountModule } from 'src/account/account.module';
 import { FaceModule } from 'src/face/face.module';
+import { MediaModule } from 'src/media/media.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Users, ActivityLog, Verification]),
     AccountModule,
     FaceModule,
+    MediaModule,
   ],
   controllers: [UsersController],
   providers: [UsersService, MailService, ActivityLogsService],

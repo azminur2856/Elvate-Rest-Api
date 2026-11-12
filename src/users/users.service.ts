@@ -1,8 +1,6 @@
 import {
   BadGatewayException,
   BadRequestException,
-  HttpException,
-  HttpStatus,
   Injectable,
   Logger,
   NotFoundException,
@@ -27,7 +25,6 @@ import { imagekit } from 'src/auth/utility/imagekit';
 import { newAvatarKey, ownAvatarUrl, staffAvatarUrl } from 'src/common/media';
 import type { FileObject } from 'imagekit/dist/libs/interfaces';
 import { Role } from './enums/role.enum';
-import axios from 'axios';
 
 export type AvatarView = 'own' | 'own-xs' | 'staff';
 
@@ -621,39 +618,6 @@ export class UsersService {
     } catch (err) {
       this.logger.warn(
         `Could not delete the old profile picture of ${user.id}: ${String(err)}`,
-      );
-    }
-  }
-
-  //Get user profile image from ImageKit
-  async getUserProfileImage(userId: string, res: any) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException(`User not found`);
-    }
-
-    let imagePath: string;
-
-    if (!user.profileImage || user.profileImage === 'profile.png') {
-      // Serve default profile image from a public fallback location
-      imagePath = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/profile.png`;
-    } else {
-      imagePath = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/user_${userId}/${user.profileImage}`;
-    }
-
-    // Option 1: Stream the image file directly (for local files only)
-    // For remote URLs (like ImageKit), you need to proxy the request or redirect.
-    // If you want to fetch the image from ImageKit and stream it, use a request library.
-    // Here is an example using axios and stream:
-
-    try {
-      const response = await axios.get(imagePath, { responseType: 'stream' });
-      res.setHeader('Content-Type', response.headers['content-type']);
-      (response.data as NodeJS.ReadableStream).pipe(res);
-    } catch {
-      throw new HttpException(
-        'Unable to retrieve the profile image',
-        HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
   }

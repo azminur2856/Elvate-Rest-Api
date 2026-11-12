@@ -34,7 +34,13 @@ import {
 } from 'src/common/upload';
 import { FaceReferenceService } from 'src/face/face-reference.service';
 import { FaceSetupDto } from 'src/face/face-setup.dto';
+import type { Response } from 'express';
 import type { AuthRequest } from 'src/common/auth-user';
+import {
+  AvatarService,
+  PRIVATE_AVATAR_CACHE,
+  sendAvatar,
+} from 'src/media/avatar.service';
 
 @ApiTags('Users')
 @Controller('users')
@@ -43,6 +49,7 @@ export class UsersController {
     private readonly faceReferences: FaceReferenceService,
     private readonly usersService: UsersService,
     private readonly account: AccountService,
+    private readonly avatars: AvatarService,
   ) {}
 
   @Public()
@@ -86,9 +93,11 @@ export class UsersController {
     return { ...user, hasPassword };
   }
 
+  /** Deprecated (BE-28): same as GET /media/me/avatar?size=md; 404 without a picture. */
   @Get('profileImage')
-  getUserProfileImage(@Req() req: any, @Res() res: Response) {
-    return this.usersService.getUserProfileImage(req.user.id, res);
+  async getUserProfileImage(@Req() req: AuthRequest, @Res() res: Response) {
+    const user = await this.avatars.findById(req.user.id);
+    sendAvatar(res, await this.avatars.image(user, 'md'), PRIVATE_AVATAR_CACHE);
   }
 
   @Patch('updateUser')
