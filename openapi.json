@@ -1,0 +1,5467 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/": {
+      "get": {
+        "operationId": "App_root",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Welcome message, database status, deployed version, server time and useful links.",
+        "tags": [
+          "App"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/users/createUser": {
+      "post": {
+        "operationId": "Users_createUser",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/users/getAllUsers": {
+      "get": {
+        "operationId": "Users_getAllUsers",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Users"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/users/getAllUsersWithTotalPaid": {
+      "get": {
+        "operationId": "Users_getPaginatedUsersWithTotalPaid",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Users"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/users/profile": {
+      "get": {
+        "operationId": "Users_getUserProfile",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "`hasPassword: false` = Google-only sign-up (delete-account asks to type DELETE).",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/profileImage": {
+      "get": {
+        "operationId": "Users_getUserProfileImage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Deprecated (BE-28): same as GET /media/me/avatar?size=md; 404 without a picture.",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/updateUser": {
+      "patch": {
+        "operationId": "Users_updateUser",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/updateUserRole/{id}": {
+      "patch": {
+        "operationId": "Users_updateUserRole",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserRoleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Users"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/users/updateUserStatus/{id}": {
+      "patch": {
+        "operationId": "Users_updateUserStatus",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Users"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/users/deleteUser/{id}": {
+      "delete": {
+        "operationId": "Users_deleteUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Users"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/users/updateProfileImage": {
+      "patch": {
+        "operationId": "Users_updateProfileImage",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/getUserById/{id}": {
+      "get": {
+        "operationId": "Users_getUserById",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Users"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/users/face-reference": {
+      "post": {
+        "operationId": "Users_setFaceReference",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaceSetupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "SEC-04 face setup: a live camera photo (multipart `photo`) becomes the\nprivate reference face login compares against.",
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "operationId": "Users_removeFaceReference",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Turns face login off and deletes the private photo.",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/verify-face": {
+      "post": {
+        "operationId": "Users_verifyFace",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaceSetupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "Deprecated alias of POST /users/face-reference (field `liveImage`).\nBefore SEC-04 this compared against the public profile picture.",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/userStats": {
+      "get": {
+        "operationId": "Users_getUserStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Users"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/auth/sessions": {
+      "get": {
+        "operationId": "Account_sessions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Account"
+        ]
+      }
+    },
+    "/auth/sessions/{id}": {
+      "delete": {
+        "operationId": "Account_revoke",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Revoking the current session also clears the cookie (= logout).",
+        "tags": [
+          "Account"
+        ]
+      }
+    },
+    "/auth/logout-all": {
+      "post": {
+        "operationId": "Account_logoutAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Account"
+        ]
+      }
+    },
+    "/users/me": {
+      "delete": {
+        "operationId": "Account_deleteMe",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeleteAccountDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Account"
+        ]
+      }
+    },
+    "/activity-logs/stats": {
+      "get": {
+        "operationId": "ActivityLogs_getActivityStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Activity logs"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/activity-logs/getAllActivityLogs": {
+      "get": {
+        "operationId": "ActivityLogs_getAllActivityLogs",
+        "parameters": [
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Activity logs"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/activity-logs/user": {
+      "get": {
+        "operationId": "ActivityLogs_getUserLogs",
+        "parameters": [
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Activity logs"
+        ]
+      }
+    },
+    "/activity-logs/getUserActivityLogs/{userId}": {
+      "get": {
+        "operationId": "ActivityLogs_getUserActivityLogs",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Activity logs"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/activity-logs/filter": {
+      "get": {
+        "operationId": "ActivityLogs_getFilteredActivityLogs",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activity",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Activity logs"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/activity-logs/export": {
+      "get": {
+        "operationId": "ActivityLogs_exportLogsToCSV",
+        "parameters": [
+          {
+            "name": "userId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "activity",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Activity logs"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/settings/public": {
+      "get": {
+        "operationId": "Settings_publicSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "What the UI needs to show or hide features (no secrets).",
+        "tags": [
+          "Settings"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/admin/settings": {
+      "get": {
+        "operationId": "Settings_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "summary": "ADMIN only (not STAFF).",
+        "tags": [
+          "Settings"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/admin/settings/shipping": {
+      "get": {
+        "operationId": "Settings_shippingSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "summary": "The delivery fees and who changed them last. ADMIN only (not STAFF).",
+        "tags": [
+          "Settings"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      },
+      "patch": {
+        "operationId": "Settings_updateShipping",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShippingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "summary": "Change the delivery fees (whole BDT; freeThreshold 0 = free delivery off).\nNew quotes and orders use them; orders already placed keep their fee.\nADMIN only (not STAFF).",
+        "tags": [
+          "Settings"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/admin/settings/{key}": {
+      "patch": {
+        "operationId": "Settings_update",
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSettingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "summary": "ADMIN only. 409 when turning on a switch that is not available.",
+        "tags": [
+          "Settings"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/media/avatar/{avatarKey}": {
+      "get": {
+        "operationId": "Media_byKey",
+        "parameters": [
+          {
+            "name": "avatarKey",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Review photos: 64 px, cached for a year (the key changes on upload).",
+        "tags": [
+          "Media"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/media/me/avatar": {
+      "get": {
+        "operationId": "Media_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "The caller's own picture.",
+        "tags": [
+          "Media"
+        ]
+      }
+    },
+    "/media/users/{id}/avatar": {
+      "get": {
+        "operationId": "Media_ofUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF or DELIVERY_MAN"
+          }
+        },
+        "summary": "Staff lists, order customer, delivery (riders: own customers only).",
+        "tags": [
+          "Media"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF",
+          "DELIVERY_MAN"
+        ],
+        "description": "**Roles:** ADMIN · STAFF · DELIVERY_MAN"
+      }
+    },
+    "/auth/verifyRegistration": {
+      "get": {
+        "operationId": "Auth_verifyEmail",
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "operationId": "Auth_login",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "operationId": "Auth_refreshToken",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/auth/logout": {
+      "post": {
+        "operationId": "Auth_signout",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/google/login": {
+      "get": {
+        "operationId": "Auth_googleLogin",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/auth/google/callback": {
+      "get": {
+        "operationId": "Auth_googleCallback",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/auth/changePassword": {
+      "patch": {
+        "operationId": "Auth_updatePassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChangePasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/forgotPassword": {
+      "post": {
+        "operationId": "Auth_forgotPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ForgotPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/auth/resetPassword": {
+      "put": {
+        "operationId": "Auth_resetPassword",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResetPasswordDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/auth/getOtpForPhoneVerification": {
+      "post": {
+        "operationId": "Auth_phoneVerification",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/verifyPhone": {
+      "post": {
+        "operationId": "Auth_verifyPhone",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyPhoneDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Auth"
+        ]
+      }
+    },
+    "/auth/face-login/challenge": {
+      "post": {
+        "operationId": "Auth_faceLoginChallenge",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaceChallengeDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "SEC-04 face login, step 1: a random liveness prompt (TURN_HEAD or BLINK)\nvalid for 2 minutes and one attempt. Same answer for every e-mail.",
+        "tags": [
+          "Auth"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/auth/login-with-face": {
+      "post": {
+        "operationId": "Auth_loginWithFace",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FaceLoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "SEC-04 face login, step 2 (multipart): `email`, `challengeId` and two\nphotos, `neutral` (looking at the camera) and `action` (after doing the\nprompt). Success sets the session cookie like a password login. Every\nfailure is the same 401; 5 per 15 minutes per e-mail or IP lock face\nlogin for 15 minutes (429).",
+        "tags": [
+          "Auth"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/products/{slug}/reviews": {
+      "get": {
+        "operationId": "ProductReviews_list",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reviews"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/products/{slug}/reviews/eligibility": {
+      "get": {
+        "operationId": "ProductReviews_eligibility",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Reviews"
+        ]
+      }
+    },
+    "/products/{productId}/reviews": {
+      "post": {
+        "operationId": "ProductReviews_create",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Reviews"
+        ]
+      }
+    },
+    "/reviews/my": {
+      "get": {
+        "operationId": "Reviews_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Reviews"
+        ]
+      }
+    },
+    "/reviews/featured": {
+      "get": {
+        "operationId": "Reviews_featured",
+        "parameters": [
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 30,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Home page: approved, 4★+, with a comment, newest first.",
+        "tags": [
+          "Reviews"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/reviews/{id}": {
+      "delete": {
+        "operationId": "Reviews_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Owner or ADMIN.",
+        "tags": [
+          "Reviews"
+        ]
+      }
+    },
+    "/admin/reviews": {
+      "get": {
+        "operationId": "AdminReviews_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Reviews"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/reviews/{id}/status": {
+      "patch": {
+        "operationId": "AdminReviews_moderate",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModerateReviewDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Reviews"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/ocr/upload/pdf": {
+      "post": {
+        "operationId": "Ocr_uploadPdf",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Digital tools"
+        ]
+      }
+    },
+    "/ocr/upload/image": {
+      "post": {
+        "operationId": "Ocr_uploadImage",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Digital tools"
+        ]
+      }
+    },
+    "/ocr/image/resize": {
+      "post": {
+        "operationId": "Ocr_resizeImage",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResizeImageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Digital tools"
+        ]
+      }
+    },
+    "/ocr/image/remove-bg": {
+      "post": {
+        "operationId": "Ocr_removeBackground",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "summary": "BE-21. Multipart field `file`: JPG / PNG / WebP / HEIC up to 10 MB.",
+        "tags": [
+          "Digital tools"
+        ]
+      }
+    },
+    "/ocr/image/edit": {
+      "post": {
+        "operationId": "Ocr_editImage",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Digital tools"
+        ]
+      }
+    },
+    "/subscriptions/checkout": {
+      "post": {
+        "operationId": "Subscription_createCheckout",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCheckoutDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/webhook": {
+      "post": {
+        "operationId": "Subscription_stripeWebhook",
+        "parameters": [
+          {
+            "name": "stripe-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/subscriptions/session/{sessionId}": {
+      "get": {
+        "operationId": "Subscription_getCheckoutSession",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/status": {
+      "get": {
+        "operationId": "Subscription_getSubscriptionStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/paymentsHistory": {
+      "get": {
+        "operationId": "Subscription_getPaymentsHistory",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/subscriptionDetails": {
+      "get": {
+        "operationId": "Subscription_getAllSubscriptions",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/cancel": {
+      "post": {
+        "operationId": "Subscription_cancelSubscription",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelSubscriptionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ]
+      }
+    },
+    "/subscriptions/subStats": {
+      "get": {
+        "operationId": "Subscription_getSubscriptionStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/subscriptions/paymentStats": {
+      "get": {
+        "operationId": "Subscription_getPaymentStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/subscriptions/paymentsPlanStats": {
+      "get": {
+        "operationId": "Subscription_getPaymentAndPlanStats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/subscriptions/getAllPayments": {
+      "get": {
+        "operationId": "Subscription_getAllPayments",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/subscriptions/getAllSubscriptions": {
+      "get": {
+        "operationId": "Subscription_getAllSubscriptionsAdmin",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Subscriptions"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/orders/quote": {
+      "post": {
+        "operationId": "Orders_quote",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Prices the server cart for the checkout page.",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders": {
+      "post": {
+        "operationId": "Orders_place",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaceOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/my": {
+      "get": {
+        "operationId": "Orders_my",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "CONFIRMED",
+                "PROCESSING",
+                "SHIPPED",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "CANCELLED",
+                "RETURN_REQUESTED",
+                "RETURNED"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/session/{sessionId}": {
+      "get": {
+        "operationId": "Orders_session",
+        "parameters": [
+          {
+            "name": "sessionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Stripe success page: `?session_id=` → which order, paid yet?",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}": {
+      "get": {
+        "operationId": "Orders_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/cancel": {
+      "post": {
+        "operationId": "Orders_cancel",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelOrderDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/orders/{id}/pay": {
+      "post": {
+        "operationId": "Orders_pay",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "New Stripe Checkout session for an unpaid card order.",
+        "tags": [
+          "Orders"
+        ]
+      }
+    },
+    "/admin/orders": {
+      "get": {
+        "operationId": "AdminOrders_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "CONFIRMED",
+                "PROCESSING",
+                "SHIPPED",
+                "OUT_FOR_DELIVERY",
+                "DELIVERED",
+                "CANCELLED",
+                "RETURN_REQUESTED",
+                "RETURNED"
+              ]
+            }
+          },
+          {
+            "name": "paymentStatus",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "UNPAID",
+                "PAID",
+                "REFUNDED",
+                "FAILED"
+              ]
+            }
+          },
+          {
+            "name": "paymentMethod",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "COD",
+                "STRIPE"
+              ]
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Order number, customer e-mail or name.",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "name": "fromDate",
+            "required": false,
+            "in": "query",
+            "description": "ISO date or date-time; a plain date means from 00:00 UTC.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "toDate",
+            "required": false,
+            "in": "query",
+            "description": "ISO date or date-time; a plain date includes that whole day.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "deliveryManId",
+            "required": false,
+            "in": "query",
+            "description": "BE-29: orders assigned to this delivery man.",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "statuses",
+            "required": false,
+            "in": "query",
+            "description": "BE-29: several statuses as CSV, e.g. \"PROCESSING,SHIPPED\" (list only, like `status`).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "PENDING",
+                  "CONFIRMED",
+                  "PROCESSING",
+                  "SHIPPED",
+                  "OUT_FOR_DELIVERY",
+                  "DELIVERED",
+                  "CANCELLED",
+                  "RETURN_REQUESTED",
+                  "RETURNED"
+                ]
+              }
+            }
+          },
+          {
+            "name": "unassigned",
+            "required": false,
+            "in": "query",
+            "description": "BE-29: `true` = orders without a delivery man.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Orders"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/orders/delivery-men": {
+      "get": {
+        "operationId": "AdminOrders_deliveryMen",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Orders"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/orders/stats": {
+      "get": {
+        "operationId": "AdminOrders_stats",
+        "parameters": [
+          {
+            "name": "days",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 365,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Orders"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/orders/{id}/status": {
+      "patch": {
+        "operationId": "AdminOrders_status",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateOrderStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Orders"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/orders/{id}/correction": {
+      "post": {
+        "operationId": "AdminOrders_correction",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderCorrectionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "summary": "BE-29: ADMIN only (not STAFF), for orders stuck in OUT_FOR_DELIVERY.",
+        "tags": [
+          "Admin · Orders"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/admin/orders/{id}/assign": {
+      "patch": {
+        "operationId": "AdminOrders_assign",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AssignDeliveryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Orders"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/orders/{id}/notes": {
+      "patch": {
+        "operationId": "AdminOrders_notes",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderNotesDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Orders"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/deliveries/summary": {
+      "get": {
+        "operationId": "AdminDeliveries_summary",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Deliveries"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/cart/preview": {
+      "post": {
+        "operationId": "Cart_preview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestCartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Guest cart (kept in the browser) priced by the server; lines have `id: null`.",
+        "tags": [
+          "Cart"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/cart": {
+      "get": {
+        "operationId": "Cart_view",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Cart"
+        ]
+      },
+      "delete": {
+        "operationId": "Cart_clear",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Cart"
+        ]
+      }
+    },
+    "/cart/items": {
+      "post": {
+        "operationId": "Cart_add",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddCartItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Cart"
+        ]
+      }
+    },
+    "/cart/items/{itemId}": {
+      "patch": {
+        "operationId": "Cart_update",
+        "parameters": [
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCartItemDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Cart"
+        ]
+      },
+      "delete": {
+        "operationId": "Cart_remove",
+        "parameters": [
+          {
+            "name": "itemId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Cart"
+        ]
+      }
+    },
+    "/cart/merge": {
+      "post": {
+        "operationId": "Cart_merge",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GuestCartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "After login: add the guest cart to the account cart (capped, never a 400 for stock).",
+        "tags": [
+          "Cart"
+        ]
+      }
+    },
+    "/addresses": {
+      "get": {
+        "operationId": "Addresses_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Addresses"
+        ]
+      },
+      "post": {
+        "operationId": "Addresses_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAddressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Addresses"
+        ]
+      }
+    },
+    "/addresses/{id}/default": {
+      "patch": {
+        "operationId": "Addresses_setDefault",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Addresses"
+        ]
+      }
+    },
+    "/addresses/{id}": {
+      "patch": {
+        "operationId": "Addresses_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateAddressDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Addresses"
+        ]
+      },
+      "delete": {
+        "operationId": "Addresses_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Addresses"
+        ]
+      }
+    },
+    "/offers": {
+      "get": {
+        "operationId": "Offers_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Offers"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/admin/coupons": {
+      "get": {
+        "operationId": "AdminCoupons_list",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxLength": 40,
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "active = enabled and not expired yet (incl. scheduled); expired; inactive = switched off",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "expired",
+                "inactive"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Admin · Coupons"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      },
+      "post": {
+        "operationId": "AdminCoupons_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCouponDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Admin · Coupons"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/admin/coupons/{id}": {
+      "patch": {
+        "operationId": "AdminCoupons_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCouponDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Admin · Coupons"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      },
+      "delete": {
+        "operationId": "AdminCoupons_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Admin · Coupons"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/admin/flash-sales": {
+      "get": {
+        "operationId": "AdminFlashSales_list",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "live = running now; scheduled = starts later; ended = over or switched off",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "live",
+                "scheduled",
+                "ended"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Admin · Flash sales"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      },
+      "post": {
+        "operationId": "AdminFlashSales_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFlashSaleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Admin · Flash sales"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/admin/flash-sales/{id}": {
+      "patch": {
+        "operationId": "AdminFlashSales_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateFlashSaleDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Admin · Flash sales"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      },
+      "delete": {
+        "operationId": "AdminFlashSales_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "tags": [
+          "Admin · Flash sales"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
+    "/products": {
+      "get": {
+        "operationId": "Products_list",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Category slug; includes all sub-categories.",
+            "schema": {
+              "maxLength": 140,
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Case-insensitive search in name, brand and description.",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "name": "minPrice",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 0,
+              "type": "number"
+            }
+          },
+          {
+            "name": "sizes",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "colors",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "brand",
+            "required": false,
+            "in": "query",
+            "description": "One brand, or several comma-separated.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "onSale",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "featured",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "newArrival",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "inStock",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "newest",
+                "price_asc",
+                "price_desc",
+                "popular",
+                "rating"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Products"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/products/filters": {
+      "get": {
+        "operationId": "Products_filters",
+        "parameters": [
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxLength": 140,
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Products"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/products/{slug}": {
+      "get": {
+        "operationId": "Products_detail",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "Inactive products 404 for shoppers; ADMIN/STAFF see them (OptionalAuth).",
+        "tags": [
+          "Products"
+        ],
+        "x-optional-auth": true,
+        "security": [
+          {},
+          {
+            "cookie": []
+          }
+        ]
+      }
+    },
+    "/products/{slug}/related": {
+      "get": {
+        "operationId": "Products_related",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 24,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Products"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/admin/products": {
+      "get": {
+        "operationId": "AdminProducts_list",
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "description": "Name, brand, slug or SKU.",
+            "schema": {
+              "maxLength": 100,
+              "type": "string"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "description": "Category slug, includes sub-categories.",
+            "schema": {
+              "maxLength": 140,
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "inactive",
+                "all"
+              ]
+            }
+          },
+          {
+            "name": "stock",
+            "required": false,
+            "in": "query",
+            "description": "`out` = total stock 0; `low` = still in stock but some variant has ≤ 5.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "low",
+                "out"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      },
+      "post": {
+        "operationId": "AdminProducts_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateProductDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/products/variants/{variantId}": {
+      "patch": {
+        "operationId": "AdminProducts_updateVariant",
+        "parameters": [
+          {
+            "name": "variantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateVariantDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      },
+      "delete": {
+        "operationId": "AdminProducts_removeVariant",
+        "parameters": [
+          {
+            "name": "variantId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/products/{id}": {
+      "get": {
+        "operationId": "AdminProducts_detail",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      },
+      "patch": {
+        "operationId": "AdminProducts_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateProductDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      },
+      "delete": {
+        "operationId": "AdminProducts_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/products/{id}/variants": {
+      "post": {
+        "operationId": "AdminProducts_addVariant",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VariantInputDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/products/{id}/images": {
+      "post": {
+        "operationId": "AdminProducts_addImages",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/admin/products/{id}/images/{imageId}": {
+      "patch": {
+        "operationId": "AdminProducts_updateImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateImageDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      },
+      "delete": {
+        "operationId": "AdminProducts_removeImage",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "imageId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Admin · Products"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/categories": {
+      "get": {
+        "operationId": "Categories_tree",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Whole tree; roots are men, women, children.",
+        "tags": [
+          "Categories"
+        ],
+        "x-public": true,
+        "security": []
+      },
+      "post": {
+        "operationId": "Categories_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Categories"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/categories/{slug}": {
+      "get": {
+        "operationId": "Categories_findBySlug",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "summary": "One category with its children and a root → self breadcrumb.",
+        "tags": [
+          "Categories"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/categories/{id}": {
+      "patch": {
+        "operationId": "Categories_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCategoryDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Categories"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      },
+      "delete": {
+        "operationId": "Categories_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: ADMIN or STAFF"
+          }
+        },
+        "tags": [
+          "Categories"
+        ],
+        "x-roles": [
+          "ADMIN",
+          "STAFF"
+        ],
+        "description": "**Roles:** ADMIN · STAFF"
+      }
+    },
+    "/healthz": {
+      "get": {
+        "operationId": "Health_live",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "summary": "Liveness probe: \"is the process up?\"\n\nDeliberately does no I/O (no DB, no external APIs) so it is cheap and\nnever fails for reasons unrelated to the process itself. It is pinged\nevery 10 minutes by the n8n \"Elvate — Render Keep-Alive\" workflow so the\nfree Render instance never spins down, and can be used as Render's\nHealth Check Path.",
+        "tags": [
+          "Health"
+        ],
+        "x-public": true,
+        "security": []
+      }
+    },
+    "/delivery/orders": {
+      "get": {
+        "operationId": "Delivery_list",
+        "parameters": [
+          {
+            "name": "scope",
+            "required": false,
+            "in": "query",
+            "description": "active = PROCESSING / SHIPPED / OUT_FOR_DELIVERY / RETURN_REQUESTED; completed = DELIVERED / RETURNED",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "active",
+                "completed"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: DELIVERY_MAN"
+          }
+        },
+        "tags": [
+          "Delivery"
+        ],
+        "x-roles": [
+          "DELIVERY_MAN"
+        ],
+        "description": "**Roles:** DELIVERY_MAN"
+      }
+    },
+    "/delivery/orders/{id}/status": {
+      "patch": {
+        "operationId": "Delivery_status",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeliveryStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: DELIVERY_MAN"
+          }
+        },
+        "tags": [
+          "Delivery"
+        ],
+        "x-roles": [
+          "DELIVERY_MAN"
+        ],
+        "description": "**Roles:** DELIVERY_MAN"
+      }
+    },
+    "/delivery/stats": {
+      "get": {
+        "operationId": "Delivery_stats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          },
+          "403": {
+            "description": "Requires role: DELIVERY_MAN"
+          }
+        },
+        "tags": [
+          "Delivery"
+        ],
+        "x-roles": [
+          "DELIVERY_MAN"
+        ],
+        "description": "**Roles:** DELIVERY_MAN"
+      }
+    },
+    "/wishlist": {
+      "get": {
+        "operationId": "Wishlist_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Wishlist"
+        ]
+      },
+      "post": {
+        "operationId": "Wishlist_add",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddWishlistDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Wishlist"
+        ]
+      }
+    },
+    "/wishlist/ids": {
+      "get": {
+        "operationId": "Wishlist_ids",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "tags": [
+          "Wishlist"
+        ]
+      }
+    },
+    "/wishlist/{productId}": {
+      "delete": {
+        "operationId": "Wishlist_remove",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "Wishlist"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Elvate API",
+    "description": "Elvate shop + digital tools backend.\n\n**Auth**: one httpOnly cookie `session` set by `POST /auth/login` (or Google / face login).\nThe frontend calls the API through its own `/api/backend` proxy so the cookie stays first-party.\nRoutes marked *public* need no cookie; routes with **Roles** need one of the listed roles (`/delivery/*` is for the assigned delivery man only).\n\nMoney is BDT as JSON numbers; dates are ISO-8601 UTC.",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "cookie": {
+        "type": "apiKey",
+        "in": "cookie",
+        "name": "session"
+      }
+    },
+    "schemas": {
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "dob": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "firstName",
+          "email",
+          "password"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "lastName": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "phone": {
+            "type": "string"
+          }
+        }
+      },
+      "UpdateUserRoleDto": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string",
+            "enum": [
+              "BUYER",
+              "ADMIN",
+              "DELIVERY_MAN",
+              "STAFF"
+            ]
+          }
+        },
+        "required": [
+          "role"
+        ]
+      },
+      "FaceSetupDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "description": "Current password; omit for Google-only accounts.",
+            "maxLength": 200
+          }
+        }
+      },
+      "DeleteAccountDto": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "confirm": {
+            "type": "string",
+            "maxLength": 10
+          }
+        }
+      },
+      "UpdateShippingDto": {
+        "type": "object",
+        "properties": {
+          "insideDhaka": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000,
+            "example": 60
+          },
+          "outsideDhaka": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000,
+            "example": 120
+          },
+          "freeThreshold": {
+            "type": "integer",
+            "description": "0 = free delivery off, else 100–100000",
+            "example": 3000
+          }
+        },
+        "required": [
+          "insideDhaka",
+          "outsideDhaka",
+          "freeThreshold"
+        ]
+      },
+      "UpdateSettingDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ChangePasswordDto": {
+        "type": "object",
+        "properties": {
+          "oldPassword": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "oldPassword",
+          "newPassword"
+        ]
+      },
+      "ForgotPasswordDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "verificationMethod": {
+            "type": "string",
+            "default": "EMAIL",
+            "enum": [
+              "EMAIL",
+              "SMS"
+            ]
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "ResetPasswordDto": {
+        "type": "object",
+        "properties": {
+          "resetTokenOrOTP": {
+            "type": "string"
+          },
+          "newPassword": {
+            "type": "string"
+          },
+          "verificationMethod": {
+            "type": "string",
+            "default": "EMAIL",
+            "enum": [
+              "EMAIL",
+              "SMS"
+            ]
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          }
+        },
+        "required": [
+          "resetTokenOrOTP",
+          "newPassword"
+        ]
+      },
+      "VerifyPhoneDto": {
+        "type": "object",
+        "properties": {
+          "otp": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "otp"
+        ]
+      },
+      "FaceChallengeDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "FaceLoginDto": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "maxLength": 320,
+            "format": "email"
+          },
+          "challengeId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "email",
+          "challengeId"
+        ]
+      },
+      "CreateReviewDto": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "rating"
+        ]
+      },
+      "ModerateReviewDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "APPROVED",
+              "REJECTED"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ResizeImageDto": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "type": "number",
+            "minimum": 16,
+            "maximum": 4096
+          },
+          "height": {
+            "type": "number",
+            "minimum": 16,
+            "maximum": 4096
+          }
+        },
+        "required": [
+          "width",
+          "height"
+        ]
+      },
+      "CreateCheckoutDto": {
+        "type": "object",
+        "properties": {
+          "plan": {
+            "type": "string",
+            "enum": [
+              "1m",
+              "6m",
+              "12m"
+            ]
+          }
+        },
+        "required": [
+          "plan"
+        ]
+      },
+      "CancelSubscriptionDto": {
+        "type": "object",
+        "properties": {
+          "subscriptionId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "subscriptionId"
+        ]
+      },
+      "QuoteDto": {
+        "type": "object",
+        "properties": {
+          "addressId": {
+            "type": "string",
+            "description": "Defaults to the user's default address (or the outside-Dhaka fee when there is none).",
+            "format": "uuid"
+          },
+          "couponCode": {
+            "type": "string",
+            "maxLength": 40
+          }
+        }
+      },
+      "PlaceOrderDto": {
+        "type": "object",
+        "properties": {
+          "addressId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "COD",
+              "STRIPE"
+            ]
+          },
+          "couponCode": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "notes": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "addressId",
+          "paymentMethod"
+        ]
+      },
+      "CancelOrderDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "UpdateOrderStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "PROCESSING",
+              "SHIPPED",
+              "OUT_FOR_DELIVERY",
+              "DELIVERED",
+              "CANCELLED",
+              "RETURN_REQUESTED",
+              "RETURNED"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "OrderCorrectionDto": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "DELIVERED",
+              "RETURN_REQUESTED"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "DELIVERY_MAN_CONFIRMED_BY_PHONE",
+              "CUSTOMER_CONFIRMED",
+              "DELIVERY_MAN_UNAVAILABLE",
+              "OTHER"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "cashCollected": {
+            "type": "boolean",
+            "description": "Required for cash on delivery when action is DELIVERED."
+          }
+        },
+        "required": [
+          "action",
+          "reason",
+          "note"
+        ]
+      },
+      "AssignDeliveryDto": {
+        "type": "object",
+        "properties": {
+          "deliveryManId": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "deliveryManId"
+        ]
+      },
+      "OrderNotesDto": {
+        "type": "object",
+        "properties": {
+          "adminNotes": {
+            "type": "string",
+            "nullable": true,
+            "description": "`null` or \"\" clears the notes.",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "adminNotes"
+        ]
+      },
+      "GuestCartLineDto": {
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 999
+          }
+        },
+        "required": [
+          "variantId",
+          "quantity"
+        ]
+      },
+      "GuestCartDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GuestCartLineDto"
+            }
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "AddCartItemDto": {
+        "type": "object",
+        "properties": {
+          "variantId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "quantity": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 10
+          }
+        },
+        "required": [
+          "variantId",
+          "quantity"
+        ]
+      },
+      "UpdateCartItemDto": {
+        "type": "object",
+        "properties": {
+          "quantity": {
+            "type": "number",
+            "description": "0 removes the line.",
+            "minimum": 0,
+            "maximum": 10
+          }
+        },
+        "required": [
+          "quantity"
+        ]
+      },
+      "CreateAddressDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40
+          },
+          "fullName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "phone": {
+            "type": "string"
+          },
+          "addressLine": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 300
+          },
+          "area": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "city": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "postalCode": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "isDefault": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "fullName",
+          "phone",
+          "addressLine",
+          "city"
+        ]
+      },
+      "UpdateAddressDto": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 40
+          },
+          "fullName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "phone": {
+            "type": "string"
+          },
+          "addressLine": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 300
+          },
+          "area": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "city": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "postalCode": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 20
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "`true` makes it the default. `false` on the default is a 400 (pick another default instead)."
+          }
+        }
+      },
+      "CreateCouponDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "FIXED"
+            ]
+          },
+          "value": {
+            "type": "number",
+            "description": "Percent (1–100) for PERCENT, taka for FIXED.",
+            "minimum": 0.01
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "minOrderAmount": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0
+          },
+          "maxDiscount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Only used by PERCENT coupons.",
+            "minimum": 1
+          },
+          "usageLimit": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1
+          },
+          "perUserLimit": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1
+          },
+          "isPublic": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "type",
+          "value",
+          "startsAt",
+          "expiresAt"
+        ]
+      },
+      "UpdateCouponDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "PERCENT",
+              "FIXED"
+            ]
+          },
+          "value": {
+            "type": "number",
+            "minimum": 0.01
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 255
+          },
+          "minOrderAmount": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0
+          },
+          "maxDiscount": {
+            "type": "number",
+            "nullable": true,
+            "description": "Only used by PERCENT coupons.",
+            "minimum": 1
+          },
+          "usageLimit": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1
+          },
+          "perUserLimit": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 1
+          },
+          "isPublic": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "CreateFlashSaleDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "discountPercent": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 90
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "productId",
+          "discountPercent",
+          "startsAt",
+          "endsAt"
+        ]
+      },
+      "UpdateFlashSaleDto": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "discountPercent": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 90
+          },
+          "startsAt": {
+            "type": "string"
+          },
+          "endsAt": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateVariantDto": {
+        "type": "object",
+        "properties": {
+          "size": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "sku": {
+            "type": "string",
+            "pattern": "^[A-Z0-9][A-Z0-9-]{0,79}$"
+          },
+          "stock": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "price": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 10000000
+          }
+        }
+      },
+      "VariantInputDto": {
+        "type": "object",
+        "properties": {
+          "size": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "color": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "sku": {
+            "type": "string",
+            "description": "Optional; generated as `<SLUG>-<SIZE>-<COLOR>` (uppercase).",
+            "pattern": "^[A-Z0-9][A-Z0-9-]{0,79}$"
+          },
+          "stock": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "price": {
+            "type": "number",
+            "nullable": true,
+            "description": "Overrides the product price; `null` (on PATCH) removes the override.",
+            "minimum": 0,
+            "maximum": 10000000
+          }
+        },
+        "required": [
+          "stock"
+        ]
+      },
+      "CreateProductDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000000
+          },
+          "variants": {
+            "minItems": 1,
+            "maxItems": 100,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VariantInputDto"
+            }
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 220
+          },
+          "brand": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "salePrice": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 10000000
+          },
+          "material": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "careInstructions": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "specifications": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "isFeatured": {
+            "type": "boolean"
+          },
+          "isNewArrival": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "description",
+          "categoryId",
+          "price",
+          "variants"
+        ]
+      },
+      "UpdateProductDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "price": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10000000
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 220
+          },
+          "brand": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 120
+          },
+          "salePrice": {
+            "type": "number",
+            "nullable": true,
+            "minimum": 0,
+            "maximum": 10000000
+          },
+          "material": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 200
+          },
+          "careInstructions": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "specifications": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "isFeatured": {
+            "type": "boolean"
+          },
+          "isNewArrival": {
+            "type": "boolean"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        }
+      },
+      "UpdateImageDto": {
+        "type": "object",
+        "properties": {
+          "isMain": {
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        }
+      },
+      "CreateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "slug": {
+            "type": "string",
+            "description": "Optional; generated from the name (children: `<parent-slug>-<name>`).",
+            "maxLength": 140
+          },
+          "parentId": {
+            "type": "string",
+            "nullable": true,
+            "description": "Omit (or null) for a top-level category.",
+            "format": "uuid"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "sortOrder": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "UpdateCategoryDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "slug": {
+            "type": "string",
+            "maxLength": 140
+          },
+          "parentId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "imageUrl": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 500
+          },
+          "sortOrder": {
+            "type": "number",
+            "minimum": 0
+          }
+        }
+      },
+      "DeliveryStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OUT_FOR_DELIVERY",
+              "DELIVERED",
+              "RETURN_REQUESTED"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "AddWishlistDto": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  },
+  "security": [
+    {
+      "cookie": []
+    }
+  ]
+}

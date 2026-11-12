@@ -7,6 +7,7 @@ import stripeConfig from './config/stripe.config';
 import { Subscription } from './entities/subscription.entity';
 import { Payment } from './entities/payment.entity';
 import { UsersModule } from 'src/users/users.module';
+import { OrdersModule } from 'src/orders/orders.module';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityLog } from 'src/activity-logs/entities/activity-logs.entity';
 
@@ -15,6 +16,7 @@ import { ActivityLog } from 'src/activity-logs/entities/activity-logs.entity';
     TypeOrmModule.forFeature([Subscription, Payment, ActivityLog]),
     UsersModule,
     ConfigModule.forFeature(stripeConfig),
+    OrdersModule, // the Stripe webhook also settles order payments
   ],
   controllers: [SubscriptionController],
   providers: [SubscriptionService, ActivityLogsService],

@@ -23,16 +23,30 @@ import { SmsService } from './services/sms.service';
 import emailConfig from './config/email.config';
 import { Verification } from './entities/verification.entity';
 import { UserSession } from './entities/user-session.entity';
-import { FaceVerificationService } from 'src/users/services/face-verification.service';
+import { FaceModule } from 'src/face/face.module';
+import { SettingsModule } from 'src/settings/settings.module';
+import { LoginAttempt } from './attempts/login-attempt.entity';
+import { LoginAttemptsService } from './attempts/login-attempts.service';
+import { FaceLoginChallenge } from './face-login/face-login-challenge.entity';
+import { FaceLoginService } from './face-login/face-login.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Users, ActivityLog, Verification, UserSession]),
+    TypeOrmModule.forFeature([
+      Users,
+      ActivityLog,
+      Verification,
+      UserSession,
+      LoginAttempt,
+      FaceLoginChallenge,
+    ]),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(refreshJwtConfig),
     ConfigModule.forFeature(googleOauthConfig),
     ConfigModule.forFeature(emailConfig),
+    FaceModule,
+    SettingsModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -45,7 +59,8 @@ import { FaceVerificationService } from 'src/users/services/face-verification.se
     GoogleStrategy,
     MailService,
     SmsService,
-    FaceVerificationService,
+    LoginAttemptsService,
+    FaceLoginService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard, //@UseGards(JwtAuthGuard) Global guard for JWT authentication for all API endpoints

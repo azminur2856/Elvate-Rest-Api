@@ -1,10 +1,11 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
+  BadRequestException,
   Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Patch,
   Post,
   Put,
@@ -12,43 +13,48 @@ import {
   Req,
   Request,
   Res,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
   ValidationPipe,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { AuthGuard } from '@nestjs/passport';
 import { LocalAuthGuard } from './guards/local-auth/local-auth.guard';
 import { RefreshAuthGuard } from './guards/refresh-auth/refresh-auth.guard';
-import { JwtAuthGuard } from './guards/jwt-auth/jwt-auth.guard';
 import { Public } from './decorators/public.decorator';
+import { RATE_LIMITS, RateLimit } from './throttle/rate-limit';
 import { GoogleAuthGuard } from './guards/google-auth/google-auth.guard';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyPhoneDto } from './dto/verify-Phone.dto';
-import { resizeToBase64 } from './utility/resize-to-base64.util';
-import { FaceVerificationService } from 'src/users/services/face-verification.service';
-import { FileInterceptor } from '@nestjs/platform-express';
-import * as fs from 'fs';
-import * as path from 'path';
-import { Response } from 'express';
+import { PhotoFieldsUpload } from 'src/common/upload';
+import { Request as ExpressRequest, Response } from 'express';
 import { encryptSessionCookie } from './utility/jose-cookie';
 import {
   SESSION_COOKIE,
   sessionCookieOptions,
   clearSessionCookieOptions,
 } from './utility/session-cookie.options';
-import axios from 'axios';
+import { FaceLoginService } from './face-login/face-login.service';
+import { FaceChallengeDto, FaceLoginDto } from './face-login/face-login.dto';
+import { clientIp } from './throttle/rate-limit';
+import type { AuthRequest } from 'src/common/auth-user';
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
 
+/** The two face-login frames (multipart file fields). */
+type FaceFrames = {
+  neutral?: Express.Multer.File[];
+  action?: Express.Multer.File[];
+};
+
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly faceVerificationService: FaceVerificationService,
+    private readonly faceLogin: FaceLoginService,
   ) {}
 
   @Public()
@@ -57,18 +63,11 @@ export class AuthController {
     return this.authService.verifyRegistratioin(token);
   }
 
-  // @Public()
-  // @HttpCode(HttpStatus.OK)
-  // @UseGuards(LocalAuthGuard)
-  // @Post('login')
-  // async login(@Request() req) {
-  //   return await this.authService.login(req.user.id);
-  // }
-
   @Public()
   @HttpCode(HttpStatus.OK)
   @UseGuards(LocalAuthGuard)
   @Post('login')
+  @RateLimit(RATE_LIMITS.login)
   async login(@Request() req, @Res({ passthrough: true }) res: Response) {
     const cookieData = await this.authService.login(
       req.user.id,
@@ -85,13 +84,6 @@ export class AuthController {
     // Optionally, return only minimal info
     return { success: true };
   }
-
-  // @Public()
-  // @UseGuards(RefreshAuthGuard)
-  // @Post('refresh')
-  // refreshToken(@Req() req) {
-  //   return this.authService.refreshToken(req.user.id);
-  // }
 
   @Public()
   @UseGuards(RefreshAuthGuard) // uses "refresh-jwt" strategy above
@@ -127,12 +119,6 @@ export class AuthController {
   @Public()
   @UseGuards(GoogleAuthGuard)
   @Get('google/callback')
-  // async googleCallback(@Req() req, @Res() res) {
-  //   const respons = await this.authService.login(req.user.id);
-  //   res.redirect(
-  //     `http://localhost:3000/auth/view/google-login-success.html?access_token=${respons.accessToken}&refresh_token=${respons.refreshToken}`,
-  //   );
-  // }
   async googleCallback(@Request() req, @Res() res: Response) {
     const cookieData = await this.authService.login(
       req.user.id,
@@ -148,12 +134,10 @@ export class AuthController {
 
     // Redirect to profile page
     return res.redirect(`${FRONTEND_URL}/google`);
-
-    // Optionally, return only minimal info
-    //return { success: true };
   }
 
   @Patch('changePassword')
+  @RateLimit(RATE_LIMITS.changePassword)
   async updatePassword(
     @Req() req: any,
     @Body(ValidationPipe) changePasswordDto: ChangePasswordDto,
@@ -164,6 +148,7 @@ export class AuthController {
 
   @Public()
   @Post('forgotPassword')
+  @RateLimit(RATE_LIMITS.forgotPassword)
   async forgotPassword(
     @Body(ValidationPipe) forgotPasswordDto: ForgotPasswordDto,
   ) {
@@ -172,6 +157,7 @@ export class AuthController {
 
   @Public()
   @Put('resetPassword')
+  @RateLimit(RATE_LIMITS.resetPassword)
   async resetPassword(
     @Body(ValidationPipe) resetPasswordDto: ResetPasswordDto,
   ) {
@@ -179,181 +165,77 @@ export class AuthController {
   }
 
   @Post('getOtpForPhoneVerification')
+  @RateLimit(RATE_LIMITS.phoneOtp)
   async phoneVerification(@Request() req) {
     return await this.authService.phoneVerification(req.user.id);
   }
 
   @Post('verifyPhone')
-  async verifyPhone(@Body(ValidationPipe) verifyPhoneDto: VerifyPhoneDto) {
-    return this.authService.verifyPhone(verifyPhoneDto);
+  @RateLimit(RATE_LIMITS.verifyPhone)
+  async verifyPhone(
+    @Req() req: AuthRequest,
+    @Body(ValidationPipe) verifyPhoneDto: VerifyPhoneDto,
+  ) {
+    return this.authService.verifyPhone(req.user.id, verifyPhoneDto);
   }
 
-  // @Public()
-  // @Post('login-with-face')
-  // @UseInterceptors(FileInterceptor('liveImage'))
-  // async loginWithFace(
-  //   @Body('email') email: string,
-  //   @UploadedFile() file: Express.Multer.File,
-  // ) {
-  //   const user = await this.authService.getVerifiedFaceUserByEmail(email);
+  /**
+   * SEC-04 face login, step 1: a random liveness prompt (TURN_HEAD or BLINK)
+   * valid for 2 minutes and one attempt. Same answer for every e-mail.
+   */
+  @Public()
+  @Post('face-login/challenge')
+  @RateLimit(RATE_LIMITS.faceChallenge)
+  faceLoginChallenge(@Body() dto: FaceChallengeDto) {
+    return this.faceLogin.createChallenge(dto.email);
+  }
 
-  //   const profileImagePath = path.join(
-  //     __dirname,
-  //     '..',
-  //     '..',
-  //     'assets',
-  //     'user_profile_image',
-  //     `user_${user.id}`,
-  //     user.profileImage,
-  //   );
-
-  //   if (!fs.existsSync(profileImagePath)) {
-  //     throw new NotFoundException('Profile image not found');
-  //   }
-
-  //   const profileImageBuffer = fs.readFileSync(profileImagePath);
-  //   const profileImageBase64 = await resizeToBase64(profileImageBuffer);
-  //   const liveImageBase64 = await resizeToBase64(file.buffer);
-
-  //   const isMatch = await this.faceVerificationService.compareFacesForLogin(
-  //     profileImageBase64,
-  //     liveImageBase64,
-  //   );
-
-  //   if (!isMatch) {
-  //     return {
-  //       verified: false,
-  //       message: '❌ Face does not match. Try again.',
-  //     };
-  //   }
-
-  //   const tokens = await this.authService.login(user.id);
-
-  //   return {
-  //     verified: true,
-  //     message: '✅ Face verified and logged in.',
-  //     ...tokens,
-  //   };
-  // }
-
-  //face login endpoint using local image and live image
-  // @Public()
-  // @Post('login-with-face')
-  // @UseInterceptors(FileInterceptor('liveImage'))
-  // async loginWithFace(
-  //   @Body('email') email: string,
-  //   @UploadedFile() file: Express.Multer.File,
-  //   @Res({ passthrough: true }) res: Response,
-  // ) {
-  //   const user = await this.authService.getVerifiedFaceUserByEmail(email);
-
-  //   const profileImagePath = path.join(
-  //     __dirname,
-  //     '..',
-  //     '..',
-  //     'assets',
-  //     'user_profile_image',
-  //     `user_${user.id}`,
-  //     user.profileImage,
-  //   );
-
-  //   if (!fs.existsSync(profileImagePath)) {
-  //     throw new NotFoundException('Profile image not found');
-  //   }
-
-  //   const profileImageBuffer = fs.readFileSync(profileImagePath);
-  //   const profileImageBase64 = await resizeToBase64(profileImageBuffer);
-  //   const liveImageBase64 = await resizeToBase64(file.buffer);
-
-  //   const isMatch = await this.faceVerificationService.compareFacesForLogin(
-  //     profileImageBase64,
-  //     liveImageBase64,
-  //   );
-
-  //   if (!isMatch) {
-  //     return {
-  //       verified: false,
-  //       message: '❌ Face does not match. Try again.',
-  //     };
-  //   }
-
-  //   // --- Set session cookie like in normal login ---
-  //   const cookieData = await this.authService.login(user.id, 'faceLogin');
-  //   const cookieDataEncrypted = await encryptSessionCookie(cookieData);
-
-  //   res.cookie('session', cookieDataEncrypted, {
-  //     httpOnly: true,
-  //     secure: process.env.NODE_ENV === 'production',
-  //     sameSite: 'lax',
-  //     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
-  //   });
-
-  //   return {
-  //     verified: true,
-  //     message: '✅ Face verified and logged in.',
-  //   };
-  // }
-
-  // face login endpoint using imagekit image URL and live image
+  /**
+   * SEC-04 face login, step 2 (multipart): `email`, `challengeId` and two
+   * photos, `neutral` (looking at the camera) and `action` (after doing the
+   * prompt). Success sets the session cookie like a password login. Every
+   * failure is the same 401; 5 per 15 minutes per e-mail or IP lock face
+   * login for 15 minutes (429).
+   */
   @Public()
   @Post('login-with-face')
-  @UseInterceptors(FileInterceptor('liveImage'))
+  @UseInterceptors(PhotoFieldsUpload(['neutral', 'action']))
+  @RateLimit(RATE_LIMITS.loginWithFace)
   async loginWithFace(
-    @Request() req,
-    @Body('email') email: string,
-    @UploadedFile() file: Express.Multer.File,
+    @Request() req: ExpressRequest,
+    @Body() dto: FaceLoginDto,
+    @UploadedFiles() files: FaceFrames | undefined,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const user = await this.authService.getVerifiedFaceUserByEmail(email);
-
-    if (user.isActive === false) {
-      throw new NotFoundException(
-        'User is inactive or blocked by admin. Contact support for assistance.',
+    const neutral = files?.neutral?.[0];
+    const action = files?.action?.[0];
+    if (!neutral || !action) {
+      throw new BadRequestException(
+        'Send two photos: "neutral" (looking at the camera) and "action" (after the prompt).',
       );
     }
-
-    const imageKitUrl = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/user_${user.id}/${user.profileImage}`;
-
-    let profileImageBuffer: Buffer;
-    try {
-      const response = await axios.get(imageKitUrl, {
-        responseType: 'arraybuffer',
-      });
-      profileImageBuffer = Buffer.from(response.data as ArrayBuffer);
-    } catch (err) {
-      throw new NotFoundException(
-        'Failed to download profile image from ImageKit',
-      );
-    }
-
-    const profileImageBase64 = await resizeToBase64(profileImageBuffer);
-    const liveImageBase64 = await resizeToBase64(file.buffer);
-
-    const isMatch = await this.faceVerificationService.compareFacesForLogin(
-      profileImageBase64,
-      liveImageBase64,
-    );
-
-    if (!isMatch) {
-      return {
-        verified: false,
-        message: '❌ Face does not match. Try again.',
-      };
-    }
+    const userAgent = req.headers['user-agent'];
+    const user = await this.faceLogin.verify({
+      email: dto.email,
+      challengeId: dto.challengeId,
+      neutral: neutral.buffer,
+      action: action.buffer,
+      ip: clientIp(req),
+    });
 
     // --- Set session cookie like in normal login ---
     const cookieData = await this.authService.login(
       user.id,
       'faceLogin',
-      req.headers['user-agent'],
+      userAgent,
     );
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
-
     res.cookie(SESSION_COOKIE, cookieDataEncrypted, sessionCookieOptions);
+    this.faceLogin.notifySignIn(user, userAgent);
 
     return {
       verified: true,
-      message: '✅ Face verified and logged in.',
+      message: 'Face verified and logged in.',
     };
   }
 }

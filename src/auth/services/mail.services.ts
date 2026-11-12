@@ -1,6 +1,7 @@
 import * as nodemailer from 'nodemailer';
 import axios from 'axios';
 import { Injectable, Logger } from '@nestjs/common';
+import { escapeHtml } from 'src/common/html';
 import emailConfig from '../config/email.config';
 
 /** Normalised result so callers don't depend on the transport. */
@@ -179,7 +180,7 @@ export class MailService {
       '#212529',
       'Verify Your Email',
       `
-            <p>Hello ${fullName},</p>
+            <p>Hello ${escapeHtml(fullName)},</p>
             <p>Thank you for registering at <strong>Elvate</strong>! Please verify your email by clicking the button below. This link will expire in <strong>1 hour</strong>.</p>
             <p style="text-align: center;">
               <a href="${verificationLink}" style="background-color: #0d6efd; color: #ffffff; padding: 12px 24px; border-radius: 5px; text-decoration: none; font-weight: bold;">Verify Email</a>
@@ -196,12 +197,15 @@ export class MailService {
     );
   }
 
-  async sendWelcomeEmail(to: string, fullName: string): Promise<MailSendResult> {
+  async sendWelcomeEmail(
+    to: string,
+    fullName: string,
+  ): Promise<MailSendResult> {
     const html = this.layout(
       '#0d6efd',
       'Welcome to Elvate!',
       `
-            <p>Hello ${fullName},</p>
+            <p>Hello ${escapeHtml(fullName)},</p>
             <p>We're excited to have you at Elvate! Start exploring digital products, manage your profile, and enjoy exclusive offers.</p>
             <p style="text-align: center;">
               <a href="${this.FRONTEND_URL}" style="background-color: #0d6efd; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">Explore Elvate</a>
@@ -222,7 +226,7 @@ export class MailService {
       '#20c997',
       'Password Reset Request',
       `
-            <p>Hello ${fullName},</p>
+            <p>Hello ${escapeHtml(fullName)},</p>
             <p>You requested a password reset for your account. Click the button below to reset your password. This link will expire in <strong>5 minutes</strong>.</p>
             <p style="text-align: center;">
               <a href="${resetLink}" style="background-color: #20c997; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">Reset Password</a>
@@ -249,7 +253,7 @@ export class MailService {
       '#dc3545',
       'Notification from Elvate',
       `
-            <p>Hello ${fullName},</p>
+            <p>Hello ${escapeHtml(fullName)},</p>
             <p>${body}</p>
             <p>If you have any questions, feel free to reply to this email.</p>
             <p><strong>The Elvate Team</strong></p>
@@ -267,5 +271,38 @@ export class MailService {
       success: true,
       message: `Email notification sent to ${to} successfully`,
     };
+  }
+
+  /**
+   * Order lifecycle e-mail (placed / shipped / delivered / cancelled).
+   * `bodyHtml` must already be escaped by the caller. Links point to
+   * `${FRONTEND_URL}/orders/<orderId>`.
+   */
+  async sendOrderEmail(
+    to: string,
+    fullName: string,
+    subject: string,
+    heading: string,
+    bodyHtml: string,
+    orderId: string,
+    /** Default: "View your order" → /orders/<id>. */
+    button: { path: string; label: string } = {
+      path: `/orders/${orderId}`,
+      label: 'View your order',
+    },
+  ): Promise<MailSendResult> {
+    const html = this.layout(
+      '#198754',
+      heading,
+      `
+            <p>Hello ${escapeHtml(fullName)},</p>
+            ${bodyHtml}
+            <p style="text-align: center;">
+              <a href="${this.FRONTEND_URL}${button.path}" style="background-color: #198754; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">${escapeHtml(button.label)}</a>
+            </p>
+            <p><strong>The Elvate Team</strong></p>
+      `,
+    );
+    return this.send('Elvate Orders', to, subject, html);
   }
 }

@@ -20,6 +20,11 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('Hello World!');
+      .expect(({ body }) =>
+        expect(body).toMatchObject({
+          message: 'Welcome to ELVATE!',
+          name: 'Elvate REST API',
+        }),
+      );
   });
 });

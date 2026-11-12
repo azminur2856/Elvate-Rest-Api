@@ -4,6 +4,12 @@ import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
 import googleOauthConfig from '../config/google-oauth.config';
 import { ConfigType } from '@nestjs/config';
 import { AuthService } from '../auth.service';
+import { CookieStateStore } from '../utility/oauth-state-store';
+import { MAX_NAME_LENGTH } from 'src/users/dto/create-user.dto';
+
+/** Google's `email_verified` (a boolean; tolerate the string form). */
+export const isGoogleVerified = (verified: unknown): boolean =>
+  verified === true || verified === 'true';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy) {
@@ -26,6 +32,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
       clientSecret: googleConfiguration.clientSecret,
       callbackURL: googleConfiguration.callbackUrl,
       scope: ['email', 'profile'],
+      // SEC-08: OAuth `state` in a short-lived cookie (no server sessions)
+      store: new CookieStateStore(),
     });
   }
 
@@ -39,11 +47,20 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
     if (!email) {
       return done(null, false);
     }
+    // SEC-08: only addresses Google itself has verified may sign in/link
+    if (!isGoogleVerified(profile.emails?.[0]?.verified)) {
+      return done(null, false);
+    }
     try {
       // phone is omitted on purpose: it is unique, so it must stay NULL, not ''.
       const user = await this.authService.validateGoogleUser({
-        firstName: profile.name?.givenName ?? profile.displayName ?? 'User',
-        lastName: profile.name?.familyName,
+        // SEC-15: same 50-character limit as sign-up
+        firstName: (
+          profile.name?.givenName ??
+          profile.displayName ??
+          'User'
+        ).slice(0, MAX_NAME_LENGTH),
+        lastName: profile.name?.familyName?.slice(0, MAX_NAME_LENGTH),
         email,
         password: '',
         isActive: true,

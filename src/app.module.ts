@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  RequestMethod,
+  Module,
+  NestModule,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
@@ -10,8 +15,22 @@ import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { OcrModule } from './ocr/ocr.module';
 import { DecryptSessionMiddleware } from './auth/middleware/decrypt-session.middleware';
+import { AuthCsrfMiddleware } from './auth/csrf/auth-csrf.middleware';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { HealthModule } from './health/health.module';
+import { CategoriesModule } from './categories/categories.module';
+import { ProductsModule } from './products/products.module';
+import { CartModule } from './cart/cart.module';
+import { AddressesModule } from './addresses/addresses.module';
+import { OffersModule } from './offers/offers.module';
+import { OrdersModule } from './orders/orders.module';
+import { DeliveryModule } from './delivery/delivery.module';
+import { AccountModule } from './account/account.module';
+import { WishlistModule } from './wishlist/wishlist.module';
+import { SettingsModule } from './settings/settings.module';
+import { MediaModule } from './media/media.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { throttlerTracker } from './auth/throttle/rate-limit';
 
 @Module({
   imports: [
@@ -21,6 +40,12 @@ import { HealthModule } from './health/health.module';
       load: [dbConfig],
     }),
     TypeOrmModule.forRootAsync({ useFactory: dbConfig }),
+    // Not a global guard: only the routes marked @RateLimit are throttled.
+    ThrottlerModule.forRoot({
+      throttlers: [{ name: 'default', ttl: 60_000, limit: 10 }],
+      errorMessage: 'Too many attempts. Please wait a moment and try again.',
+      getTracker: (req) => throttlerTracker(req),
+    }),
     UsersModule,
     AuthModule,
     ActivityLogsModule,
@@ -28,6 +53,17 @@ import { HealthModule } from './health/health.module';
     OcrModule,
     SubscriptionModule,
     HealthModule,
+    CategoriesModule,
+    ProductsModule,
+    CartModule,
+    AddressesModule,
+    OffersModule,
+    OrdersModule,
+    DeliveryModule,
+    AccountModule,
+    WishlistModule,
+    SettingsModule,
+    MediaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
@@ -36,5 +72,10 @@ import { HealthModule } from './health/health.module';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(DecryptSessionMiddleware).forRoutes('*'); // Or restrict as needed
+    // SEC-13: JSON-only bodies on the sign-in / account routes (login CSRF)
+    consumer.apply(AuthCsrfMiddleware).forRoutes('auth/*path', {
+      path: 'users/createUser',
+      method: RequestMethod.POST,
+    });
   }
 }

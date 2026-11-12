@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Post,
@@ -17,17 +18,25 @@ import { ConfigService } from '@nestjs/config';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/users/enums/role.enum';
+import { OrdersService } from 'src/orders/orders.service';
+import {
+  CancelSubscriptionDto,
+  CreateCheckoutDto,
+} from './dto/subscription.dto';
+import { PaginationQueryDto, pageParams } from 'src/common/pagination';
 
+@ApiTags('Subscriptions')
 @Controller('subscriptions')
 export class SubscriptionController {
   constructor(
     private readonly subService: SubscriptionService,
     private readonly config: ConfigService,
+    private readonly orders: OrdersService,
   ) {}
 
   @Post('checkout')
-  createCheckout(@Req() req, @Body('plan') plan: '1m' | '6m' | '12m') {
-    return this.subService.createCheckoutSession(req.user.id, plan);
+  createCheckout(@Req() req, @Body() dto: CreateCheckoutDto) {
+    return this.subService.createCheckoutSession(req.user.id, dto.plan);
   }
 
   @Public() // or remove guard for this route
@@ -51,27 +60,18 @@ export class SubscriptionController {
     try {
       const event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
 
-      await this.subService.handleWebhook(event);
+      // One endpoint for both: order payments carry metadata.kind = 'order'.
+      if (this.orders.isOrderEvent(event)) {
+        await this.orders.handleStripeEvent(event);
+      } else {
+        await this.subService.handleWebhook(event);
+      }
       res.status(200).send(); // Stripe expects a 2xx response
     } catch (err: any) {
       console.error('Webhook error:', err.message);
       res.status(400).send(`Webhook Error: ${err.message}`);
     }
   }
-
-  // @Get('session/:sessionId')
-  // async getCheckoutSession(@Param('sessionId') sessionId: string, @Req() req) {
-  //   const session = await this.subService.getCheckoutSessionDetails(sessionId);
-
-  //   // Secure: Only allow user to see their session!
-  //   if (!session.metadata || session.metadata.userId !== req.user.id) {
-  //     throw new UnauthorizedException(
-  //       'This payment session does not belong to you!',
-  //     );
-  //   }
-
-  //   return session;
-  // }
 
   @Get('session/:sessionId')
   async getCheckoutSession(@Param('sessionId') sessionId: string, @Req() req) {
@@ -96,11 +96,8 @@ export class SubscriptionController {
   }
 
   @Post('cancel')
-  async cancelSubscription(
-    @Req() req,
-    @Body('subscriptionId') subscriptionId: string,
-  ) {
-    return this.subService.cancelSubscription(req.user.id, subscriptionId);
+  async cancelSubscription(@Req() req, @Body() dto: CancelSubscriptionDto) {
+    return this.subService.cancelSubscription(req.user.id, dto.subscriptionId);
   }
 
   @Roles(Role.ADMIN)
@@ -123,27 +120,17 @@ export class SubscriptionController {
 
   @Roles(Role.ADMIN)
   @Get('getAllPayments')
-  getAllPayments(
-    @Query('page') page = '1',
-    @Query('pageSize') pageSize = '10',
-  ) {
-    return this.subService.getAllPayments(
-      parseInt(page, 10) || 1,
-      parseInt(pageSize, 10) || 10,
-    );
+  getAllPayments(@Query() query: PaginationQueryDto) {
+    const { page, pageSize } = pageParams(query); // pageSize capped at 100
+    return this.subService.getAllPayments(page, pageSize);
   }
 
   // subscriptions.controller.ts
 
   @Roles(Role.ADMIN)
   @Get('getAllSubscriptions')
-  getAllSubscriptionsAdmin(
-    @Query('page') page = '1',
-    @Query('pageSize') pageSize = '10',
-  ) {
-    return this.subService.getAllSubscriptionsAdmin(
-      parseInt(page, 10) || 1,
-      parseInt(pageSize, 10) || 10,
-    );
+  getAllSubscriptionsAdmin(@Query() query: PaginationQueryDto) {
+    const { page, pageSize } = pageParams(query); // pageSize capped at 100
+    return this.subService.getAllSubscriptionsAdmin(page, pageSize);
   }
 }

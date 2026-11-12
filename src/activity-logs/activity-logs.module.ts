@@ -8,5 +8,6 @@ import { ActivityLog } from './entities/activity-logs.entity';
   imports: [TypeOrmModule.forFeature([ActivityLog])],
   controllers: [ActivityLogsController],
   providers: [ActivityLogsService],
+  exports: [ActivityLogsService],
 })
 export class ActivityLogsModule {}

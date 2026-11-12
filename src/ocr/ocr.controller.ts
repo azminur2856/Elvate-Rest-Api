@@ -1,3 +1,4 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Post,
@@ -7,18 +8,21 @@ import {
   Req,
   Body,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { EditOptions, OcrService } from './ocr.service';
+import { OcrService } from './ocr.service';
+import { ResizeImageDto, parseEditOptions } from './dto/edit-image.dto';
 import { extname } from 'path';
-import { Public } from 'src/auth/decorators/public.decorator';
+import type { AuthRequest } from 'src/common/auth-user';
+import { SingleFileUpload } from 'src/common/upload';
+import { RATE_LIMITS, RateLimit } from 'src/auth/throttle/rate-limit';
 
-//@Public()
+@ApiTags('Digital tools')
 @Controller('ocr')
 export class OcrController {
   constructor(private readonly ocrService: OcrService) {}
 
   @Post('upload/pdf')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(SingleFileUpload('file'))
+  @RateLimit(RATE_LIMITS.heavyTool)
   async uploadPdf(@UploadedFile() file: Express.Multer.File, @Req() req) {
     if (!file) {
       throw new BadRequestException('No file uploaded.');
@@ -33,7 +37,8 @@ export class OcrController {
   }
 
   @Post('upload/image')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(SingleFileUpload('file'))
+  @RateLimit(RATE_LIMITS.heavyTool)
   async uploadImage(@UploadedFile() file: Express.Multer.File, @Req() req) {
     if (!file) {
       throw new BadRequestException('No file uploaded.');
@@ -53,11 +58,12 @@ export class OcrController {
   }
 
   @Post('image/resize')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(SingleFileUpload('file'))
+  @RateLimit(RATE_LIMITS.imageTool)
   async resizeImage(
     @UploadedFile() file: Express.Multer.File,
     @Req() req,
-    @Body() body: { width: string; height: string },
+    @Body() body: ResizeImageDto,
   ) {
     if (!file) throw new BadRequestException('No file uploaded.');
     const extension = extname(file.originalname).toLowerCase();
@@ -70,66 +76,43 @@ export class OcrController {
       throw new BadRequestException('Only image files are allowed.');
     }
 
-    // Parse/validate width/height
-    const width = Number(body.width);
-    const height = Number(body.height);
-
-    if (
-      !width ||
-      !height ||
-      width < 16 ||
-      width > 4096 ||
-      height < 16 ||
-      height > 4096
-    ) {
-      throw new BadRequestException('Invalid width or height');
-    }
-
     return this.ocrService.resizeImage(
       file.buffer,
-      width,
-      height,
+      body.width,
+      body.height,
       file.mimetype,
       req.user.id,
     );
   }
 
-  // @Post('image/remove-bg')
-  // @UseInterceptors(FileInterceptor('file'))
-  // async removeBackground(
-  //   @UploadedFile() file: Express.Multer.File,
-  //   @Req() req: any,
-  // ) {
-  //   if (!file) {
-  //     throw new BadRequestException('No file uploaded.');
-  //   }
-
-  //   const resultBuffer = await this.ocrService.removeBackground(
-  //     file.buffer,
-  //     file.mimetype,
-  //     req.user.id,
-  //   );
-
-  //   return {
-  //     contentType: 'image/png',
-  //     data: resultBuffer.toString('base64'),
-  //   };
-  // }
+  /** BE-21. Multipart field `file`: JPG / PNG / WebP / HEIC up to 10 MB. */
+  @Post('image/remove-bg')
+  @UseInterceptors(SingleFileUpload('file'))
+  @RateLimit(RATE_LIMITS.heavyTool)
+  async removeBackground(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: AuthRequest,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded.');
+    const extension = extname(file.originalname).toLowerCase();
+    if (!['.jpg', '.jpeg', '.png', '.webp', '.heic'].includes(extension)) {
+      throw new BadRequestException(
+        'Only JPG, PNG, WebP or HEIC images are allowed.',
+      );
+    }
+    return this.ocrService.removeBackground(file, req.user.id);
+  }
 
   @Post('image/edit')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(SingleFileUpload('file'))
+  @RateLimit(RATE_LIMITS.imageTool)
   async editImage(
     @UploadedFile() file: Express.Multer.File,
     @Body('options') options: string, // should be JSON string
     @Req() req,
   ) {
     if (!file) throw new BadRequestException('No file uploaded');
-    let opts: EditOptions;
-    try {
-      opts = JSON.parse(options);
-    } catch {
-      throw new BadRequestException('Invalid options format');
-    }
+    const opts = parseEditOptions(options);
     const editedBuffer = await this.ocrService.editImage(
       file.buffer,
       opts,

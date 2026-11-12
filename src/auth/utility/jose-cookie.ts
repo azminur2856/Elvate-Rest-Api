@@ -1,4 +1,4 @@
-require('dotenv').config();
+import 'dotenv/config';
 import { EncryptJWT, jwtDecrypt } from 'jose';
 
 const base64Key = process.env.COOKIES_SECRET!;

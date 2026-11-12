@@ -1,20 +1,25 @@
 import {
-  IsEmail,
   IsOptional,
   IsString,
-  IsDateString,
-  IsEnum,
   IsPhoneNumber,
+  MaxLength,
 } from 'class-validator';
-import { Role } from 'src/users/enums/role.enum';
+import { MAX_NAME_LENGTH } from './create-user.dto';
 
+/**
+ * Fields a user may change on their own profile (PATCH /users/updateUser).
+ * Role, status, verification flags, password and profile image have their
+ * own guarded endpoints and must never be settable here.
+ */
 export class UpdateUserDto {
   @IsOptional()
   @IsString()
+  @MaxLength(MAX_NAME_LENGTH)
   firstName?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(MAX_NAME_LENGTH)
   lastName?: string;
 
   @IsOptional()
@@ -23,15 +28,4 @@ export class UpdateUserDto {
     message: 'Phone number must be a valid Bangladeshi phone number',
   })
   phone?: string;
-
-  @IsOptional()
-  isPhoneVerified?: boolean;
-
-  @IsOptional()
-  @IsString()
-  password?: string;
-
-  @IsOptional()
-  @IsString()
-  profileImage?: string;
 }

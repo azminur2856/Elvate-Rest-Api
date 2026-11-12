@@ -1,9 +1,8 @@
 import {
   BadGatewayException,
   BadRequestException,
-  HttpException,
-  HttpStatus,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -11,25 +10,61 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from './entities/users.entity';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
+import { CreateGoogleUserDto } from './dto/create-google-user.dto';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import * as fs from 'fs';
-import { deleteTempDirectory } from 'src/auth/utility/delete-directory.util';
-import * as path from 'path';
-import { clearDirectory } from 'src/auth/utility/clear-direttory.util';
 import { MailService } from 'src/auth/services/mail.services';
 import { generateVerificationToken } from 'src/auth/utility/token.util';
 import { Verification } from 'src/auth/entities/verification.entity';
+import { UserSession } from 'src/auth/entities/user-session.entity';
 import { VerificationType } from 'src/auth/enums/verification-type.enum';
 import { maskEmail } from 'src/auth/utility/email-mask.util';
 import { imagekit } from 'src/auth/utility/imagekit';
-import axios from 'axios';
-import { PassThrough } from 'stream';
+import { newAvatarKey, ownAvatarUrl, staffAvatarUrl } from 'src/common/media';
+import type { FileObject } from 'imagekit/dist/libs/interfaces';
+import { Role } from './enums/role.enum';
+
+export type AvatarView = 'own' | 'own-xs' | 'staff';
+
+/**
+ * BE-28: replaces the private picture fields with our own avatarUrl
+ * (/media/...), so no response carries the file path or the key.
+ */
+export function withAvatarUrl<
+  T extends {
+    id: string;
+    profileImagePath?: string | null;
+    avatarKey?: string | null;
+    profileImageFileId?: string | null;
+  },
+>(
+  user: T,
+  view: AvatarView,
+): Omit<T, 'profileImagePath' | 'avatarKey' | 'profileImageFileId'> & {
+  avatarUrl: string | null;
+} {
+  const { profileImagePath, avatarKey, profileImageFileId, ...rest } = user;
+  void profileImageFileId;
+  const owner = { id: user.id, profileImagePath, avatarKey };
+  return {
+    ...rest,
+    avatarUrl:
+      view === 'staff'
+        ? staffAvatarUrl(owner, 'sm')
+        : ownAvatarUrl(owner, view === 'own-xs' ? 'xs' : 'md'),
+  };
+}
+
+/** ImageKit folder of a user's profile pictures. */
+export const profileImageFolder = (userId: string) =>
+  `/user_profile_image/user_${userId}`;
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     private activityLogsService: ActivityLogsService,
     @InjectRepository(Users) private userRepository: Repository<Users>,
@@ -81,7 +116,16 @@ export class UsersService {
       }
     }
 
-    const user = this.userRepository.create(createUserDto);
+    // Copy only the sign-up fields: role, status and verification flags
+    // must never come from the request body.
+    const user = this.userRepository.create({
+      firstName: createUserDto.firstName,
+      lastName: createUserDto.lastName,
+      dob: createUserDto.dob,
+      email: createUserDto.email,
+      phone: createUserDto.phone,
+      password: createUserDto.password,
+    });
     const savedUser = await this.userRepository.save(user);
 
     const token = generateVerificationToken();
@@ -112,12 +156,10 @@ export class UsersService {
       user: savedUser,
     });
 
-    //const { password, refreshToken, ...result } = savedUser;
-    //return result;
     const maskedEmail = maskEmail(savedUser.email);
-    // Security: never return the verification token; it must only reach the user's inbox.
     return {
       message: `Registration verification link sent to your email ${maskedEmail}`,
+      // never return the token: it would let anyone verify an e-mail they do not own
     };
   }
 
@@ -228,6 +270,8 @@ export class UsersService {
         isEmailVerified: true,
         isPhoneVerified: true,
         profileImage: true,
+        profileImagePath: true,
+        avatarKey: true,
       },
     });
     if (!users) {
@@ -235,7 +279,7 @@ export class UsersService {
     }
     return {
       message: 'Users fetched successfully',
-      data: users,
+      data: users.map((u) => withAvatarUrl(u, 'staff')),
     };
   }
 
@@ -262,6 +306,8 @@ export class UsersService {
         'user.isEmailVerified',
         'user.isPhoneVerified',
         'user.profileImage',
+        'user.profileImagePath',
+        'user.avatarKey',
         'user.createdAt',
       ])
       .addSelect('COALESCE(SUM(payment.amount), 0)', 'totalPaid')
@@ -306,7 +352,7 @@ export class UsersService {
     ]);
 
     const userList = usersRaw.entities.map((user, idx) => ({
-      ...user,
+      ...withAvatarUrl(user, 'staff'),
       totalPaid: Number(usersRaw.raw[idx]?.totalPaid) || 0,
       createdAt: user.createdAt,
     }));
@@ -320,7 +366,11 @@ export class UsersService {
     };
   }
 
-  async getUserById(id: string) {
+  /**
+   * `avatar`: whose link to build (BE-28): 'own' (profile, md), 'own-xs'
+   * (session user) or 'staff' (someone else's picture, sm).
+   */
+  async getUserById(id: string, avatar: AvatarView = 'staff') {
     if (!id) throw new BadRequestException('User ID is required');
     const user = await this.userRepository.findOne({
       where: { id },
@@ -336,6 +386,8 @@ export class UsersService {
         'isEmailVerified',
         'isPhoneVerified',
         'profileImage',
+        'profileImagePath',
+        'avatarKey',
         'createdAt',
         'updatedAt',
         'lastLoginAt',
@@ -344,7 +396,7 @@ export class UsersService {
       ],
     });
     if (!user) throw new NotFoundException(`No data found for user ${id}`);
-    return user;
+    return withAvatarUrl(user, avatar);
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {
@@ -367,12 +419,24 @@ export class UsersService {
           `User with this phone ${updateUserDto.phone} already exists`,
         );
       }
-      if (user.phone !== updateUserDto.phone) {
-        updateUserDto.isPhoneVerified = false; // Set isPhoneVerified to false if phone is updated
-      }
     }
 
-    const result = await this.userRepository.update(id, updateUserDto);
+    // Copy only the profile fields (never role / flags / password).
+    const changes: Partial<Users> = {};
+    if (updateUserDto.firstName !== undefined)
+      changes.firstName = updateUserDto.firstName;
+    if (updateUserDto.lastName !== undefined)
+      changes.lastName = updateUserDto.lastName;
+    if (updateUserDto.phone !== undefined) {
+      changes.phone = updateUserDto.phone;
+      // A new number has to be verified again.
+      if (user.phone !== updateUserDto.phone) changes.isPhoneVerified = false;
+    }
+    if (Object.keys(changes).length === 0) {
+      throw new BadRequestException('Nothing to update');
+    }
+
+    const result = await this.userRepository.update(id, changes);
     if (!result) {
       throw new BadGatewayException('Failed to update user');
     }
@@ -396,7 +460,7 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    if (user.role === 'ADMIN') {
+    if (user.role === Role.ADMIN) {
       throw new UnauthorizedException(`Unauthorized to change admin role`);
     }
 
@@ -422,11 +486,20 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    if (user.role === 'ADMIN') {
+    if (user.role === Role.ADMIN) {
       throw new UnauthorizedException(`Unauthorized to change admin status`);
     }
 
-    const result = await this.userRepository.update(id, { isActive });
+    // SEC-07: blocking ends every session; unblocking does not revive them
+    const result = await this.userRepository.manager.transaction(async (m) => {
+      const updated = await m.update(
+        Users,
+        id,
+        isActive ? { isActive } : { isActive, lastLogoutAt: new Date() },
+      );
+      if (!isActive) await m.delete(UserSession, { userId: id });
+      return updated;
+    });
 
     const activityLog = {
       activity: ActivityType.ADMIN_UPDATE_USER_STATUS,
@@ -446,20 +519,13 @@ export class UsersService {
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found`);
     }
-    if (user.role === 'ADMIN') {
+    if (user.role === Role.ADMIN) {
       throw new UnauthorizedException(`Unauthorized to delete admin account`);
     }
 
     const result = await this.userRepository.delete(id);
     if (!result) {
       throw new BadGatewayException('Failed to delete user');
-    }
-
-    if (result.affected) {
-      const userImageDirectory = `./assets/user_profile_image/user_${id}`;
-      if (fs.existsSync(userImageDirectory)) {
-        deleteTempDirectory(userImageDirectory);
-      }
     }
 
     const activityLog = {
@@ -475,50 +541,14 @@ export class UsersService {
     };
   }
 
-  // Update user profile image locally
-  // async updateProfileImage(userId: string, profileImageFileName: string) {
-  //   const user = await this.userRepository.findOne({ where: { id: userId } });
-
-  //   if (!user) {
-  //     throw new NotFoundException(`User not found`);
-  //   }
-
-  //   const result = await this.userRepository.update(userId, {
-  //     profileImage: profileImageFileName,
-  //     isFaceVerified: false, // Reset face verification status when profile image is updated
-  //   });
-
-  //   const uploadPath = path.join(
-  //     '..',
-  //     '..',
-  //     'assets',
-  //     'user_profile_image',
-  //     `user_${userId}`,
-  //   );
-
-  //   // Something went wrong while updating the user.
-  //   if (result.affected === 0) {
-  //     clearDirectory(uploadPath, user.profileImage, 'profileImage-');
-  //     throw new NotFoundException(`User not found`);
-  //   }
-
   //   clearDirectory(uploadPath, profileImageFileName, 'profileImage-'); // Delete old files starting with "profileImage-" except the new file
 
-  //   // Update Action Log
-  //   const activityLog = {
-  //     activity: ActivityType.USER_UPDATE_PROFILE,
-  //     description: 'User Changed Profile Image',
-  //     user: user,
-  //   };
-  //   await this.activityLogsService.createActivityLog(activityLog);
-
-  //   return {
-  //     message: `Profile Image Updated Successfully`,
-  //     userAffected: result.affected,
-  //   };
-  // }
-
   // Upload profile image to ImageKit
+  /**
+   * BE-28: profile pictures are private ImageKit files. Each upload gets a
+   * new avatarKey (so old review-photo links stop working) and the previous
+   * file is deleted. The reply carries our own path, never an ImageKit URL.
+   */
   async uploadProfileImage(
     userId: string,
     fileBuffer: Buffer,
@@ -530,155 +560,66 @@ export class UsersService {
       throw new NotFoundException('User not found');
     }
 
-    const folder = `/user_profile_image/user_${userId}`;
-
-    // Upload image to ImageKit
-    const uploadResponse = await imagekit.upload({
+    const upload = await imagekit.upload({
       file: fileBuffer,
       fileName: `${fileName}.jpg`,
-      folder: folder,
-      useUniqueFileName: false,
-      isPrivateFile: false,
+      folder: profileImageFolder(userId),
+      useUniqueFileName: true,
+      isPrivateFile: true,
     });
-
-    if (user.profileImage && user.profileImage !== 'profile.png') {
-      try {
-        const files = await imagekit.listFiles({
-          // only provide folder, NOT full path
-          folder: folder,
-        });
-
-        const fileToDelete = files.find(
-          (file) => file.name === user.profileImage,
-        );
-
-        if (fileToDelete) {
-          await imagekit.deleteFile(fileToDelete.fileId);
-          try {
-            const cleanUrl = fileToDelete.url.split('?')[0];
-            await imagekit.purgeCache(cleanUrl);
-            console.log('Cache purged for old image:', cleanUrl);
-            console.log('Cache purged for old image:', fileToDelete.url);
-          } catch (purgeError) {
-            console.warn('Failed to purge cache for old image:', purgeError);
-          }
-        } else {
-          console.warn('Old image not found in ImageKit folder');
-        }
-      } catch (err) {
-        console.warn('Failed to fetch or delete old image from ImageKit:', err);
-      }
-    }
-
-    // Save new image file name
+    const avatarKey = newAvatarKey();
+    // BE-26: face login compares with its own private reference, so a new
+    // profile picture does not switch it off
     const result = await this.userRepository.update(userId, {
-      profileImage: uploadResponse.name,
-      isFaceVerified: false,
+      profileImage: upload.name,
+      profileImageFileId: upload.fileId,
+      profileImagePath: upload.filePath,
+      avatarKey,
     });
-
     if (result.affected === 0) {
       throw new NotFoundException('Failed to update profile image');
     }
+    await this.deleteProfilePictureFile(user);
 
-    // Log activity
-    const activityLog = {
+    await this.activityLogsService.createActivityLog({
       activity: ActivityType.USER_UPDATE_PROFILE,
       description: 'User Changed Profile Image',
       user,
-    };
-    await this.activityLogsService.createActivityLog(activityLog);
+    });
 
     return {
       message: 'Profile Image Updated Successfully',
-      imageUrl: uploadResponse.url,
+      avatarUrl: ownAvatarUrl({
+        id: userId,
+        avatarKey,
+        profileImagePath: upload.filePath,
+      }),
       userAffected: result.affected,
     };
   }
 
-  // Get user profile image from local storage
-  // async getUserProfileImage(userId: string, res: any) {
-  //   const user = await this.userRepository.findOne({ where: { id: userId } });
-  //   if (!user) {
-  //     throw new NotFoundException(`User not found`);
-  //   }
-
-  //   let imagePath = path.join(
-  //     __dirname,
-  //     '..',
-  //     '..',
-  //     'assets',
-  //     'user_profile_image',
-  //     `user_${userId}`,
-  //     `${user.profileImage}`,
-  //   );
-
-  //   if (user.profileImage === 'profile.png') {
-  //     imagePath = path.join(
-  //       __dirname,
-  //       '..',
-  //       '..',
-  //       'assets',
-  //       'user_profile_image',
-  //       `${user.profileImage}`,
-  //     );
-  //   }
-
-  //   // Check if the image exists
-  //   if (!fs.existsSync(imagePath)) {
-  //     throw new NotFoundException(`Image file not found`);
-  //   }
-
-  //   // Stream the image file to the client
-  //   res.sendFile(imagePath, (err: any) => {
-  //     if (err) {
-  //       throw new HttpException(
-  //         'Unable to retrieve the profile image',
-  //         HttpStatus.INTERNAL_SERVER_ERROR,
-  //       );
-  //     }
-  //   });
-  //   return {
-  //     message: `Profile Image Sent Successfully`,
-  //   };
-  // }
-
-  //Get user profile image from ImageKit
-  async getUserProfileImage(userId: string, res: any) {
-    const user = await this.userRepository.findOne({ where: { id: userId } });
-    if (!user) {
-      throw new NotFoundException(`User not found`);
-    }
-
-    let imagePath: string;
-
-    if (!user.profileImage || user.profileImage === 'profile.png') {
-      // Serve default profile image from a public fallback location
-      imagePath = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/profile.png`;
-    } else {
-      imagePath = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/user_${userId}/${user.profileImage}`;
-    }
-
-    // Option 1: Stream the image file directly (for local files only)
-    // For remote URLs (like ImageKit), you need to proxy the request or redirect.
-    // If you want to fetch the image from ImageKit and stream it, use a request library.
-    // Here is an example using axios and stream:
-
+  /** Deletes the user's current picture file (private by id, legacy by name). */
+  private async deleteProfilePictureFile(user: Users): Promise<void> {
     try {
-      const response = await axios.get(imagePath, { responseType: 'stream' });
-      res.setHeader('Content-Type', response.headers['content-type']);
-      (response.data as NodeJS.ReadableStream).pipe(res);
+      if (user.profileImageFileId) {
+        await imagekit.deleteFile(user.profileImageFileId);
+        return;
+      }
+      if (!user.profileImage || user.profileImage === 'profile.png') return;
+      // legacy public file: find it by name in the user's folder
+      const files = await imagekit.listFiles({
+        path: profileImageFolder(user.id),
+      });
+      const old = files.find(
+        (f): f is FileObject =>
+          f.type === 'file' && f.name === user.profileImage,
+      );
+      if (old) await imagekit.deleteFile(old.fileId);
     } catch (err) {
-      throw new HttpException(
-        'Unable to retrieve the profile image',
-        HttpStatus.INTERNAL_SERVER_ERROR,
+      this.logger.warn(
+        `Could not delete the old profile picture of ${user.id}: ${String(err)}`,
       );
     }
-
-    // Option 2: Send as JSON response (for frontend to handle)
-    // return {
-    //   message: 'Profile image URL retrieved successfully',
-    //   imageUrl: imagePath,
-    // };
   }
 
   async findByEmail(email: string) {
@@ -688,6 +629,42 @@ export class UsersService {
 
   async updateLastLogin(id: string) {
     await this.userRepository.update(id, { lastLoginAt: new Date() });
+  }
+
+  /**
+   * SEC-08: someone signed up with this address but never verified it, and
+   * now its owner signs in with Google. Linking would hand the owner an
+   * account whose password (and phone) the first person chose ("account
+   * pre-hijacking"). Instead the pending registration is discarded: the row
+   * is reset to a fresh Google-only account owned by the verified address.
+   */
+  async claimPendingSignupForGoogle(
+    id: string,
+    google: CreateGoogleUserDto,
+  ): Promise<Users> {
+    await this.userRepository.manager.transaction(async (m) => {
+      await m.update(Users, id, {
+        firstName: google.firstName,
+        lastName: (google.lastName ?? null) as unknown as string,
+        password: '', // Google-only until the owner sets one
+        phone: null as unknown as string,
+        dob: null as unknown as Date,
+        isPhoneVerified: false,
+        isFaceVerified: false,
+        isEmailVerified: true,
+        profileImage: 'profile.png',
+        lastLogoutAt: new Date(),
+      });
+      await m.delete(Verification, { userId: id });
+      await m.delete(UserSession, { userId: id });
+    });
+    const user = await this.userRepository.findOne({ where: { id } });
+    await this.activityLogsService.createActivityLog({
+      activity: ActivityType.USER_REGISTER,
+      description: `Unverified sign-up ${id} discarded: its address signed in with Google and now owns the account.`,
+      user,
+    });
+    return user!;
   }
 
   async setLastLogoutTime(userId: string) {
@@ -708,20 +685,6 @@ export class UsersService {
     await this.userRepository.update(userId, {
       isPhoneVerified: true,
     });
-  }
-
-  async markFaceAsVerified(id: string) {
-    await this.userRepository.update(id, { isFaceVerified: true });
-
-    const user = await this.getUserById(id);
-
-    // Update Action Log
-    const activityLog = {
-      activity: ActivityType.USER_VERIFY_FACE,
-      description: 'User verified face successfully',
-      user: user,
-    };
-    await this.activityLogsService.createActivityLog(activityLog);
   }
 
   async getUserStats() {
@@ -754,9 +717,12 @@ export class UsersService {
       .select('user.role', 'role')
       .addSelect('COUNT(*)', 'count')
       .groupBy('user.role')
-      .getRawMany();
+      .getRawMany<{ role: Role; count: string }>();
 
-    const roleCounts = {};
+    // Every role is present (0 when nobody has it yet, e.g. STAFF).
+    const roleCounts = Object.fromEntries(
+      Object.values(Role).map((r) => [r, 0]),
+    ) as Record<Role, number>;
     for (const row of roleCountsRaw) {
       roleCounts[row.role] = Number(row.count);
     }

@@ -1,39 +1,14 @@
-// import { NestFactory } from '@nestjs/core';
-// import { AppModule } from './app.module';
-
-// async function bootstrap() {
-//   const app = await NestFactory.create(AppModule);
-//   await app.listen(process.env.PORT ?? 3000);
-// }
-// bootstrap();
-
-// import { NestFactory } from '@nestjs/core';
-// import { AppModule } from './app.module';
-// import { join } from 'path';
-// import { NestExpressApplication } from '@nestjs/platform-express';
-
-// async function bootstrap() {
-//   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-
-//   app.useStaticAssets(join(__dirname, '..', 'src', 'auth', 'static'), {
-//     prefix: '/auth/view',
-//   });
-
-//   app.enableCors({
-//     origin: 'http://localhost:3000',
-//     credentials: true,
-//   });
-//   await app.listen(8000);
-// }
-// bootstrap();
-
 // Must stay the first import: forces the process into UTC before TypeORM/pg load.
 import './set-timezone';
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
+import helmet from 'helmet';
+import { setupSwagger, swaggerEnabled } from './swagger';
+import { corsOrigins } from './common/cors';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -53,17 +28,33 @@ async function bootstrap() {
   // Render (and most PaaS) terminate TLS at a reverse proxy; trust the first
   // hop so req.secure / req.protocol reflect the original https request.
   app.set('trust proxy', 1);
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !process.env.PROXY_SHARED_SECRET?.trim()
+  ) {
+    // SEC-06: without it, rate limits trust a forgeable X-Forwarded-For
+    console.warn(
+      'PROXY_SHARED_SECRET is not set: rate limits fall back to X-Forwarded-For, which direct callers can forge.',
+    );
+  }
+
+  // Security headers. CORP cross-origin so images/files served by the API
+  // still load if a page ever embeds them from the API origin directly.
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 
   app.use(cookieParser());
+
+  // whitelist: strip every body/query field without a validator decorator,
+  // so DTOs are the allow-list (e.g. `role` can never ride along on
+  // updateUser / createUser). transform: DTO instances + typed params.
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
 
   // In production the frontend proxies API calls through its own origin
   // (Next.js rewrite), so CORS rarely matters — but keep the real frontend
   // origin and localhost allowed for direct calls and local development.
-  const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:3000']
-    .filter((o): o is string => Boolean(o))
-    .map((o) => o.replace(/\/+$/, ''));
+  // SEC-20: localhost is only allowed outside production (see corsOrigins)
   app.enableCors({
-    origin: allowedOrigins,
+    origin: corsOrigins(),
     credentials: true,
   });
 
@@ -76,6 +67,9 @@ async function bootstrap() {
       next();
     },
   );
+
+  // API docs at /docs (SWAGGER_ENABLED; off in production by default)
+  if (swaggerEnabled()) setupSwagger(app);
 
   await app.listen(process.env.PORT || 8000);
 }

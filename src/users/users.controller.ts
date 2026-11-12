@@ -1,11 +1,12 @@
+import { ApiTags } from '@nestjs/swagger';
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
   HttpException,
   HttpStatus,
-  NotFoundException,
   Param,
   Patch,
   Post,
@@ -13,65 +14,49 @@ import {
   Req,
   Res,
   UploadedFile,
-  UseGuards,
   UseInterceptors,
   ValidationPipe,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
+import { AccountService } from 'src/account/account.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from './enums/role.enum';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage, memoryStorage } from 'multer';
-import { CurrentUser } from 'src/auth/types/current-user';
-import * as path from 'path';
-import * as fs from 'fs';
-import { extname } from 'path';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth/jwt-auth.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
-import { RolesGuard } from 'src/auth/guards/roles/roles.guard';
 import { Public } from 'src/auth/decorators/public.decorator';
-import { FaceVerificationService } from './services/face-verification.service';
-import { resizeToBase64 } from 'src/auth/utility/resize-to-base64.util';
-import axios from 'axios';
+import { RATE_LIMITS, RateLimit } from 'src/auth/throttle/rate-limit';
+import {
+  FACE_PHOTO_UPLOAD,
+  MB,
+  NO_FACE_PHOTO,
+  SingleFileUpload,
+} from 'src/common/upload';
+import { FaceReferenceService } from 'src/face/face-reference.service';
+import { FaceSetupDto } from 'src/face/face-setup.dto';
+import type { Response } from 'express';
+import type { AuthRequest } from 'src/common/auth-user';
+import {
+  AvatarService,
+  PRIVATE_AVATAR_CACHE,
+  sendAvatar,
+} from 'src/media/avatar.service';
 
-/** Copy only the listed keys that are actually present (defence against mass assignment). */
-function pickDefined<T extends object, K extends keyof T>(
-  source: T,
-  keys: readonly K[],
-): Partial<Pick<T, K>> {
-  const out: Partial<Pick<T, K>> = {};
-  for (const key of keys) {
-    if (source[key] !== undefined) out[key] = source[key];
-  }
-  return out;
-}
-
+@ApiTags('Users')
 @Controller('users')
 export class UsersController {
   constructor(
-    private readonly faceVerificationService: FaceVerificationService,
+    private readonly faceReferences: FaceReferenceService,
     private readonly usersService: UsersService,
+    private readonly account: AccountService,
+    private readonly avatars: AvatarService,
   ) {}
 
   @Public()
   @Post('createUser')
-  createUser(
-    @Body(new ValidationPipe({ whitelist: true })) createUserDto: CreateUserDto,
-  ) {
-    // Security: only sign-up fields may come from the client, never
-    // role / isActive / isEmailVerified (they were copied straight into the DB).
-    return this.usersService.createUser(
-      pickDefined(createUserDto, [
-        'firstName',
-        'lastName',
-        'dob',
-        'email',
-        'phone',
-        'password',
-      ]) as CreateUserDto,
-    );
+  @RateLimit(RATE_LIMITS.createUser)
+  createUser(@Body(ValidationPipe) createUserDto: CreateUserDto) {
+    return this.usersService.createUser(createUserDto);
   }
 
   @Roles(Role.ADMIN)
@@ -98,32 +83,29 @@ export class UsersController {
     );
   }
 
+  /** `hasPassword: false` = Google-only sign-up (delete-account asks to type DELETE). */
   @Get('profile')
-  getUserProfile(@Req() req: any) {
-    return this.usersService.getUserById(req.user.id);
+  async getUserProfile(@Req() req: any) {
+    const [user, hasPassword] = await Promise.all([
+      this.usersService.getUserById(req.user.id, 'own'),
+      this.account.hasPassword(req.user.id),
+    ]);
+    return { ...user, hasPassword };
   }
 
+  /** Deprecated (BE-28): same as GET /media/me/avatar?size=md; 404 without a picture. */
   @Get('profileImage')
-  getUserProfileImage(@Req() req: any, @Res() res: Response) {
-    return this.usersService.getUserProfileImage(req.user.id, res);
+  async getUserProfileImage(@Req() req: AuthRequest, @Res() res: Response) {
+    const user = await this.avatars.findById(req.user.id);
+    sendAvatar(res, await this.avatars.image(user, 'md'), PRIVATE_AVATAR_CACHE);
   }
 
   @Patch('updateUser')
   updateUser(
     @Req() req: any,
-    @Body(new ValidationPipe({ whitelist: true })) updateUserDto: UpdateUserDto,
+    @Body(ValidationPipe) updateUserDto: UpdateUserDto,
   ) {
-    // Security: users may only change their name and phone here, never role,
-    // password or verification flags (those have their own guarded routes).
-    const allowed = pickDefined(updateUserDto, [
-      'firstName',
-      'lastName',
-      'phone',
-    ]);
-    if (Object.keys(allowed).length === 0) {
-      throw new HttpException('Nothing to update', HttpStatus.BAD_REQUEST);
-    }
-    return this.usersService.updateUser(req.user.id, allowed);
+    return this.usersService.updateUser(req.user.id, updateUserDto);
   }
 
   @Roles(Role.ADMIN)
@@ -159,87 +141,13 @@ export class UsersController {
     return this.usersService.deteteUser(id, req.user.id);
   }
 
-  // Local file upload
-  // @Patch('updateProfileImage')
-  // @UseInterceptors(
-  //   FileInterceptor('profileImage', {
-  //     storage: diskStorage({
-  //       destination: (req, file, cb) => {
-  //         const currentUser: CurrentUser = req.user as CurrentUser;
-  //         const userId = currentUser.id;
-
-  //         const uploadPath = path.join(
-  //           __dirname,
-  //           '..',
-  //           '..',
-  //           'assets',
-  //           'user_profile_image',
-  //           `user_${userId}`,
-  //         );
-
-  //         // Ensure the directory exists or create it dynamically
-  //         if (!fs.existsSync(uploadPath)) {
-  //           fs.mkdirSync(uploadPath, { recursive: true });
-  //         }
-  //         cb(null, uploadPath); // Set the destination folder.
-  //       },
-  //       filename: (req, file, cb) => {
-  //         const currentUser: CurrentUser = req.user as CurrentUser;
-  //         const userId = currentUser.id;
-
-  //         const uniqueSuffix =
-  //           Date.now() + '-' + Math.round(Math.random() * 1e9);
-  //         const fileExt = extname(file.originalname);
-  //         cb(null, `profileImage-user-${userId}-${uniqueSuffix}${fileExt}`);
-  //       },
-  //     }),
-  //     fileFilter: (req, file, cb) => {
-  //       // Accept only image files.
-  //       if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
-  //         return cb(
-  //           new HttpException(
-  //             'Only image files are allowed (jpg, jpeg, png, gif)',
-  //             HttpStatus.BAD_REQUEST,
-  //           ),
-  //           false,
-  //         );
-  //       }
-  //       cb(null, true);
-  //     },
-  //     limits: { fileSize: 5 * 1024 * 1024 }, // Set file size limit to 5 MB.
-  //   }),
-  // )
-  // updateProfileImage(
-  //   @UploadedFile() profileImage: Express.Multer.File,
-  //   @Req() req: any,
-  // ) {
-  //   if (!profileImage) {
-  //     throw new HttpException('No file uploaded', HttpStatus.BAD_REQUEST);
-  //   }
-  //   return this.usersService.updateProfileImage(
-  //     req.user.id,
-  //     profileImage.filename,
-  //   );
-  // }
-
   // ImageKit file upload
   @Patch('updateProfileImage')
   @UseInterceptors(
-    FileInterceptor('profileImage', {
-      storage: memoryStorage(),
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
-          return cb(
-            new HttpException(
-              'Only image files are allowed (jpg, jpeg, png, gif)',
-              HttpStatus.BAD_REQUEST,
-            ),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-      limits: { fileSize: 5 * 1024 * 1024 },
+    SingleFileUpload('profileImage', {
+      maxBytes: 5 * MB,
+      mimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'],
+      typeError: 'Only image files are allowed (jpg, jpeg, png, gif)',
     }),
   )
   async updateProfileImage(
@@ -269,89 +177,53 @@ export class UsersController {
     return this.usersService.getUserById(id);
   }
 
-  // Face verification endpoint local
-  // @Post('verify-face')
-  // @UseInterceptors(FileInterceptor('liveImage'))
-  // async verifyFace(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
-  //   const user = await this.usersService.findOne(req.user.id);
-  //   if (!user) throw new NotFoundException('User not found');
+  /**
+   * SEC-04 face setup: a live camera photo (multipart `photo`) becomes the
+   * private reference face login compares against.
+   */
+  @Post('face-reference')
+  @UseInterceptors(SingleFileUpload('photo', FACE_PHOTO_UPLOAD))
+  @RateLimit(RATE_LIMITS.faceSetup)
+  setFaceReference(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: FaceSetupDto,
+    @Req() req: AuthRequest,
+  ) {
+    if (!file) {
+      throw new BadRequestException(
+        'No photo uploaded (multipart field "photo").',
+      );
+    }
+    return this.faceReferences.enroll(req.user.id, file.buffer, {
+      password: dto.password,
+      sessionId: req.user.sid,
+    });
+  }
 
-  //   const profileImagePath = path.join(
-  //     __dirname,
-  //     '..',
-  //     '..',
-  //     'assets',
-  //     'user_profile_image',
-  //     `user_${user.id}`,
-  //     user.profileImage,
-  //   );
+  /** Turns face login off and deletes the private photo. */
+  @Delete('face-reference')
+  removeFaceReference(@Req() req: AuthRequest) {
+    return this.faceReferences.remove(req.user.id);
+  }
 
-  //   if (!fs.existsSync(profileImagePath)) {
-  //     throw new NotFoundException('Profile image not found upload image first');
-  //   }
-
-  //   // Resize both profile image and live image to base64
-  //   const profileImageBuffer = fs.readFileSync(profileImagePath);
-  //   const profileImageBase64 = await resizeToBase64(profileImageBuffer);
-
-  //   const liveImageBase64 = await resizeToBase64(file.buffer); // also compress live image
-
-  //   const isMatch = await this.faceVerificationService.compareFaces(
-  //     profileImageBase64,
-  //     liveImageBase64,
-  //   );
-
-  //   if (isMatch) {
-  //     await this.usersService.markFaceAsVerified(user.id);
-  //   }
-
-  //   return { verified: isMatch };
-  // }
-
-  // Face verification endpoint using ImageKit
+  /**
+   * Deprecated alias of POST /users/face-reference (field `liveImage`).
+   * Before SEC-04 this compared against the public profile picture.
+   */
   @Post('verify-face')
-  @UseInterceptors(FileInterceptor('liveImage'))
-  async verifyFace(@UploadedFile() file: Express.Multer.File, @Req() req: any) {
-    const user = await this.usersService.findOne(req.user.id);
-    if (!user) throw new NotFoundException('User not found');
-
-    if (!user.profileImage || user.profileImage === 'profile.png') {
-      throw new NotFoundException(
-        'Profile image not found. Upload a profile image first.',
-      );
-    }
-
-    const imageKitUrl = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/user_${user.id}/${user.profileImage}`;
-
-    // Step 1: Download profile image from ImageKit
-    let profileImageBuffer: Buffer;
-    try {
-      const response = await axios.get(imageKitUrl, {
-        responseType: 'arraybuffer',
-      });
-      profileImageBuffer = Buffer.from(response.data as ArrayBuffer);
-    } catch (err) {
-      throw new NotFoundException(
-        'Failed to download profile image from ImageKit',
-      );
-    }
-
-    // Step 2: Resize/compress both images to base64
-    const profileImageBase64 = await resizeToBase64(profileImageBuffer);
-    const liveImageBase64 = await resizeToBase64(file.buffer);
-
-    // Step 3: Compare face
-    const isMatch = await this.faceVerificationService.compareFaces(
-      profileImageBase64,
-      liveImageBase64,
-    );
-
-    // Step 4: Update DB if match
-    if (isMatch) {
-      await this.usersService.markFaceAsVerified(user.id);
-    }
-
-    return { verified: isMatch };
+  @UseInterceptors(SingleFileUpload('liveImage', FACE_PHOTO_UPLOAD))
+  @RateLimit(RATE_LIMITS.faceSetup)
+  async verifyFace(
+    @UploadedFile() file: Express.Multer.File,
+    @Body() dto: FaceSetupDto,
+    @Req() req: AuthRequest,
+  ) {
+    if (!file) throw new BadRequestException(NO_FACE_PHOTO);
+    const state = await this.faceReferences.enroll(req.user.id, file.buffer, {
+      password: dto.password,
+      sessionId: req.user.sid,
+    });
+    return { verified: true, ...state };
   }
 
   @Roles(Role.ADMIN)

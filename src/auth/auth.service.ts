@@ -2,14 +2,15 @@ import {
   BadRequestException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
-  Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcrypt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from 'src/users/users.service';
+import { Users } from 'src/users/entities/users.entity';
 import { AuthJwtPayload } from './types/auth-jwtPayload';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { ConfigType } from '@nestjs/config';
@@ -27,8 +28,13 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { VerificationMethod } from './enums/verification-method.enum';
 import { VerificationType } from './enums/verification-type.enum';
-import { maskEmail } from './utility/email-mask.util';
 import { generateOtp } from './utility/otp.util';
+import { useSmsCode } from './utility/sms-code';
+import { SettingsService } from 'src/settings/settings.service';
+import {
+  LoginAttemptsService,
+  emailKey,
+} from './attempts/login-attempts.service';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { generateVerificationToken } from './utility/token.util';
 import { VerifyPhoneDto } from './dto/verify-Phone.dto';
@@ -38,11 +44,30 @@ import {
   clearSessionCookieOptions,
 } from './utility/session-cookie.options';
 
+/** SEC-12: forgotPassword never says whether the account exists. */
+export const RESET_SENT =
+  'If an account exists for this e-mail, we have sent instructions to reset the password.';
+
+/** SEC-12: one answer for "no such account" and "wrong password". */
+export const INVALID_LOGIN = 'Invalid email or password';
+/** bcrypt hash of a random string: makes unknown-e-mail logins as slow as real ones. */
+const DUMMY_BCRYPT_HASH =
+  '$2b$10$CwTycUXWue0Thq9StjUM0uJ8.1lbfHNiBo2YX0yz4d0SmKTAtvLlW';
+
+/** SEC-21: a refresh within this time of the last one may carry the old token. */
+const REFRESH_RACE_GRACE_MS = 30_000;
+
+/** Same text as the password-login check for a blocked account. */
+const ACCOUNT_BLOCKED =
+  'User account is inactive or has been blocked. Please contact support for assistance.';
+
 /** Hard cap on a login session; matches the session cookie's maxAge (7 days). */
 const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 7;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private activityLogsService: ActivityLogsService,
     private usersService: UsersService,
@@ -55,6 +80,8 @@ export class AuthService {
     private verificationRepository: Repository<Verification>,
     @InjectRepository(UserSession)
     private sessionRepository: Repository<UserSession>,
+    private loginAttempts: LoginAttemptsService,
+    private settings: SettingsService,
   ) {}
 
   // Verify Registration after user sign up
@@ -85,14 +112,20 @@ export class AuthService {
 
   // Validate user credentials
   async validateUser(email: string, password: string) {
+    // SEC-06: per-account limit, so rotating IPs does not help a guesser
+    const keys = [emailKey('password-email', email)];
+    await this.loginAttempts.assertNotLocked(keys);
     const user = await this.usersService.findByEmail(email);
-    if (!user) {
-      throw new UnauthorizedException('User not found');
+    // SEC-12: unknown e-mail and wrong password look the same, in the text
+    // and in the time taken (a dummy bcrypt check when there is no user)
+    const isPasswordMatch = user
+      ? await compare(password, user.password)
+      : (await compare(password, DUMMY_BCRYPT_HASH)) && false;
+    if (!user || !isPasswordMatch) {
+      await this.loginAttempts.recordFailure(keys);
+      throw new UnauthorizedException(INVALID_LOGIN);
     }
-    const isPasswordMatch = await compare(password, user.password);
-    if (!isPasswordMatch) {
-      throw new UnauthorizedException('Invalid password');
-    }
+    await this.loginAttempts.clear(keys);
     if (!user.isEmailVerified) {
       throw new UnauthorizedException(
         'Email not verified. Please check your inbox and verify your email address to proceed.',
@@ -146,12 +179,12 @@ export class AuthService {
       activity = ActivityType.USER_LOGIN;
     }
 
-    const userData = await this.usersService.getUserById(userId);
+    const userData = await this.usersService.getUserById(userId, 'own-xs');
 
     const activityLog = {
       activity,
       description: `User logged in with id ${userId}`,
-      user: userData,
+      user: { id: userId } as Users, // the relation only needs the id
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
@@ -161,7 +194,8 @@ export class AuthService {
         name: userData.firstName + ' ' + (userData.lastName || ''),
         role: userData.role,
         email: userData.email,
-        profileImage: userData.profileImage,
+        profileImage: userData.profileImage, // deprecated, use avatarUrl
+        avatarUrl: userData.avatarUrl,
       },
       accessToken,
       refreshToken,
@@ -181,37 +215,35 @@ export class AuthService {
     };
   }
 
-  // Generate new access token using the refresh token
-  // refreshToken(userId: string) {
-  //   const payload: AuthJwtPayload = { sub: userId };
-  //   const accessToken = this.jwtService.sign(payload);
-  //   return {
-  //     id: userId,
-  //     accessToken,
-  //   };
-  // }
-
   //Generate new access and refresh tokens using the refresh token
   async refreshToken(userId: string, sessionId: string) {
     const { accessToken, refreshToken } = await this.generateToken(
       userId,
       sessionId,
     );
-    // Rotate the refresh token for THIS session only.
+    // Rotate the refresh token for THIS session only, remembering the one it
+    // replaces (SEC-21 reuse detection).
+    const current = await this.sessionRepository.findOne({
+      where: { id: sessionId, userId },
+      select: ['id', 'hashedRefreshToken'],
+    });
+    const now = new Date();
     await this.sessionRepository.update(
       { id: sessionId, userId },
       {
         hashedRefreshToken: await argon2.hash(refreshToken),
-        lastUsedAt: new Date(),
+        previousRefreshHash: current?.hashedRefreshToken ?? null,
+        rotatedAt: now,
+        lastUsedAt: now,
       },
     );
 
-    const userData = await this.usersService.getUserById(userId);
+    const userData = await this.usersService.getUserById(userId, 'own-xs');
 
     const activityLog = {
       activity: ActivityType.REFRESH_TOKEN,
       description: `User refresh token's with id ${userId}`,
-      user: userData,
+      user: { id: userId } as Users, // the relation only needs the id
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
@@ -221,7 +253,8 @@ export class AuthService {
         name: userData.firstName + ' ' + (userData.lastName || ''),
         role: userData.role,
         email: userData.email,
-        profileImage: userData.profileImage,
+        profileImage: userData.profileImage, // deprecated, use avatarUrl
+        avatarUrl: userData.avatarUrl,
       },
       accessToken,
       refreshToken,
@@ -242,18 +275,47 @@ export class AuthService {
       where: { id: sessionId, userId },
     });
     if (!session) {
-      throw new UnauthorizedException('Session not found or already logged out');
+      throw new UnauthorizedException(
+        'Session not found or already logged out',
+      );
     }
     if (session.expiresAt < new Date()) {
       await this.sessionRepository.delete({ id: sessionId });
       throw new UnauthorizedException('Session expired, please log in again');
+    }
+    // SEC-07: no new tokens for a blocked account; end this session too
+    const owner = await this.usersService.findOne(userId);
+    if (!owner?.isActive) {
+      await this.sessionRepository.delete({ id: sessionId });
+      throw new UnauthorizedException(ACCOUNT_BLOCKED);
     }
     const refreshTokenMatches = await argon2.verify(
       session.hashedRefreshToken,
       refreshToken,
     );
     if (!refreshTokenMatches) {
-      throw new UnauthorizedException('Invalid refresh token');
+      // SEC-21: the token just replaced, seconds ago: another tab won the
+      // race; refuse without punishing the user (it retries with the cookie)
+      const justRotated =
+        session.previousRefreshHash &&
+        session.rotatedAt &&
+        Date.now() - session.rotatedAt.getTime() < REFRESH_RACE_GRACE_MS &&
+        (await argon2.verify(session.previousRefreshHash, refreshToken));
+      if (justRotated) {
+        throw new UnauthorizedException(
+          'Session was just refreshed, please retry',
+        );
+      }
+      // an older token replayed: someone holds a copy -> end the session
+      await this.sessionRepository.delete({ id: sessionId });
+      await this.activityLogsService.createActivityLog({
+        activity: ActivityType.REFRESH_TOKEN,
+        description: `Reused refresh token for session ${sessionId}: session revoked`,
+        user: { id: userId } as Users,
+      });
+      throw new UnauthorizedException(
+        'Session ended for security reasons, please log in again',
+      );
     }
     return { id: userId, sid: sessionId };
   }
@@ -263,7 +325,7 @@ export class AuthService {
     const activityLog = {
       activity: ActivityType.USER_LOGOUT,
       description: `User logged out with id ${userId}`,
-      user: await this.usersService.getUserById(userId),
+      user: { id: userId } as Users,
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
@@ -282,7 +344,7 @@ export class AuthService {
     const activityLog = {
       activity: ActivityType.USER_LOGOUT,
       description: `User logged out from all devices with id ${userId}`,
-      user: await this.usersService.getUserById(userId),
+      user: { id: userId } as Users,
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
@@ -301,6 +363,8 @@ export class AuthService {
   ) {
     const user = await this.usersService.findOne(userId);
     if (!user) throw new UnauthorizedException('User not found');
+    // SEC-07: a blocked account loses access at once, not when tokens expire
+    if (!user.isActive) throw new UnauthorizedException(ACCOUNT_BLOCKED);
 
     if (
       user.lastLogoutAt &&
@@ -335,6 +399,14 @@ export class AuthService {
     if (user && user.isActive === false) {
       throw new UnauthorizedException(
         'User is inactive or blocked by admin. Contract support for assistance.',
+      );
+    }
+
+    // SEC-08: never link to a sign-up nobody verified; discard it instead
+    if (user && !user.isEmailVerified) {
+      return await this.usersService.claimPendingSignupForGoogle(
+        user.id,
+        createGoogleUserDto,
       );
     }
 
@@ -390,19 +462,17 @@ export class AuthService {
 
   //Forgot password
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
-    const user = await this.usersService.findByEmail(forgotPasswordDto.email);
-    if (!user) {
-      throw new NotFoundException(`User not found`);
+    if (forgotPasswordDto.verificationMethod === VerificationMethod.SMS) {
+      await this.settings.assertSmsEnabled(); // BE-25 admin switch
     }
+    const user = await this.usersService.findByEmail(forgotPasswordDto.email);
+    // SEC-12: the same answer whether or not the account exists or can reset
+    if (!user || !user.isActive) return { message: RESET_SENT };
 
     const fullName = user.firstName + ' ' + (user.lastName || '');
 
     if (forgotPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
-      if (!user.isEmailVerified) {
-        throw new BadRequestException(
-          'Email is not verified. Please verify your email address to proceed with password reset.',
-        );
-      }
+      if (!user.isEmailVerified) return { message: RESET_SENT };
       const resetToken = generateVerificationToken();
       const expiresAt = new Date();
       //expiresAt.setHours(expiresAt.getHours() + 1); // Expires in 1 hour
@@ -440,31 +510,15 @@ export class AuthService {
 
       await this.activityLogsService.createActivityLog(activityLog);
 
-      const maskedEmail = maskEmail(user.email);
-
-      if (response.accepted.length > 0 && response.rejected.length === 0) {
-        // Security: never return the reset token; it must only reach the user's inbox.
-        return {
-          message: `Password reset link sent to your email ${maskedEmail}`,
-        };
-      } else {
-        return {
-          message: `Failed to sent email to your email ${maskedEmail}`,
-        };
+      if (response.accepted.length === 0 || response.rejected.length > 0) {
+        this.logger.warn(`Password reset e-mail for user ${user.id} failed`);
       }
+      // never the token (SEC-01) and no masked address or send result (SEC-12)
+      return { message: RESET_SENT };
     } else if (
       forgotPasswordDto.verificationMethod === VerificationMethod.SMS
     ) {
-      if (!user.phone) {
-        throw new BadRequestException(
-          'Phone number not found. Please add a valid phone number to proceed with password reset.',
-        );
-      }
-      if (!user.isPhoneVerified) {
-        throw new BadRequestException(
-          'Phone number is not verified. Please verify your phone number to proceed with password reset.',
-        );
-      }
+      if (!user.phone || !user.isPhoneVerified) return { message: RESET_SENT };
       const otp = generateOtp();
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 2); // Expires in 2 minutes
@@ -497,17 +551,10 @@ export class AuthService {
 
       await this.activityLogsService.createActivityLog(activityLog);
 
-      const maskedPhone = `********${user.phone.slice(-2)}`;
-
-      if (response.success) {
-        return {
-          message: `OTP Successfully sent to your phone number ${maskedPhone}`,
-        };
-      } else {
-        return {
-          message: `Failed to send OTP to your phone number ${maskedPhone}`,
-        };
+      if (!response.success) {
+        this.logger.warn(`Password reset SMS for user ${user.id} failed`);
       }
+      return { message: RESET_SENT };
     } else {
       throw new BadRequestException('Invalid verification method');
     }
@@ -515,6 +562,10 @@ export class AuthService {
 
   //Reset Password
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    if (resetPasswordDto.verificationMethod === VerificationMethod.SMS) {
+      // BE-25: also stops codes that were sent before SMS was switched off
+      await this.settings.assertSmsEnabled();
+    }
     let verification: Verification | null = null;
 
     if (resetPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
@@ -540,25 +591,16 @@ export class AuthService {
         throw new BadRequestException('This password reset link has expired');
       }
     } else if (resetPasswordDto.verificationMethod === VerificationMethod.SMS) {
-      verification = await this.verificationRepository.findOne({
-        where: {
-          tokenOrOtp: resetPasswordDto.resetTokenOrOTP,
-          type: VerificationType.PASSWORD_RESET_OTP,
-        },
-        relations: ['user'],
-      });
-
-      if (!verification) {
-        throw new NotFoundException('OTP not found');
-      }
-
-      if (verification.isUsed) {
-        throw new BadRequestException('This OTP has already been used');
-      }
-
-      if (verification.expiresAt < new Date()) {
-        throw new BadRequestException('This OTP has expired');
-      }
+      // SEC-05: only the latest code sent to *this* account, 5 guesses max
+      const owner = resetPasswordDto.email
+        ? await this.usersService.findByEmail(resetPasswordDto.email)
+        : null;
+      verification = await useSmsCode(
+        this.verificationRepository,
+        owner?.id,
+        VerificationType.PASSWORD_RESET_OTP,
+        resetPasswordDto.resetTokenOrOTP,
+      );
     } else {
       throw new BadRequestException('Invalid verification method');
     }
@@ -596,6 +638,7 @@ export class AuthService {
 
   //Check if phone number is already verified
   async phoneVerification(userId: string) {
+    await this.settings.assertSmsEnabled(); // BE-25 admin switch
     const user = await this.usersService.findOne(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -663,29 +706,15 @@ export class AuthService {
   }
 
   // Verify Phone Number
-  async verifyPhone(verifyPhoneDto: VerifyPhoneDto) {
-    const verification = await this.verificationRepository.findOne({
-      where: {
-        tokenOrOtp: verifyPhoneDto.otp,
-        type: VerificationType.PHONE_VERIFICATION,
-      },
-      relations: ['user'],
-    });
-
-    if (!verification) {
-      throw new NotFoundException('OTP not found');
-    }
-
-    if (verification.isUsed) {
-      throw new BadRequestException('OTP has already been used');
-    }
-
-    if (new Date() > verification.expiresAt) {
-      throw new BadRequestException('OTP has expired');
-    }
-
-    verification.isUsed = true;
-    await this.verificationRepository.save(verification);
+  /** SEC-05: only the caller's own latest code counts, 5 guesses max. */
+  async verifyPhone(userId: string, verifyPhoneDto: VerifyPhoneDto) {
+    await this.settings.assertSmsEnabled(); // BE-25 admin switch
+    const verification = await useSmsCode(
+      this.verificationRepository,
+      userId,
+      VerificationType.PHONE_VERIFICATION,
+      verifyPhoneDto.otp,
+    );
 
     await this.usersService.verifyPhoneNumber(verification.user.id);
 
@@ -698,16 +727,5 @@ export class AuthService {
     await this.activityLogsService.createActivityLog(activityLog);
 
     return { message: 'Phone number verified successfully' };
-  }
-
-  async getVerifiedFaceUserByEmail(email: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) throw new NotFoundException('No user found for this email.');
-    if (!user.isFaceVerified) {
-      throw new NotFoundException(
-        '❌ Face not verified. Please verify face first.',
-      );
-    }
-    return user;
   }
 }

@@ -1,28 +1,38 @@
 import {
   BadRequestException,
   ForbiddenException,
+  Inject,
+  ServiceUnavailableException,
   Injectable,
 } from '@nestjs/common';
+import {
+  BACKGROUND_REMOVER,
+  BackgroundRemover,
+} from './background/background-remover';
 import * as pdfParse from 'pdf-parse';
 import { SubscriptionService } from 'src/subscription/subscription.service';
-import * as Tesseract from 'tesseract.js';
-import * as sharp from 'sharp'; // npm install sharp
-//import { Rembg } from 'rembg-node';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { UsersService } from 'src/users/users.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
+import { MAX_EDGE, type EditOptionsDto } from './dto/edit-image.dto';
+import { openImage } from 'src/common/image-input';
+import { TesseractPool } from './tesseract-pool';
 
-export interface EditOptions {
-  crop?: { left: number; top: number; width: number; height: number };
-  resize?: { width: number; height: number };
-  rotate?: number; // degrees
-  brightness?: number; // 0.0 - 2.0 (1 is normal)
-  contrast?: number; // 0.0 - 2.0 (1 is normal)
-  grayscale?: boolean;
-  flip?: boolean;
-  flop?: boolean;
-  blur?: number; // sigma > 0.3
-}
+/** SEC-17: pages of a PDF that are read for text. */
+export const MAX_PDF_PAGES = 20;
+
+/** pdf-parse ships no type declarations; this is the part we use. */
+const parsePdf = pdfParse as unknown as (
+  data: Buffer,
+  options: { max: number },
+) => Promise<{ text: string }>;
+
+/** A damaged, encrypted or non-PDF upload: a 400, not a 500. */
+export const PDF_UNREADABLE =
+  "We couldn't read this PDF. It may be damaged or password-protected. Try another file.";
+
+/** Validated edit options (see `EditOptionsDto` for the limits). */
+export type EditOptions = EditOptionsDto;
 
 @Injectable()
 export class OcrService {
@@ -30,7 +40,43 @@ export class OcrService {
     private readonly activityLogService: ActivityLogsService,
     private usersService: UsersService,
     private subscriptionService: SubscriptionService,
+    @Inject(BACKGROUND_REMOVER) private readonly remover: BackgroundRemover,
+    private readonly tesseract: TesseractPool,
   ) {}
+
+  /** BE-21: subscribed users only; PNG with a transparent background, as base64. */
+  async removeBackground(
+    file: Pick<Express.Multer.File, 'buffer' | 'mimetype' | 'originalname'>,
+    userId: string,
+  ): Promise<{ contentType: 'image/png'; data: string }> {
+    const status = await this.subscriptionService.getSubscriptionStatus(userId);
+    if (!status.isSubscribed) {
+      throw new ForbiddenException(
+        'You must be subscribed to use this feature.',
+      );
+    }
+    if (!this.remover.isConfigured()) {
+      throw new ServiceUnavailableException(
+        'Background removal is not available right now (the provider is not configured)',
+      );
+    }
+    const user = await this.usersService.findOne(userId);
+    if (!user) throw new BadRequestException('User not found');
+    // real type + size check before spending a remove.bg call on it
+    await openImage(file.buffer);
+
+    const png = await this.remover.remove(
+      file.buffer,
+      file.mimetype,
+      file.originalname || 'image',
+    );
+    await this.activityLogService.createActivityLog({
+      activity: ActivityType.REMOVE_BACKGROUND,
+      description: `User ${userId} removed the background from an image.`,
+      user,
+    });
+    return { contentType: 'image/png', data: png.toString('base64') };
+  }
   async extractTextFromPdf(
     buffer: Buffer,
     userId: string,
@@ -47,13 +93,20 @@ export class OcrService {
       throw new BadRequestException('User not found');
     }
 
-    //Add activity log for PDF text extraction
+    // SEC-17: a 5 000-page PDF must not be parsed in full on a small server
+    let data: { text: string };
+    try {
+      data = await parsePdf(buffer, { max: MAX_PDF_PAGES });
+    } catch {
+      throw new BadRequestException(PDF_UNREADABLE);
+    }
+
+    // Activity log only for a PDF that was actually read
     await this.activityLogService.createActivityLog({
       activity: ActivityType.OCR_EXTRACT_TEXT_FROM_PDF,
       description: `User ${userId} extracted text from a PDF document.`,
       user: user,
     });
-    const data = await pdfParse(buffer);
     return { text: data.text.trim() };
   }
 
@@ -72,6 +125,8 @@ export class OcrService {
     if (!user) {
       throw new BadRequestException('User not found');
     }
+    // tesseract decodes on its own: refuse non-images and pixel bombs first
+    await openImage(buffer);
     // Add activity log for image text extraction
     await this.activityLogService.createActivityLog({
       activity: ActivityType.OCR_EXTRACT_TEXT_FROM_IMAGE,
@@ -79,11 +134,9 @@ export class OcrService {
       user: user,
     });
 
-    // Use Tesseract.js to extract text from image
-    const result = await Tesseract.recognize(buffer, 'eng', {
-      logger: (m) => console.log(m), // Optional progress log
-    });
-    return { text: result.data.text.trim() };
+    // SEC-17: the shared, queued worker (no per-request worker, no progress log)
+    const text = await this.tesseract.recognize(buffer);
+    return { text: text.trim() };
   }
 
   async resizeImage(
@@ -104,6 +157,7 @@ export class OcrService {
     if (!user) {
       throw new BadRequestException('User not found');
     }
+    const { image } = await openImage(buffer);
 
     // Add activity log for image resizing
     await this.activityLogService.createActivityLog({
@@ -112,11 +166,12 @@ export class OcrService {
       user: user,
     });
 
-    // Use sharp to resize
-    const resized = await sharp(buffer)
-      .resize(width, height)
-      .toFormat('jpeg')
-      .toBuffer();
+    let resized: Buffer;
+    try {
+      resized = await image.resize(width, height).jpeg().toBuffer();
+    } catch {
+      throw new BadRequestException('Image processing failed');
+    }
 
     // Convert to base64 string for frontend
     return {
@@ -124,53 +179,6 @@ export class OcrService {
       contentType: 'image/jpeg',
     };
   }
-
-  // async removeBackground(buffer: Buffer, mimetype: string, userId: string) {
-  //   // 1. Check subscription
-  //   const status = await this.subscriptionService.getSubscriptionStatus(userId);
-  //   if (!status.isSubscribed) {
-  //     throw new ForbiddenException(
-  //       'You must be subscribed to use this feature.',
-  //     );
-  //   }
-
-  //   // 2. Check user existence
-  //   const user = await this.usersService.findOne(userId);
-  //   if (!user) {
-  //     throw new BadRequestException('User not found');
-  //   }
-
-  //   // Add activity log for background removal
-  //   await this.activityLogService.createActivityLog({
-  //     activity: ActivityType.REMOVE_BACKGROUND,
-  //     description: `User ${userId} removed background from an image.`,
-  //     user: user,
-  //   });
-
-  //   // 2. Validate file type
-  //   // Accepts: jpg, jpeg, png, heic (HEIC may require sharp@latest)
-  //   if (!/^image\/(jpeg|png|jpg|heic)$/i.test(mimetype)) {
-  //     throw new BadRequestException(
-  //       'Only JPG, JPEG, PNG, or HEIC images are allowed.',
-  //     );
-  //   }
-
-  //   // 3. Remove background
-  //   try {
-  //     const rembg = new Rembg();
-  //     // Convert buffer to Sharp instance before removing background
-  //     const sharpImage = sharp(buffer);
-  //     // `remove` returns a PNG buffer with transparent background
-  //     const resultSharp = await rembg.remove(sharpImage);
-  //     const outputBuffer = await resultSharp.png().toBuffer(); // Always return buffer
-  //     return outputBuffer;
-  //   } catch (err) {
-  //     // Optionally log the error
-  //     throw new BadRequestException(
-  //       'Failed to process image for background removal.',
-  //     );
-  //   }
-  // }
 
   async editImage(
     buffer: Buffer,
@@ -185,16 +193,30 @@ export class OcrService {
       );
     }
 
-    let image = sharp(buffer);
+    const opened = await openImage(buffer);
+    let image = opened.image;
 
-    // Crop
+    // Crop (must stay inside the picture)
     if (options.crop) {
-      image = image.extract(options.crop);
+      const { left, top, width, height } = options.crop;
+      if (left + width > opened.width || top + height > opened.height) {
+        throw new BadRequestException(
+          `crop must stay inside the ${opened.width}x${opened.height} image`,
+        );
+      }
+      image = image.extract({ left, top, width, height });
     }
 
-    // Resize
+    // Resize; without one, still cap the output at MAX_EDGE per side
     if (options.resize) {
       image = image.resize(options.resize.width, options.resize.height);
+    } else {
+      image = image.resize({
+        width: MAX_EDGE,
+        height: MAX_EDGE,
+        fit: 'inside',
+        withoutEnlargement: true,
+      });
     }
 
     // Rotate
@@ -256,7 +278,7 @@ export class OcrService {
     // Return result as Buffer (default: PNG)
     try {
       return await image.png().toBuffer();
-    } catch (err) {
+    } catch {
       throw new BadRequestException('Image processing failed');
     }
   }
