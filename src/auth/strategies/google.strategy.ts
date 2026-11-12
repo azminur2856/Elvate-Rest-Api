@@ -4,6 +4,7 @@ import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
 import googleOauthConfig from '../config/google-oauth.config';
 import { ConfigType } from '@nestjs/config';
 import { AuthService } from '../auth.service';
+import { CookieStateStore } from '../utility/oauth-state-store';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy) {
@@ -26,6 +27,8 @@ export class GoogleStrategy extends PassportStrategy(Strategy) {
       clientSecret: googleConfiguration.clientSecret,
       callbackURL: googleConfiguration.callbackUrl,
       scope: ['email', 'profile'],
+      // SEC-08: OAuth `state` in a short-lived cookie (no server sessions)
+      store: new CookieStateStore(),
     });
   }
 
