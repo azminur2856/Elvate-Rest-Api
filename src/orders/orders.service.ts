@@ -130,6 +130,17 @@ export const COD_PENDING_MAX_MS = 48 * 60 * 60_000;
 export const CARD_PENDING_MAX_MS = 2 * 60 * 60_000;
 const STALE_SWEEP_MS = 60 * 60_000;
 
+/** SEC-23: Stripe charge events about order payments. */
+const CHARGE_EVENTS = new Set(['charge.refunded', 'charge.dispute.created']);
+
+/** ৳1,035 style amount for log lines. */
+const taka = (n: number) =>
+  `৳${n.toLocaleString('en-US', { maximumFractionDigits: 2 })}`;
+
+const intentId = (
+  pi: string | { id: string } | null | undefined,
+): string | null => (typeof pi === 'string' ? pi : (pi?.id ?? null));
+
 /** Same lines (variant + quantity) in both carts, in any order. */
 export function sameCart(
   a: Pick<CartItem, 'variantId' | 'quantity'>[],
@@ -835,12 +846,21 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
   // ---------- Stripe (webhook is shared with subscriptions) ----------
 
   isOrderEvent(event: Stripe.Event): boolean {
+    // SEC-23: refunds / disputes made in the Stripe dashboard (subscriptions
+    // ignore charge events; handleStripeEvent finds the order, if any)
+    if (CHARGE_EVENTS.has(event.type)) return true;
     if (!event.type.startsWith('checkout.session.')) return false;
     const session = event.data.object as Stripe.Checkout.Session;
     return session.metadata?.kind === 'order';
   }
 
   async handleStripeEvent(event: Stripe.Event) {
+    if (event.type === 'charge.refunded') {
+      return this.chargeRefunded(event.data.object);
+    }
+    if (event.type === 'charge.dispute.created') {
+      return this.chargeDisputed(event.data.object);
+    }
     const session = event.data.object as Stripe.Checkout.Session;
     const orderId = session.metadata?.orderId;
     if (!orderId) return;
@@ -855,6 +875,60 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
       default:
         return;
     }
+  }
+
+  /**
+   * SEC-23: a refund made in the Stripe dashboard. A full refund marks the
+   * order REFUNDED (status unchanged: staff decide what happens to the
+   * parcel); a partial one is only logged. Takes the order row lock, so the
+   * event for a refund Elvate itself made (already REFUNDED under that
+   * lock) is a no-op.
+   */
+  private async chargeRefunded(charge: Stripe.Charge) {
+    const paymentIntent = intentId(charge.payment_intent);
+    if (!paymentIntent) return;
+    const order = await this.dataSource.transaction(async (m) => {
+      const o = await m.findOne(Order, {
+        where: { stripePaymentIntentId: paymentIntent },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!o || o.paymentStatus !== PaymentStatus.PAID) return null;
+      if (charge.refunded) {
+        await m.update(
+          Order,
+          { id: o.id },
+          { paymentStatus: PaymentStatus.REFUNDED },
+        );
+      }
+      return o;
+    });
+    if (!order) return;
+    const amount = taka(charge.amount_refunded / 100);
+    await this.log(
+      order.userId,
+      ActivityType.ORDER_REFUND,
+      charge.refunded
+        ? `Order ${order.orderNumber}: refunded in the Stripe dashboard (${amount})`
+        : `Order ${order.orderNumber}: partly refunded in the Stripe dashboard (${amount}); still marked paid`,
+    );
+  }
+
+  /** SEC-23: the customer's bank opened a dispute; staff must answer in Stripe. */
+  private async chargeDisputed(dispute: Stripe.Dispute) {
+    const paymentIntent = intentId(dispute.payment_intent);
+    if (!paymentIntent) return;
+    const order = await this.orders.findOne({
+      where: { stripePaymentIntentId: paymentIntent },
+    });
+    if (!order) return;
+    this.logger.warn(
+      `Order ${order.orderNumber}: card payment disputed (${dispute.reason})`,
+    );
+    await this.log(
+      order.userId,
+      ActivityType.ORDER_DISPUTE,
+      `Order ${order.orderNumber}: card payment disputed (${dispute.reason}, ${taka(dispute.amount / 100)}); respond in the Stripe dashboard`,
+    );
   }
 
   /** PAID + auto CONFIRMED. Idempotent; a payment that lands on a cancelled order is refunded. */
