@@ -17,9 +17,12 @@ import {
 import {
   AdminOrdersQueryDto,
   AssignDeliveryDto,
+  CORRECTION_REASON_LABELS,
+  OrderCorrectionDto,
   OrderNotesDto,
   UpdateOrderStatusDto,
 } from './dto/admin-order.dto';
+import { OrderMailer } from './order-mailer';
 import { Users } from 'src/users/entities/users.entity';
 import { Role } from 'src/users/enums/role.enum';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
@@ -69,6 +72,7 @@ export class AdminOrdersService {
     @InjectDataSource() private readonly dataSource: DataSource,
     private readonly ordersService: OrdersService,
     private readonly activityLogs: ActivityLogsService,
+    private readonly mailer: OrderMailer,
   ) {}
 
   // ---------- GET /admin/orders ----------
@@ -201,6 +205,56 @@ export class AdminOrdersService {
       ActivityType.ADMIN_ASSIGN_DELIVERY,
       `${actorLabel(actor)} assigned order ${order.orderNumber} to delivery man ${fullName(rider)} (${rider.id})`,
     );
+    return this.ordersService.detailFor(id, actor);
+  }
+
+  /**
+   * BE-29: ADMIN only. Finishes a delivery stuck in OUT_FOR_DELIVERY (the
+   * delivery man cannot do it himself): logged, marked as a correction in
+   * the timeline, and the delivery man gets an e-mail. No other status can
+   * be corrected, so no step is skipped and final states stay final.
+   */
+  async correct(
+    id: string,
+    dto: OrderCorrectionDto,
+    actor: AuthUser,
+  ): Promise<OrderDetail> {
+    const order = await this.mustFind(id);
+    if (order.status !== OrderStatus.OUT_FOR_DELIVERY) {
+      throw new BadRequestException(
+        'A correction is only possible while the order is out for delivery.',
+      );
+    }
+    const codDelivered =
+      dto.action === OrderStatus.DELIVERED &&
+      order.paymentMethod === PaymentMethod.COD;
+    if (codDelivered && dto.cashCollected === undefined) {
+      throw new BadRequestException(
+        'cashCollected is required for a cash on delivery order.',
+      );
+    }
+    const reason = CORRECTION_REASON_LABELS[dto.reason];
+    const cashCollected = codDelivered ? dto.cashCollected : undefined;
+    await this.ordersService.changeStatus(
+      id,
+      dto.action,
+      `Correction: ${reason} — ${dto.note}`,
+      actor,
+      { reason, cashCollected },
+    );
+
+    const rider = order.deliveryManId
+      ? await this.dataSource
+          .getRepository(Users)
+          .findOne({ where: { id: order.deliveryManId } })
+      : null;
+    if (rider) {
+      await this.mailer.sendCorrection(
+        order,
+        { email: rider.email, name: fullName(rider) },
+        { action: dto.action, reason, note: dto.note, cashCollected },
+      );
+    }
     return this.ordersService.detailFor(id, actor);
   }
 
