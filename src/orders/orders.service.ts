@@ -120,6 +120,19 @@ export type Quote = {
 /** Stripe Checkout sessions must live ≥ 30 min; a little slack for clock skew. */
 const CHECKOUT_TTL_SECONDS = 31 * 60;
 
+/** Same lines (variant + quantity) in both carts, in any order. */
+export function sameCart(
+  a: Pick<CartItem, 'variantId' | 'quantity'>[],
+  b: Pick<CartItem, 'variantId' | 'quantity'>[],
+): boolean {
+  const key = (rows: Pick<CartItem, 'variantId' | 'quantity'>[]) =>
+    rows
+      .map((r) => `${r.variantId}:${r.quantity}`)
+      .sort()
+      .join('|');
+  return a.length === b.length && key(a) === key(b);
+}
+
 /** Taka -> paisa (Stripe amounts are in the smallest unit). */
 export const paisa = (n: number) => Math.round(n * 100);
 
@@ -315,6 +328,19 @@ export class OrdersService {
     );
 
     const order = await this.dataSource.transaction(async (m) => {
+      // SEC-11: lock the cart rows and make sure they are what we priced.
+      // A double submit waits here and then finds the cart already emptied.
+      const locked = await m.find(CartItem, {
+        where: { userId: user.id },
+        lock: { mode: 'pessimistic_write' },
+      });
+      if (!locked.length) throw new BadRequestException('Your cart is empty');
+      if (!sameCart(locked, rows)) {
+        throw new ConflictException(
+          'Your cart changed while the order was being placed. Please review it and try again.',
+        );
+      }
+
       const subtotal = money(lines.reduce((s, l) => s + l.lineTotal, 0));
 
       let discount = 0;
