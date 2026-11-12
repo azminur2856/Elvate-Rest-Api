@@ -73,7 +73,21 @@ export type OrderSummary = {
     avatarUrl: string | null;
   };
   deliveryMan?: { id: string; name: string } | null;
+  /** BE-29 (admin + delivery lists): where it goes. */
+  shippingAddress?: { area: string | null; city: string };
+  /** BE-29 (admin + delivery lists): time of the last status change. */
+  updatedAt?: Date;
+  /** BE-29 (admin + delivery lists): an admin corrected this delivery. */
+  correctedByAdmin?: boolean;
 };
+
+/** Fields only the admin / delivery list rows carry. */
+type ListOnly =
+  | 'customer'
+  | 'deliveryMan'
+  | 'shippingAddress'
+  | 'updatedAt'
+  | 'correctedByAdmin';
 
 export type OrderItemView = {
   id: string;
@@ -89,7 +103,7 @@ export type OrderItemView = {
   canReview: boolean;
 };
 
-export type OrderDetail = Omit<OrderSummary, 'customer' | 'deliveryMan'> & {
+export type OrderDetail = Omit<OrderSummary, ListOnly> & {
   items: OrderItemView[];
   subtotal: number;
   discount: number;
@@ -1372,7 +1386,18 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
     const byOrder = new Map(agg.map((a) => [a.orderId, a]));
 
     let people = new Map<string, Users>();
+    let history = new Map<string, { last: Date; corrected: boolean }>();
     if (withPeople) {
+      const hist = await this.dataSource
+        .getRepository(OrderStatusHistory)
+        .createQueryBuilder('h')
+        .select('h.orderId', 'orderId')
+        .addSelect('MAX(h.createdAt)', 'last')
+        .addSelect('BOOL_OR(h.correction)', 'corrected')
+        .where('h.orderId IN (:...ids)', { ids })
+        .groupBy('h.orderId')
+        .getRawMany<{ orderId: string; last: Date; corrected: boolean }>();
+      history = new Map(hist.map((h) => [h.orderId, h]));
       const userIds = [
         ...new Set(
           rows
@@ -1411,6 +1436,13 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
           avatarUrl: staffAvatarUrl(c, 'sm'),
         };
         summary.deliveryMan = d ? { id: d.id, name: fullName(d) } : null;
+        summary.shippingAddress = {
+          area: o.shippingAddress?.area ?? null,
+          city: o.shippingAddress?.city ?? '',
+        };
+        const h = history.get(o.id);
+        summary.updatedAt = h ? new Date(h.last) : o.updatedAt;
+        summary.correctedByAdmin = h?.corrected === true;
       }
       return summary;
     });
