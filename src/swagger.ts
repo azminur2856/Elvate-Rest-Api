@@ -28,7 +28,7 @@ export function buildOpenApiDocument(app: INestApplication): OpenAPIObject {
         '',
         `**Auth**: one httpOnly cookie \`${SESSION_COOKIE}\` set by \`POST /auth/login\` (or Google / face login).`,
         'The frontend calls the API through its own `/api/backend` proxy so the cookie stays first-party.',
-        'Routes marked *public* need no cookie; routes with **Roles** need one of the listed roles (ADMIN may also call DELIVERY_MAN routes).',
+        'Routes marked *public* need no cookie; routes with **Roles** need one of the listed roles (`/delivery/*` is for the assigned delivery man only).',
         '',
         'Money is BDT as JSON numbers; dates are ISO-8601 UTC.',
       ].join('\n'),

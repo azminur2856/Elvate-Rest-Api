@@ -4291,7 +4291,7 @@
   },
   "info": {
     "title": "Elvate API",
-    "description": "Elvate shop + digital tools backend.\n\n**Auth**: one httpOnly cookie `session` set by `POST /auth/login` (or Google / face login).\nThe frontend calls the API through its own `/api/backend` proxy so the cookie stays first-party.\nRoutes marked *public* need no cookie; routes with **Roles** need one of the listed roles (ADMIN may also call DELIVERY_MAN routes).\n\nMoney is BDT as JSON numbers; dates are ISO-8601 UTC.",
+    "description": "Elvate shop + digital tools backend.\n\n**Auth**: one httpOnly cookie `session` set by `POST /auth/login` (or Google / face login).\nThe frontend calls the API through its own `/api/backend` proxy so the cookie stays first-party.\nRoutes marked *public* need no cookie; routes with **Roles** need one of the listed roles (`/delivery/*` is for the assigned delivery man only).\n\nMoney is BDT as JSON numbers; dates are ISO-8601 UTC.",
     "version": "1.0",
     "contact": {}
   },
