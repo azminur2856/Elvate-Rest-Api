@@ -71,9 +71,10 @@ describe('CouponService.evaluate', () => {
     ['unknown', null, 'not valid'],
     ['inactive', coupon({ isActive: false }), 'not valid'],
     [
+      // SEC-11: same answer as an unknown code (no probing for scheduled ones)
       'not started',
       coupon({ startsAt: new Date(now.getTime() + day) }),
-      'not active yet',
+      'not valid',
     ],
     ['expired', coupon({ expiresAt: now }), 'expired'],
     ['fully used', coupon({ usageLimit: 5, usedCount: 5 }), 'fully used'],

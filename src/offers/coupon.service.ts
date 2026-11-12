@@ -72,9 +72,10 @@ export class CouponService {
       coupon,
     });
 
-    if (!coupon || !coupon.isActive)
+    // SEC-11: unknown, switched off and not-yet-started codes look the same,
+    // so nobody can probe for coupons that are scheduled but not announced
+    if (!coupon || !coupon.isActive || now < coupon.startsAt)
       return invalid('This coupon code is not valid');
-    if (now < coupon.startsAt) return invalid('This coupon is not active yet');
     if (now >= coupon.expiresAt) return invalid('This coupon has expired');
     if (coupon.usageLimit !== null && coupon.usedCount >= coupon.usageLimit) {
       return invalid('This coupon has been fully used');
