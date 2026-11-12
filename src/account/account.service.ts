@@ -25,6 +25,7 @@ import { AuthUser } from 'src/common/auth-user';
 import { imagekit } from 'src/auth/utility/imagekit';
 import stripeConfig from 'src/subscription/config/stripe.config';
 import { DeleteAccountDto } from './dto/account.dto';
+import { FaceReferenceService } from 'src/face/face-reference.service';
 
 /** Contract `DeviceSession`. */
 export type DeviceSession = {
@@ -51,6 +52,7 @@ export class AccountService {
     @InjectRepository(UserSession)
     private readonly sessions: Repository<UserSession>,
     private readonly activityLogs: ActivityLogsService,
+    private readonly faceReferences: FaceReferenceService,
     @Inject(stripeConfig.KEY) stripeSettings: ConfigType<typeof stripeConfig>,
   ) {
     this.stripe = stripeSettings.stripeSecretKey
@@ -189,6 +191,8 @@ export class AccountService {
     });
 
     await this.deleteProfileImages(user.id);
+    // SEC-04: the private face photo is biometric data; delete it as well
+    await this.faceReferences.remove(user.id);
     await this.log(
       user.id,
       ActivityType.USER_DELETE_ACCOUNT,
