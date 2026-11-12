@@ -93,4 +93,5 @@ export enum ActivityType {
 
   // Reviews
   ADMIN_REVIEW_MODERATE = 'ADMIN_REVIEW_MODERATE',
+  ADMIN_UPDATE_SETTING = 'ADMIN_UPDATE_SETTING',
 }
