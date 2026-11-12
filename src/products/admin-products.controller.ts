@@ -28,6 +28,7 @@ import {
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { SHOP_MANAGER_ROLES } from 'src/users/enums/role.enum';
 import type { AuthRequest } from 'src/common/auth-user';
+import { MB, UPLOAD_LIMITS } from 'src/common/upload';
 
 const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -103,7 +104,12 @@ export class AdminProductsController {
   @UseInterceptors(
     FilesInterceptor('files', MAX_IMAGES, {
       storage: memoryStorage(),
-      limits: { fileSize: 5 * 1024 * 1024, files: MAX_IMAGES },
+      limits: {
+        ...UPLOAD_LIMITS,
+        fileSize: 5 * MB,
+        files: MAX_IMAGES,
+        parts: MAX_IMAGES + UPLOAD_LIMITS.fields,
+      },
       fileFilter: (_req, file, cb) =>
         IMAGE_TYPES.includes(file.mimetype)
           ? cb(null, true)

@@ -24,8 +24,6 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { Role } from './enums/role.enum';
 import { UpdateUserRoleDto } from './dto/update-user-role.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { memoryStorage } from 'multer';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { RATE_LIMITS, RateLimit } from 'src/auth/throttle/rate-limit';
@@ -34,6 +32,7 @@ import { resizeToBase64 } from 'src/auth/utility/resize-to-base64.util';
 import axios from 'axios';
 import {
   FACE_PHOTO_UPLOAD,
+  MB,
   NO_FACE_PHOTO,
   SingleFileUpload,
 } from 'src/common/upload';
@@ -137,21 +136,10 @@ export class UsersController {
   // ImageKit file upload
   @Patch('updateProfileImage')
   @UseInterceptors(
-    FileInterceptor('profileImage', {
-      storage: memoryStorage(),
-      fileFilter: (req, file, cb) => {
-        if (!file.mimetype.match(/\/(jpg|jpeg|png|gif)$/)) {
-          return cb(
-            new HttpException(
-              'Only image files are allowed (jpg, jpeg, png, gif)',
-              HttpStatus.BAD_REQUEST,
-            ),
-            false,
-          );
-        }
-        cb(null, true);
-      },
-      limits: { fileSize: 5 * 1024 * 1024 },
+    SingleFileUpload('profileImage', {
+      maxBytes: 5 * MB,
+      mimeTypes: ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'],
+      typeError: 'Only image files are allowed (jpg, jpeg, png, gif)',
     }),
   )
   async updateProfileImage(
