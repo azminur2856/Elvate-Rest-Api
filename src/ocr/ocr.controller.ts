@@ -8,7 +8,8 @@ import {
   Req,
   Body,
 } from '@nestjs/common';
-import { EditOptions, OcrService } from './ocr.service';
+import { OcrService } from './ocr.service';
+import { parseEditOptions } from './dto/edit-image.dto';
 import { extname } from 'path';
 import type { AuthRequest } from 'src/common/auth-user';
 import { SingleFileUpload } from 'src/common/upload';
@@ -120,12 +121,7 @@ export class OcrController {
     @Req() req,
   ) {
     if (!file) throw new BadRequestException('No file uploaded');
-    let opts: EditOptions;
-    try {
-      opts = JSON.parse(options);
-    } catch {
-      throw new BadRequestException('Invalid options format');
-    }
+    const opts = parseEditOptions(options);
     const editedBuffer = await this.ocrService.editImage(
       file.buffer,
       opts,

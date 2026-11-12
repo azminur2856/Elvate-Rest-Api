@@ -17,18 +17,10 @@ import * as sharp from 'sharp'; // npm install sharp
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { UsersService } from 'src/users/users.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
+import type { EditOptionsDto } from './dto/edit-image.dto';
 
-export interface EditOptions {
-  crop?: { left: number; top: number; width: number; height: number };
-  resize?: { width: number; height: number };
-  rotate?: number; // degrees
-  brightness?: number; // 0.0 - 2.0 (1 is normal)
-  contrast?: number; // 0.0 - 2.0 (1 is normal)
-  grayscale?: boolean;
-  flip?: boolean;
-  flop?: boolean;
-  blur?: number; // sigma > 0.3
-}
+/** Validated edit options (see `EditOptionsDto` for the limits). */
+export type EditOptions = EditOptionsDto;
 
 @Injectable()
 export class OcrService {
