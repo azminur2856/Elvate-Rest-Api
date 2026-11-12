@@ -11,6 +11,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Users } from './entities/users.entity';
 import { Repository } from 'typeorm';
 import { CreateUserDto } from './dto/create-user.dto';
+import { CreateGoogleUserDto } from './dto/create-google-user.dto';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -613,6 +614,42 @@ export class UsersService {
 
   async updateLastLogin(id: string) {
     await this.userRepository.update(id, { lastLoginAt: new Date() });
+  }
+
+  /**
+   * SEC-08: someone signed up with this address but never verified it, and
+   * now its owner signs in with Google. Linking would hand the owner an
+   * account whose password (and phone) the first person chose ("account
+   * pre-hijacking"). Instead the pending registration is discarded: the row
+   * is reset to a fresh Google-only account owned by the verified address.
+   */
+  async claimPendingSignupForGoogle(
+    id: string,
+    google: CreateGoogleUserDto,
+  ): Promise<Users> {
+    await this.userRepository.manager.transaction(async (m) => {
+      await m.update(Users, id, {
+        firstName: google.firstName,
+        lastName: (google.lastName ?? null) as unknown as string,
+        password: '', // Google-only until the owner sets one
+        phone: null as unknown as string,
+        dob: null as unknown as Date,
+        isPhoneVerified: false,
+        isFaceVerified: false,
+        isEmailVerified: true,
+        profileImage: 'profile.png',
+        lastLogoutAt: new Date(),
+      });
+      await m.delete(Verification, { userId: id });
+      await m.delete(UserSession, { userId: id });
+    });
+    const user = await this.userRepository.findOne({ where: { id } });
+    await this.activityLogsService.createActivityLog({
+      activity: ActivityType.USER_REGISTER,
+      description: `Unverified sign-up ${id} discarded: its address signed in with Google and now owns the account.`,
+      user,
+    });
+    return user!;
   }
 
   async setLastLogoutTime(userId: string) {

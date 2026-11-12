@@ -355,6 +355,14 @@ export class AuthService {
       );
     }
 
+    // SEC-08: never link to a sign-up nobody verified; discard it instead
+    if (user && !user.isEmailVerified) {
+      return await this.usersService.claimPendingSignupForGoogle(
+        user.id,
+        createGoogleUserDto,
+      );
+    }
+
     if (user) {
       return user;
     }
