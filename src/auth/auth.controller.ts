@@ -6,7 +6,6 @@ import {
   Get,
   HttpCode,
   HttpStatus,
-  NotFoundException,
   Patch,
   Post,
   Put,
@@ -14,7 +13,7 @@ import {
   Req,
   Request,
   Res,
-  UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
   ValidationPipe,
@@ -29,32 +28,31 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyPhoneDto } from './dto/verify-Phone.dto';
-import { resizeToBase64 } from './utility/resize-to-base64.util';
-import { FaceVerificationService } from 'src/users/services/face-verification.service';
-import {
-  FACE_PHOTO_UPLOAD,
-  NO_FACE_PHOTO,
-  SingleFileUpload,
-} from 'src/common/upload';
-import { Response } from 'express';
+import { PhotoFieldsUpload } from 'src/common/upload';
+import { Request as ExpressRequest, Response } from 'express';
 import { encryptSessionCookie } from './utility/jose-cookie';
 import {
   SESSION_COOKIE,
   sessionCookieOptions,
   clearSessionCookieOptions,
 } from './utility/session-cookie.options';
-import axios from 'axios';
 import { FaceLoginService } from './face-login/face-login.service';
-import { FaceChallengeDto } from './face-login/face-login.dto';
+import { FaceChallengeDto, FaceLoginDto } from './face-login/face-login.dto';
+import { clientIp } from './throttle/rate-limit';
 
 const FRONTEND_URL = process.env.FRONTEND_URL;
+
+/** The two face-login frames (multipart file fields). */
+type FaceFrames = {
+  neutral?: Express.Multer.File[];
+  action?: Express.Multer.File[];
+};
 
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly faceVerificationService: FaceVerificationService,
     private readonly faceLogin: FaceLoginService,
   ) {}
 
@@ -187,68 +185,52 @@ export class AuthController {
     return this.faceLogin.createChallenge(dto.email);
   }
 
-  // face login endpoint using imagekit image URL and live image
+  /**
+   * SEC-04 face login, step 2 (multipart): `email`, `challengeId` and two
+   * photos, `neutral` (looking at the camera) and `action` (after doing the
+   * prompt). Success sets the session cookie like a password login. Every
+   * failure is the same 401; 5 per 15 minutes per e-mail or IP lock face
+   * login for 15 minutes (429).
+   */
   @Public()
   @Post('login-with-face')
-  @UseInterceptors(SingleFileUpload('liveImage', FACE_PHOTO_UPLOAD))
+  @UseInterceptors(PhotoFieldsUpload(['neutral', 'action']))
   @RateLimit(RATE_LIMITS.loginWithFace)
   async loginWithFace(
-    @Request() req,
-    @Body('email') email: string,
-    @UploadedFile() file: Express.Multer.File,
+    @Request() req: ExpressRequest,
+    @Body() dto: FaceLoginDto,
+    @UploadedFiles() files: FaceFrames | undefined,
     @Res({ passthrough: true }) res: Response,
   ) {
-    if (!file) throw new BadRequestException(NO_FACE_PHOTO);
-    const user = await this.authService.getVerifiedFaceUserByEmail(email);
-
-    if (user.isActive === false) {
-      throw new NotFoundException(
-        'User is inactive or blocked by admin. Contact support for assistance.',
+    const neutral = files?.neutral?.[0];
+    const action = files?.action?.[0];
+    if (!neutral || !action) {
+      throw new BadRequestException(
+        'Send two photos: "neutral" (looking at the camera) and "action" (after the prompt).',
       );
     }
-
-    const imageKitUrl = `${process.env.IMAGEKIT_URL_ENDPOINT}/user_profile_image/user_${user.id}/${user.profileImage}`;
-
-    let profileImageBuffer: Buffer;
-    try {
-      const response = await axios.get(imageKitUrl, {
-        responseType: 'arraybuffer',
-      });
-      profileImageBuffer = Buffer.from(response.data as ArrayBuffer);
-    } catch {
-      throw new NotFoundException(
-        'Failed to download profile image from ImageKit',
-      );
-    }
-
-    const profileImageBase64 = await resizeToBase64(profileImageBuffer);
-    const liveImageBase64 = await resizeToBase64(file.buffer);
-
-    const isMatch = await this.faceVerificationService.compareFacesForLogin(
-      profileImageBase64,
-      liveImageBase64,
-    );
-
-    if (!isMatch) {
-      return {
-        verified: false,
-        message: '❌ Face does not match. Try again.',
-      };
-    }
+    const userAgent = req.headers['user-agent'];
+    const user = await this.faceLogin.verify({
+      email: dto.email,
+      challengeId: dto.challengeId,
+      neutral: neutral.buffer,
+      action: action.buffer,
+      ip: clientIp(req),
+    });
 
     // --- Set session cookie like in normal login ---
     const cookieData = await this.authService.login(
       user.id,
       'faceLogin',
-      req.headers['user-agent'],
+      userAgent,
     );
     const cookieDataEncrypted = await encryptSessionCookie(cookieData);
-
     res.cookie(SESSION_COOKIE, cookieDataEncrypted, sessionCookieOptions);
+    this.faceLogin.notifySignIn(user, userAgent);
 
     return {
       verified: true,
-      message: '✅ Face verified and logged in.',
+      message: 'Face verified and logged in.',
     };
   }
 }

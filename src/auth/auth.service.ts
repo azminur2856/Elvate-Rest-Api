@@ -690,15 +690,4 @@ export class AuthService {
 
     return { message: 'Phone number verified successfully' };
   }
-
-  async getVerifiedFaceUserByEmail(email: string) {
-    const user = await this.usersService.findByEmail(email);
-    if (!user) throw new NotFoundException('No user found for this email.');
-    if (!user.isFaceVerified) {
-      throw new NotFoundException(
-        '❌ Face not verified. Please verify face first.',
-      );
-    }
-    return user;
-  }
 }
