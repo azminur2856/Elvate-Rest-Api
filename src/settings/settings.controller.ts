@@ -42,16 +42,19 @@ export class SettingsController {
     return this.settings.list();
   }
 
-  /** BE-30, ADMIN only (not STAFF): the delivery fees. */
+  /** The delivery fees and who changed them last. ADMIN only (not STAFF). */
   @Roles(Role.ADMIN)
   @Get('admin/settings/shipping')
   shippingSettings() {
     return this.shipping.view();
   }
 
+  // BE-30: declared before `:key` below, so "shipping" is never taken for a
+  // switch key (routes match in the order they are declared).
   /**
-   * BE-30, ADMIN only. Declared before `:key` so "shipping" is never taken
-   * for a switch key (routes match in the order they are declared).
+   * Change the delivery fees (whole BDT; freeThreshold 0 = free delivery off).
+   * New quotes and orders use them; orders already placed keep their fee.
+   * ADMIN only (not STAFF).
    */
   @Roles(Role.ADMIN)
   @Patch('admin/settings/shipping')
