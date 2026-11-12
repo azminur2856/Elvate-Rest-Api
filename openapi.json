@@ -826,6 +826,72 @@
         "description": "**Roles:** ADMIN"
       }
     },
+    "/admin/settings/shipping": {
+      "get": {
+        "operationId": "Settings_shippingSettings",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "summary": "The delivery fees and who changed them last. ADMIN only (not STAFF).",
+        "tags": [
+          "Settings"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      },
+      "patch": {
+        "operationId": "Settings_updateShipping",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateShippingDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Requires role: ADMIN"
+          }
+        },
+        "summary": "Change the delivery fees (whole BDT; freeThreshold 0 = free delivery off).\nNew quotes and orders use them; orders already placed keep their fee.\nADMIN only (not STAFF).",
+        "tags": [
+          "Settings"
+        ],
+        "x-roles": [
+          "ADMIN"
+        ],
+        "description": "**Roles:** ADMIN"
+      }
+    },
     "/admin/settings/{key}": {
       "patch": {
         "operationId": "Settings_update",
@@ -4393,6 +4459,33 @@
             "maxLength": 10
           }
         }
+      },
+      "UpdateShippingDto": {
+        "type": "object",
+        "properties": {
+          "insideDhaka": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000,
+            "example": 60
+          },
+          "outsideDhaka": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000,
+            "example": 120
+          },
+          "freeThreshold": {
+            "type": "integer",
+            "description": "0 = free delivery off, else 100–100000",
+            "example": 3000
+          }
+        },
+        "required": [
+          "insideDhaka",
+          "outsideDhaka",
+          "freeThreshold"
+        ]
       },
       "UpdateSettingDto": {
         "type": "object",
