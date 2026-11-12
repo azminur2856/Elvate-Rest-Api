@@ -2,6 +2,7 @@ import {
   Injectable,
   Inject,
   BadRequestException,
+  ConflictException,
   Logger,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -107,6 +108,15 @@ export class SubscriptionService {
     const priceId = priceMap[plan];
     if (!priceId) {
       throw new BadRequestException('Invalid plan selected.');
+    }
+
+    // SEC-14: one subscription at a time; a second checkout would charge
+    // twice for overlapping periods
+    const current = await this.getSubscriptionStatus(userId);
+    if (current.isSubscribed) {
+      throw new ConflictException(
+        `You already have an active subscription until ${current.endDate?.toISOString().slice(0, 10)}.`,
+      );
     }
 
     const session = await this.stripe.checkout.sessions.create({
