@@ -145,6 +145,8 @@ export class DeliveryService {
           .select('COALESCE(SUM(o.total), 0)', 'sum')
           .andWhere('o.status = :d', { d: OrderStatus.DELIVERED })
           .andWhere('o.paymentMethod = :cod', { cod: PaymentMethod.COD })
+          // BE-29: an admin correction may record that no cash was collected
+          .andWhere('o.paymentStatus = :paid', { paid: PaymentStatus.PAID })
           .andWhere('o.deliveredAt >= :today', { today })
           .getRawOne<{ sum: string }>(),
       ]);
