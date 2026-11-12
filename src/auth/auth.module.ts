@@ -24,10 +24,18 @@ import emailConfig from './config/email.config';
 import { Verification } from './entities/verification.entity';
 import { UserSession } from './entities/user-session.entity';
 import { FaceVerificationService } from 'src/users/services/face-verification.service';
+import { LoginAttempt } from './attempts/login-attempt.entity';
+import { LoginAttemptsService } from './attempts/login-attempts.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Users, ActivityLog, Verification, UserSession]),
+    TypeOrmModule.forFeature([
+      Users,
+      ActivityLog,
+      Verification,
+      UserSession,
+      LoginAttempt,
+    ]),
     JwtModule.registerAsync(jwtConfig.asProvider()),
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(refreshJwtConfig),
@@ -46,6 +54,7 @@ import { FaceVerificationService } from 'src/users/services/face-verification.se
     MailService,
     SmsService,
     FaceVerificationService,
+    LoginAttemptsService,
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard, //@UseGards(JwtAuthGuard) Global guard for JWT authentication for all API endpoints
