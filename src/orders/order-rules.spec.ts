@@ -27,31 +27,39 @@ describe('order status rules (contract BE-16)', () => {
     expect(canTransition(S.OUT_FOR_DELIVERY, S.RETURNED)).toBe(false);
     expect(canTransition(S.OUT_FOR_DELIVERY, S.RETURN_REQUESTED)).toBe(true);
     expect(canTransition(S.RETURN_REQUESTED, S.RETURNED)).toBe(true);
-    expect(canTransition(S.RETURN_REQUESTED, S.OUT_FOR_DELIVERY)).toBe(true);
+    // BE-29: "send out again" goes back to SHIPPED
+    expect(canTransition(S.RETURN_REQUESTED, S.SHIPPED)).toBe(true);
+    expect(canTransition(S.RETURN_REQUESTED, S.OUT_FOR_DELIVERY)).toBe(false);
     expect(canTransition(S.DELIVERED, S.RETURNED)).toBe(false);
     expect(canTransition(S.CANCELLED, S.PENDING)).toBe(false);
   });
 
-  it('ADMIN and STAFF get every allowed move', () => {
+  it('ADMIN and STAFF manage the order but never perform the delivery', () => {
     expect(allowedNextStatuses(order(), admin)).toEqual([
       S.CONFIRMED,
       S.CANCELLED,
     ]);
-    expect(
-      allowedNextStatuses(order({ status: S.OUT_FOR_DELIVERY }), staff),
-    ).toEqual([S.DELIVERED, S.RETURN_REQUESTED]);
-    expect(
-      allowedNextStatuses(order({ status: S.RETURN_REQUESTED }), staff),
-    ).toEqual([S.RETURNED, S.OUT_FOR_DELIVERY]);
+    for (const viewer of [admin, staff]) {
+      expect(allowedNextStatuses(order({ status: S.SHIPPED }), viewer)).toEqual(
+        [],
+      );
+      expect(
+        allowedNextStatuses(order({ status: S.OUT_FOR_DELIVERY }), viewer),
+      ).toEqual([]);
+      expect(
+        allowedNextStatuses(order({ status: S.RETURN_REQUESTED }), viewer),
+      ).toEqual([S.RETURNED, S.SHIPPED]);
+    }
   });
 
   it('SEC-09: a rider can request a return but never confirm one', () => {
     expect(
       allowedNextStatuses(order({ status: S.OUT_FOR_DELIVERY }), rider),
     ).toEqual([S.DELIVERED, S.RETURN_REQUESTED]);
+    // BE-29: sending it out again is a staff decision
     expect(
       allowedNextStatuses(order({ status: S.RETURN_REQUESTED }), rider),
-    ).toEqual([S.OUT_FOR_DELIVERY]);
+    ).toEqual([]);
   });
 
   it('an unpaid card order cannot be confirmed by hand', () => {

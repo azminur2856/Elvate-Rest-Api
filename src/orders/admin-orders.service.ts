@@ -7,7 +7,7 @@ import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { Brackets, DataSource, Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
 import { OrderStatus, PaymentMethod, PaymentStatus } from './order.enums';
-import { allowedNextStatuses } from './order-rules';
+import { allowedNextStatuses, DELIVERY_MOVES } from './order-rules';
 import {
   fullName,
   OrderDetail,
@@ -42,6 +42,8 @@ export const ON_THE_WAY = [
  */
 export const ACTIVE_DELIVERY = [...ON_THE_WAY, OrderStatus.RETURN_REQUESTED];
 const ASSIGNABLE = new Set([OrderStatus.PROCESSING, OrderStatus.SHIPPED]);
+export const ONLY_DELIVERY_MAN =
+  'Only the assigned delivery man can update delivery progress.';
 const LOW_STOCK = 5;
 
 const zeroStatuses = () =>
@@ -153,6 +155,9 @@ export class AdminOrdersService {
     actor: AuthUser,
   ): Promise<OrderDetail> {
     const order = await this.mustFind(id);
+    if (DELIVERY_MOVES.has(dto.status)) {
+      throw new BadRequestException(ONLY_DELIVERY_MAN);
+    }
     const allowed = allowedNextStatuses(order, actor);
     if (!allowed.includes(dto.status)) {
       throw new BadRequestException(
