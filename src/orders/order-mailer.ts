@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { MailService } from 'src/auth/services/mail.services';
 import type { Order } from './entities/order.entity';
 import type { OrderItem } from './entities/order-item.entity';
-import { PaymentMethod, PaymentStatus } from './order.enums';
+import { OrderStatus, PaymentMethod, PaymentStatus } from './order.enums';
 
 export type OrderMailKind = 'placed' | 'shipped' | 'delivered' | 'cancelled';
 
@@ -59,6 +59,53 @@ export class OrderMailer {
     } catch (err) {
       this.logger.warn(
         `Order e-mail (${kind}) for ${order.orderNumber} failed: ${(err as Error).message}`,
+      );
+    }
+  }
+
+  /**
+   * BE-29: tells the assigned delivery man that an admin corrected one of
+   * his deliveries (never throws).
+   */
+  async sendCorrection(
+    order: Pick<Order, 'id' | 'orderNumber' | 'total' | 'paymentMethod'>,
+    to: { email: string; name: string } | null,
+    correction: {
+      action: OrderStatus.DELIVERED | OrderStatus.RETURN_REQUESTED;
+      reason: string;
+      note: string;
+      cashCollected?: boolean;
+    },
+  ): Promise<void> {
+    if (!to?.email || UNDELIVERABLE.test(to.email)) return;
+    const number = esc(order.orderNumber);
+    const marked =
+      correction.action === OrderStatus.DELIVERED
+        ? 'Delivered'
+        : 'Return requested';
+    const cash =
+      correction.action === OrderStatus.DELIVERED &&
+      order.paymentMethod === PaymentMethod.COD
+        ? correction.cashCollected
+          ? `<p>The cash of <strong>${taka(order.total)}</strong> counts as collected by you.</p>`
+          : '<p>No cash was collected for this order.</p>'
+        : '';
+    try {
+      await this.mail.sendOrderEmail(
+        to.email,
+        to.name,
+        `Order ${number} was corrected by an admin`,
+        'An admin updated one of your deliveries',
+        `<p>Order <strong>${number}</strong>, out for delivery with you, was marked <strong>${marked}</strong> by an admin.</p>
+         <p>Reason: ${esc(correction.reason)}</p>
+         <p>Note: ${esc(correction.note)}</p>${cash}
+         <p>If this is not right, please contact the shop.</p>`,
+        order.id,
+        { path: '/delivery', label: 'Open the delivery app' },
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Correction e-mail for ${order.orderNumber} failed: ${(err as Error).message}`,
       );
     }
   }

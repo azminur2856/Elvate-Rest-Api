@@ -285,6 +285,11 @@ export class MailService {
     heading: string,
     bodyHtml: string,
     orderId: string,
+    /** Default: "View your order" → /orders/<id>. */
+    button: { path: string; label: string } = {
+      path: `/orders/${orderId}`,
+      label: 'View your order',
+    },
   ): Promise<MailSendResult> {
     const html = this.layout(
       '#198754',
@@ -293,7 +298,7 @@ export class MailService {
             <p>Hello ${escapeHtml(fullName)},</p>
             ${bodyHtml}
             <p style="text-align: center;">
-              <a href="${this.FRONTEND_URL}/orders/${orderId}" style="background-color: #198754; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">View your order</a>
+              <a href="${this.FRONTEND_URL}${button.path}" style="background-color: #198754; color: white; padding: 12px 24px; border-radius: 5px; text-decoration: none;">${escapeHtml(button.label)}</a>
             </p>
             <p><strong>The Elvate Team</strong></p>
       `,
