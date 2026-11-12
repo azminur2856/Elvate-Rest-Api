@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppSetting } from './app-setting.entity';
 import { ShippingSetting } from './shipping-setting.entity';
 import { SettingsService } from './settings.service';
+import { ShippingSettingsService } from './shipping-settings.service';
 import { SettingsController } from './settings.controller';
 import { ActivityLogsModule } from 'src/activity-logs/activity-logs.module';
 
@@ -13,7 +14,7 @@ import { ActivityLogsModule } from 'src/activity-logs/activity-logs.module';
     ActivityLogsModule,
   ],
   controllers: [SettingsController],
-  providers: [SettingsService],
-  exports: [SettingsService],
+  providers: [SettingsService, ShippingSettingsService],
+  exports: [SettingsService, ShippingSettingsService],
 })
 export class SettingsModule {}
