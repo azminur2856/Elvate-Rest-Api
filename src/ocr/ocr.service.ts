@@ -12,12 +12,11 @@ import {
 import * as pdfParse from 'pdf-parse';
 import { SubscriptionService } from 'src/subscription/subscription.service';
 import * as Tesseract from 'tesseract.js';
-import * as sharp from 'sharp'; // npm install sharp
-//import { Rembg } from 'rembg-node';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { UsersService } from 'src/users/users.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
-import type { EditOptionsDto } from './dto/edit-image.dto';
+import { MAX_EDGE, type EditOptionsDto } from './dto/edit-image.dto';
+import { openImage } from 'src/common/image-input';
 
 /** Validated edit options (see `EditOptionsDto` for the limits). */
 export type EditOptions = EditOptionsDto;
@@ -49,6 +48,8 @@ export class OcrService {
     }
     const user = await this.usersService.findOne(userId);
     if (!user) throw new BadRequestException('User not found');
+    // real type + size check before spending a remove.bg call on it
+    await openImage(file.buffer);
 
     const png = await this.remover.remove(
       file.buffer,
@@ -103,6 +104,8 @@ export class OcrService {
     if (!user) {
       throw new BadRequestException('User not found');
     }
+    // tesseract decodes on its own: refuse non-images and pixel bombs first
+    await openImage(buffer);
     // Add activity log for image text extraction
     await this.activityLogService.createActivityLog({
       activity: ActivityType.OCR_EXTRACT_TEXT_FROM_IMAGE,
@@ -135,6 +138,7 @@ export class OcrService {
     if (!user) {
       throw new BadRequestException('User not found');
     }
+    const { image } = await openImage(buffer);
 
     // Add activity log for image resizing
     await this.activityLogService.createActivityLog({
@@ -143,11 +147,12 @@ export class OcrService {
       user: user,
     });
 
-    // Use sharp to resize
-    const resized = await sharp(buffer)
-      .resize(width, height)
-      .toFormat('jpeg')
-      .toBuffer();
+    let resized: Buffer;
+    try {
+      resized = await image.resize(width, height).jpeg().toBuffer();
+    } catch {
+      throw new BadRequestException('Image processing failed');
+    }
 
     // Convert to base64 string for frontend
     return {
@@ -169,16 +174,30 @@ export class OcrService {
       );
     }
 
-    let image = sharp(buffer);
+    const opened = await openImage(buffer);
+    let image = opened.image;
 
-    // Crop
+    // Crop (must stay inside the picture)
     if (options.crop) {
-      image = image.extract(options.crop);
+      const { left, top, width, height } = options.crop;
+      if (left + width > opened.width || top + height > opened.height) {
+        throw new BadRequestException(
+          `crop must stay inside the ${opened.width}x${opened.height} image`,
+        );
+      }
+      image = image.extract({ left, top, width, height });
     }
 
-    // Resize
+    // Resize; without one, still cap the output at MAX_EDGE per side
     if (options.resize) {
       image = image.resize(options.resize.width, options.resize.height);
+    } else {
+      image = image.resize({
+        width: MAX_EDGE,
+        height: MAX_EDGE,
+        fit: 'inside',
+        withoutEnlargement: true,
+      });
     }
 
     // Rotate

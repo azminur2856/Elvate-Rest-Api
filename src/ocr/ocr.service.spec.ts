@@ -2,15 +2,24 @@ import {
   ForbiddenException,
   ServiceUnavailableException,
 } from '@nestjs/common';
+import sharp = require('sharp');
 import { OcrService } from './ocr.service';
 import { BackgroundRemover } from './background/background-remover';
 
 describe('OcrService.removeBackground (BE-21)', () => {
   const file = {
-    buffer: Buffer.from('img'),
+    buffer: Buffer.alloc(0),
     mimetype: 'image/jpeg',
     originalname: 'a.jpg',
   };
+  beforeAll(async () => {
+    // a real 1x1 JPEG: the service now checks the content (SEC-03)
+    file.buffer = await sharp({
+      create: { width: 1, height: 1, channels: 3, background: '#fff' },
+    })
+      .jpeg()
+      .toBuffer();
+  });
   const make = (subscribed: boolean, remover: Partial<BackgroundRemover>) =>
     new OcrService(
       { createActivityLog: jest.fn() } as never,
