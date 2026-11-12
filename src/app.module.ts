@@ -28,6 +28,7 @@ import { DeliveryModule } from './delivery/delivery.module';
 import { AccountModule } from './account/account.module';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { SettingsModule } from './settings/settings.module';
+import { MediaModule } from './media/media.module';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { throttlerTracker } from './auth/throttle/rate-limit';
 
@@ -62,6 +63,7 @@ import { throttlerTracker } from './auth/throttle/rate-limit';
     AccountModule,
     WishlistModule,
     SettingsModule,
+    MediaModule,
   ],
   controllers: [AppController],
   providers: [AppService],
