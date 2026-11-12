@@ -14,6 +14,9 @@ export const RATE_LIMITS = {
   loginWithFace: { limit: 5, ttl: MINUTE }, // each attempt is a paid Face++ call
   faceSetup: { limit: 5, ttl: 15 * MINUTE }, // Face++ call + ImageKit upload
   faceChallenge: { limit: 10, ttl: 15 * MINUTE },
+  // SEC-11: per user (orders need a login); stops scripted hoarding
+  placeOrder: { limit: 5, ttl: 10 * MINUTE },
+  orderQuote: { limit: 30, ttl: MINUTE },
   createUser: { limit: 10, ttl: 10 * MINUTE },
   forgotPassword: { limit: 5, ttl: 15 * MINUTE }, // sends an e-mail / SMS
   resetPassword: { limit: 10, ttl: 15 * MINUTE }, // OTP / token guessing

@@ -19,6 +19,7 @@ import {
   QuoteDto,
 } from './dto/order.dto';
 import type { AuthRequest } from 'src/common/auth-user';
+import { RATE_LIMITS, RateLimit } from 'src/auth/throttle/rate-limit';
 
 /** Checkout + the customer's orders (BE-15). */
 @ApiTags('Orders')
@@ -29,11 +30,13 @@ export class OrdersController {
   /** Prices the server cart for the checkout page. */
   @Post('quote')
   @HttpCode(HttpStatus.OK)
+  @RateLimit(RATE_LIMITS.orderQuote)
   quote(@Body() dto: QuoteDto, @Req() req: AuthRequest) {
     return this.orders.quote(req.user.id, dto);
   }
 
   @Post()
+  @RateLimit(RATE_LIMITS.placeOrder)
   place(@Body() dto: PlaceOrderDto, @Req() req: AuthRequest) {
     return this.orders.place(req.user, dto);
   }
