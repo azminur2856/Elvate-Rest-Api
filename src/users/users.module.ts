@@ -7,21 +7,17 @@ import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityLog } from 'src/activity-logs/entities/activity-logs.entity';
 import { MailService } from 'src/auth/services/mail.services';
 import { Verification } from 'src/auth/entities/verification.entity';
-import { FaceVerificationService } from './services/face-verification.service';
 import { AccountModule } from 'src/account/account.module';
+import { FaceModule } from 'src/face/face.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Users, ActivityLog, Verification]),
     AccountModule,
+    FaceModule,
   ],
   controllers: [UsersController],
-  providers: [
-    UsersService,
-    MailService,
-    ActivityLogsService,
-    FaceVerificationService,
-  ],
+  providers: [UsersService, MailService, ActivityLogsService],
   exports: [UsersService],
 })
 export class UsersModule {}
