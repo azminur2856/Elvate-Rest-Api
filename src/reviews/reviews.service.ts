@@ -23,6 +23,7 @@ import {
   pageParams,
   paginated,
 } from 'src/common/pagination';
+import { publicAvatarUrl } from 'src/common/media';
 
 /** Contract `Review`. */
 export type ReviewView = {
@@ -47,14 +48,6 @@ export function displayName(u: Users, style: NameStyle) {
       .filter(Boolean)
       .join(' ') || 'Customer'
   );
-}
-
-function avatarOf(u: Users): string | null {
-  if (!u.profileImage || u.profileImage === 'profile.png') return null;
-  const base = process.env.IMAGEKIT_URL_ENDPOINT;
-  return base
-    ? `${base}/user_profile_image/user_${u.id}/${u.profileImage}`
-    : null;
 }
 
 @Injectable()
@@ -362,7 +355,7 @@ export class ReviewsService {
       createdAt: r.createdAt,
       status: r.reviewStatus,
       user: r.user
-        ? { name: displayName(r.user, style), avatar: avatarOf(r.user) }
+        ? { name: displayName(r.user, style), avatar: publicAvatarUrl(r.user) }
         : null,
     };
   }
