@@ -11,16 +11,13 @@ import { Repository } from 'typeorm';
 import { FaceReference } from './face-reference.entity';
 import { Users } from 'src/users/entities/users.entity';
 import { FaceVerificationService } from 'src/users/services/face-verification.service';
-import {
-  FACE_CHECK_MESSAGES,
-  FaceCheckFailure,
-  LIVENESS,
-} from 'src/users/services/face-check';
+import { FaceCheckFailure, LIVENESS } from 'src/users/services/face-check';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { MailService } from 'src/auth/services/mail.services';
 import { imagekit } from 'src/auth/utility/imagekit';
-import { sharpInput } from 'src/common/image-input';
+import { faceJpeg } from './face-photo';
+import { escapeHtml } from 'src/common/html';
 
 /** ImageKit folder of a user's private face reference. */
 export const faceReferenceFolder = (userId: string) =>
@@ -86,16 +83,7 @@ export class FaceReferenceService implements OnApplicationBootstrap {
 
     let jpeg: Buffer;
     try {
-      jpeg = await sharpInput(photo)
-        .rotate() // apply the camera's EXIF orientation
-        .resize(640, 640, { fit: 'inside', withoutEnlargement: true })
-        .jpeg({ quality: 85 })
-        .toBuffer();
-    } catch {
-      throw new BadRequestException(FACE_CHECK_MESSAGES.BAD_IMAGE);
-    }
-
-    try {
+      jpeg = await faceJpeg(photo);
       const face = await this.face.analyze(jpeg.toString('base64'));
       if (Math.abs(face.yaw) > LIVENESS.neutralMaxYaw + 5) {
         throw new FaceCheckFailure('NOT_FRONTAL');
@@ -133,7 +121,7 @@ export class FaceReferenceService implements OnApplicationBootstrap {
     });
     void this.mail.sendNotificationEmail(
       user.email,
-      `${user.firstName} ${user.lastName ?? ''}`.trim(),
+      escapeHtml(`${user.firstName} ${user.lastName ?? ''}`.trim()),
       'Face login was set up on your Elvate account',
       'Face login was just set up on your account. If this was not you, change your password and remove face login in Settings.',
     );

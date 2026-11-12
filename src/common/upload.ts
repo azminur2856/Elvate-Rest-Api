@@ -1,5 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import {
+  FileFieldsInterceptor,
+  FileInterceptor,
+} from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 
 export const MB = 1024 * 1024;
@@ -62,4 +65,29 @@ export function SingleFileUpload(
       );
     },
   });
+}
+
+/**
+ * One photo per named field (e.g. the two face-login frames), each under the
+ * SEC-02 limits and of a photo type (JPG, PNG or WebP).
+ */
+export function PhotoFieldsUpload(fields: string[]) {
+  return FileFieldsInterceptor(
+    fields.map((name) => ({ name, maxCount: 1 })),
+    {
+      storage: memoryStorage(),
+      limits: {
+        ...UPLOAD_LIMITS,
+        files: fields.length,
+        parts: fields.length + UPLOAD_LIMITS.fields,
+      },
+      fileFilter: (_req, file, cb) => {
+        if (PHOTO_MIME_TYPES.includes(file.mimetype)) {
+          cb(null, true);
+          return;
+        }
+        cb(new BadRequestException(FACE_PHOTO_UPLOAD.typeError), false);
+      },
+    },
+  );
 }
