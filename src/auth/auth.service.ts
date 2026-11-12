@@ -43,6 +43,12 @@ import {
   clearSessionCookieOptions,
 } from './utility/session-cookie.options';
 
+/** SEC-12: one answer for "no such account" and "wrong password". */
+export const INVALID_LOGIN = 'Invalid email or password';
+/** bcrypt hash of a random string: makes unknown-e-mail logins as slow as real ones. */
+const DUMMY_BCRYPT_HASH =
+  '$2b$10$CwTycUXWue0Thq9StjUM0uJ8.1lbfHNiBo2YX0yz4d0SmKTAtvLlW';
+
 /** Same text as the password-login check for a blocked account. */
 const ACCOUNT_BLOCKED =
   'User account is inactive or has been blocked. Please contact support for assistance.';
@@ -100,14 +106,14 @@ export class AuthService {
     const keys = [emailKey('password-email', email)];
     await this.loginAttempts.assertNotLocked(keys);
     const user = await this.usersService.findByEmail(email);
-    if (!user) {
+    // SEC-12: unknown e-mail and wrong password look the same, in the text
+    // and in the time taken (a dummy bcrypt check when there is no user)
+    const isPasswordMatch = user
+      ? await compare(password, user.password)
+      : (await compare(password, DUMMY_BCRYPT_HASH)) && false;
+    if (!user || !isPasswordMatch) {
       await this.loginAttempts.recordFailure(keys);
-      throw new UnauthorizedException('User not found');
-    }
-    const isPasswordMatch = await compare(password, user.password);
-    if (!isPasswordMatch) {
-      await this.loginAttempts.recordFailure(keys);
-      throw new UnauthorizedException('Invalid password');
+      throw new UnauthorizedException(INVALID_LOGIN);
     }
     await this.loginAttempts.clear(keys);
     if (!user.isEmailVerified) {
