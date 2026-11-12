@@ -1,23 +1,35 @@
 import { Role } from 'src/users/enums/role.enum';
 import { OrderStatus, PaymentMethod, PaymentStatus } from './order.enums';
 
-/** Contract "Status rules". CANCELLED, RETURNED and DELIVERED are final. */
+/**
+ * Contract "Status rules". CANCELLED, RETURNED and DELIVERED are final.
+ * SEC-09: a parcel coming back is first RETURN_REQUESTED (rider); only
+ * ADMIN / STAFF turn it into RETURNED, which refunds and restocks.
+ */
 export const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   [OrderStatus.PENDING]: [OrderStatus.CONFIRMED, OrderStatus.CANCELLED],
   [OrderStatus.CONFIRMED]: [OrderStatus.PROCESSING, OrderStatus.CANCELLED],
   [OrderStatus.PROCESSING]: [OrderStatus.SHIPPED, OrderStatus.CANCELLED],
   [OrderStatus.SHIPPED]: [OrderStatus.OUT_FOR_DELIVERY],
-  [OrderStatus.OUT_FOR_DELIVERY]: [OrderStatus.DELIVERED, OrderStatus.RETURNED],
+  [OrderStatus.OUT_FOR_DELIVERY]: [
+    OrderStatus.DELIVERED,
+    OrderStatus.RETURN_REQUESTED,
+  ],
+  // confirmed back in the shop, or sent out again (rider mistake / retry)
+  [OrderStatus.RETURN_REQUESTED]: [
+    OrderStatus.RETURNED,
+    OrderStatus.OUT_FOR_DELIVERY,
+  ],
   [OrderStatus.DELIVERED]: [],
   [OrderStatus.CANCELLED]: [],
   [OrderStatus.RETURNED]: [],
 };
 
-/** Moves a delivery man may make on an order assigned to him. */
+/** Moves a delivery man may make on an order assigned to him (never RETURNED). */
 const DELIVERY_MOVES = new Set([
   OrderStatus.OUT_FOR_DELIVERY,
   OrderStatus.DELIVERED,
-  OrderStatus.RETURNED,
+  OrderStatus.RETURN_REQUESTED,
 ]);
 
 /** Statuses that put the stock back and release the coupon. */

@@ -23,7 +23,11 @@ describe('order status rules (contract BE-16)', () => {
     expect(canTransition(S.PENDING, S.CONFIRMED)).toBe(true);
     expect(canTransition(S.PROCESSING, S.CANCELLED)).toBe(true);
     expect(canTransition(S.SHIPPED, S.CANCELLED)).toBe(false);
-    expect(canTransition(S.OUT_FOR_DELIVERY, S.RETURNED)).toBe(true);
+    // SEC-09: a return is requested first, then confirmed
+    expect(canTransition(S.OUT_FOR_DELIVERY, S.RETURNED)).toBe(false);
+    expect(canTransition(S.OUT_FOR_DELIVERY, S.RETURN_REQUESTED)).toBe(true);
+    expect(canTransition(S.RETURN_REQUESTED, S.RETURNED)).toBe(true);
+    expect(canTransition(S.RETURN_REQUESTED, S.OUT_FOR_DELIVERY)).toBe(true);
     expect(canTransition(S.DELIVERED, S.RETURNED)).toBe(false);
     expect(canTransition(S.CANCELLED, S.PENDING)).toBe(false);
   });
@@ -35,7 +39,19 @@ describe('order status rules (contract BE-16)', () => {
     ]);
     expect(
       allowedNextStatuses(order({ status: S.OUT_FOR_DELIVERY }), staff),
-    ).toEqual([S.DELIVERED, S.RETURNED]);
+    ).toEqual([S.DELIVERED, S.RETURN_REQUESTED]);
+    expect(
+      allowedNextStatuses(order({ status: S.RETURN_REQUESTED }), staff),
+    ).toEqual([S.RETURNED, S.OUT_FOR_DELIVERY]);
+  });
+
+  it('SEC-09: a rider can request a return but never confirm one', () => {
+    expect(
+      allowedNextStatuses(order({ status: S.OUT_FOR_DELIVERY }), rider),
+    ).toEqual([S.DELIVERED, S.RETURN_REQUESTED]);
+    expect(
+      allowedNextStatuses(order({ status: S.RETURN_REQUESTED }), rider),
+    ).toEqual([S.OUT_FOR_DELIVERY]);
   });
 
   it('an unpaid card order cannot be confirmed by hand', () => {

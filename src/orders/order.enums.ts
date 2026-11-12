@@ -6,6 +6,8 @@ export enum OrderStatus {
   OUT_FOR_DELIVERY = 'OUT_FOR_DELIVERY',
   DELIVERED = 'DELIVERED',
   CANCELLED = 'CANCELLED',
+  /** SEC-09: the rider says the parcel is coming back; staff must confirm. */
+  RETURN_REQUESTED = 'RETURN_REQUESTED',
   RETURNED = 'RETURNED',
 }
 
