@@ -8,6 +8,7 @@ import * as cookieParser from 'cookie-parser';
 import * as express from 'express';
 import helmet from 'helmet';
 import { setupSwagger, swaggerEnabled } from './swagger';
+import { corsOrigins } from './common/cors';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -51,11 +52,9 @@ async function bootstrap() {
   // In production the frontend proxies API calls through its own origin
   // (Next.js rewrite), so CORS rarely matters — but keep the real frontend
   // origin and localhost allowed for direct calls and local development.
-  const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:3000']
-    .filter((o): o is string => Boolean(o))
-    .map((o) => o.replace(/\/+$/, ''));
+  // SEC-20: localhost is only allowed outside production (see corsOrigins)
   app.enableCors({
-    origin: allowedOrigins,
+    origin: corsOrigins(),
     credentials: true,
   });
 
