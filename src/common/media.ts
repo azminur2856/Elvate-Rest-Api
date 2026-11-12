@@ -68,3 +68,19 @@ export function toImgPath(value: string | null | undefined): string | null {
   if (path === null) return value;
   return `/img${path.split('?')[0]}`;
 }
+
+/** An /img/ shop-photo path (as the API returns them). */
+export const IMG_PATH_PATTERN = /^\/img\/(?!.*\.\.)[A-Za-z0-9._~%/-]+$/;
+
+/**
+ * Back from `/img/<path>` to the full ImageKit URL for storage, so stored
+ * rows keep one format. Anything else is returned unchanged.
+ */
+export function fromImgPath<T extends string | null | undefined>(value: T): T {
+  if (typeof value !== 'string' || !value.startsWith('/img/')) return value;
+  const endpoint = (process.env.IMAGEKIT_URL_ENDPOINT ?? '').replace(
+    /\/+$/,
+    '',
+  );
+  return (endpoint ? `${endpoint}${value.slice(4)}` : value) as T;
+}

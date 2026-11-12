@@ -16,7 +16,7 @@ import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { actorLabel, AuthUser } from 'src/common/auth-user';
 import { Users } from 'src/users/entities/users.entity';
-import { toImgPath } from 'src/common/media';
+import { fromImgPath, toImgPath } from 'src/common/media';
 
 /** Contract `Category`. `children` is present in tree responses. */
 export type CategoryView = {
@@ -149,7 +149,7 @@ export class CategoriesService implements OnApplicationBootstrap {
         name: dto.name.trim(),
         slug,
         parentId: parent?.id ?? null,
-        imageUrl: dto.imageUrl ?? null,
+        imageUrl: fromImgPath(dto.imageUrl) ?? null,
         sortOrder: dto.sortOrder ?? 0,
       }),
     );
@@ -189,7 +189,8 @@ export class CategoriesService implements OnApplicationBootstrap {
     }
 
     if (dto.name !== undefined) category.name = dto.name.trim();
-    if (dto.imageUrl !== undefined) category.imageUrl = dto.imageUrl;
+    if (dto.imageUrl !== undefined)
+      category.imageUrl = fromImgPath(dto.imageUrl);
     if (dto.sortOrder !== undefined) category.sortOrder = dto.sortOrder;
 
     // `parent` is not loaded, so save() uses the parentId column.

@@ -3,17 +3,36 @@ import {
   IsInt,
   IsOptional,
   IsString,
-  IsUrl,
+  isURL,
   IsUUID,
   Length,
   Matches,
   MaxLength,
   Min,
+  ValidateBy,
   ValidateIf,
+  ValidationOptions,
 } from 'class-validator';
+import { IMG_PATH_PATTERN } from 'src/common/media';
 import { SLUG_PATTERN } from 'src/common/slug';
 
 const SLUG_MESSAGE = 'slug must be lowercase kebab-case (a-z, 0-9, -)';
+
+/** BE-28: a full URL, or the /img/ path the API returned for it. */
+function IsImageUrl(options?: ValidationOptions) {
+  return ValidateBy(
+    {
+      name: 'isImageUrl',
+      validator: {
+        validate: (v: unknown) =>
+          typeof v === 'string' &&
+          (IMG_PATH_PATTERN.test(v) || isURL(v, { require_protocol: true })),
+        defaultMessage: () => 'imageUrl must be a URL or an /img/ path',
+      },
+    },
+    options,
+  );
+}
 
 export class CreateCategoryDto {
   @IsString()
@@ -34,7 +53,7 @@ export class CreateCategoryDto {
 
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
-  @IsUrl({ require_protocol: true })
+  @IsImageUrl()
   @MaxLength(500)
   imageUrl?: string | null;
 
@@ -64,7 +83,7 @@ export class UpdateCategoryDto {
 
   @IsOptional()
   @ValidateIf((_, v) => v !== null)
-  @IsUrl({ require_protocol: true })
+  @IsImageUrl()
   @MaxLength(500)
   imageUrl?: string | null;
 
