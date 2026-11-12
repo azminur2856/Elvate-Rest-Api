@@ -137,6 +137,7 @@ export class AuthController {
   }
 
   @Patch('changePassword')
+  @RateLimit(RATE_LIMITS.changePassword)
   async updatePassword(
     @Req() req: any,
     @Body(ValidationPipe) changePasswordDto: ChangePasswordDto,

@@ -25,6 +25,7 @@ export const RATE_LIMITS = {
   resetPassword: { limit: 10, ttl: 15 * MINUTE }, // OTP / token guessing
   phoneOtp: { limit: 3, ttl: 10 * MINUTE }, // sends an SMS
   verifyPhone: { limit: 10, ttl: 10 * MINUTE }, // 6-digit OTP guessing
+  changePassword: { limit: 5, ttl: 15 * MINUTE }, // SEC-21: old-password guessing
 } as const;
 
 /**
