@@ -11,6 +11,7 @@ import { Verification } from './entities/verification.entity';
 import { UserSession } from './entities/user-session.entity';
 import { VerificationMethod } from './enums/verification-method.enum';
 import { LoginAttemptsService } from './attempts/login-attempts.service';
+import { SettingsService } from 'src/settings/settings.service';
 
 // SEC-01: POST /auth/forgotPassword is public. Its reply must never carry the
 // reset token or the SMS code, or anyone who knows an e-mail address could
@@ -64,6 +65,10 @@ describe('AuthService.forgotPassword never returns the secret', () => {
         },
         { provide: getRepositoryToken(UserSession), useValue: {} },
         { provide: LoginAttemptsService, useValue: {} },
+        {
+          provide: SettingsService,
+          useValue: { assertSmsEnabled: () => Promise.resolve() },
+        },
       ],
     }).compile();
     service = moduleRef.get(AuthService);

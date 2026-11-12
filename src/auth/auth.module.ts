@@ -24,6 +24,7 @@ import emailConfig from './config/email.config';
 import { Verification } from './entities/verification.entity';
 import { UserSession } from './entities/user-session.entity';
 import { FaceModule } from 'src/face/face.module';
+import { SettingsModule } from 'src/settings/settings.module';
 import { LoginAttempt } from './attempts/login-attempt.entity';
 import { LoginAttemptsService } from './attempts/login-attempts.service';
 import { FaceLoginChallenge } from './face-login/face-login-challenge.entity';
@@ -45,6 +46,7 @@ import { FaceLoginService } from './face-login/face-login.service';
     ConfigModule.forFeature(googleOauthConfig),
     ConfigModule.forFeature(emailConfig),
     FaceModule,
+    SettingsModule,
   ],
   controllers: [AuthController],
   providers: [

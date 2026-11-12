@@ -20,6 +20,7 @@ describe('AuthService.validateUser (per-account lock)', () => {
     {} as never, // verification repo
     {} as never, // session repo
     attempts as never,
+    {} as never, // settings (BE-25)
   );
   const key = [{ scope: 'password-email', key: 'buyer@elvate.test' }];
   let hash: string;

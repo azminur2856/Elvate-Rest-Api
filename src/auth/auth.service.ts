@@ -29,6 +29,7 @@ import { VerificationType } from './enums/verification-type.enum';
 import { maskEmail } from './utility/email-mask.util';
 import { generateOtp } from './utility/otp.util';
 import { useSmsCode } from './utility/sms-code';
+import { SettingsService } from 'src/settings/settings.service';
 import {
   LoginAttemptsService,
   emailKey,
@@ -64,6 +65,7 @@ export class AuthService {
     @InjectRepository(UserSession)
     private sessionRepository: Repository<UserSession>,
     private loginAttempts: LoginAttemptsService,
+    private settings: SettingsService,
   ) {}
 
   // Verify Registration after user sign up
@@ -405,6 +407,9 @@ export class AuthService {
 
   //Forgot password
   async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    if (forgotPasswordDto.verificationMethod === VerificationMethod.SMS) {
+      await this.settings.assertSmsEnabled(); // BE-25 admin switch
+    }
     const user = await this.usersService.findByEmail(forgotPasswordDto.email);
     if (!user) {
       throw new NotFoundException(`User not found`);
@@ -530,6 +535,10 @@ export class AuthService {
 
   //Reset Password
   async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    if (resetPasswordDto.verificationMethod === VerificationMethod.SMS) {
+      // BE-25: also stops codes that were sent before SMS was switched off
+      await this.settings.assertSmsEnabled();
+    }
     let verification: Verification | null = null;
 
     if (resetPasswordDto.verificationMethod === VerificationMethod.EMAIL) {
@@ -602,6 +611,7 @@ export class AuthService {
 
   //Check if phone number is already verified
   async phoneVerification(userId: string) {
+    await this.settings.assertSmsEnabled(); // BE-25 admin switch
     const user = await this.usersService.findOne(userId);
     if (!user) {
       throw new NotFoundException('User not found');
@@ -671,6 +681,7 @@ export class AuthService {
   // Verify Phone Number
   /** SEC-05: only the caller's own latest code counts, 5 guesses max. */
   async verifyPhone(userId: string, verifyPhoneDto: VerifyPhoneDto) {
+    await this.settings.assertSmsEnabled(); // BE-25 admin switch
     const verification = await useSmsCode(
       this.verificationRepository,
       userId,

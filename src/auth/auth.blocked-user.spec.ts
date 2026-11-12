@@ -21,7 +21,8 @@ describe('blocked accounts', () => {
       {} as never,
       {} as never,
       sessions as never,
-      {} as never,
+      {} as never, // login attempts
+      {} as never, // settings (BE-25)
     );
 
     beforeEach(() => jest.clearAllMocks());
