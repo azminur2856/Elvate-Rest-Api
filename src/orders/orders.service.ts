@@ -103,6 +103,8 @@ export type OrderDetail = Omit<OrderSummary, 'customer' | 'deliveryMan'> & {
     note: string | null;
     at: Date;
     by: { name: string; role: string } | null;
+    /** BE-29: true for an admin correction. */
+    correction: boolean;
   }[];
   deliveryMan: { id: string; name: string; phone: string | null } | null;
   customer: {
@@ -1293,6 +1295,7 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
         by: h.changedBy
           ? { name: fullName(h.changedBy), role: h.changedBy.role }
           : null,
+        correction: h.correction ?? false,
       })),
       deliveryMan: order.deliveryMan
         ? {

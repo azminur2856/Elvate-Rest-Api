@@ -31,6 +31,10 @@ export class OrderStatusHistory {
   @Column({ type: 'text', nullable: true })
   note: string | null;
 
+  /** BE-29: an admin correction of a stuck delivery (not a normal step). */
+  @Column({ type: 'boolean', default: false })
+  correction: boolean;
+
   @Column({ type: 'uuid', nullable: true })
   changedById: string | null;
 
