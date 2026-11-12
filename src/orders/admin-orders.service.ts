@@ -27,6 +27,7 @@ import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { actorLabel, AuthUser } from 'src/common/auth-user';
 import { money } from 'src/common/decimal.transformer';
 import { Paginated, pageParams, paginated } from 'src/common/pagination';
+import { toImgPath } from 'src/common/media';
 
 /** Orders on their way to the customer (cash may still be collected). */
 export const ON_THE_WAY = [
@@ -372,7 +373,7 @@ export class AdminOrdersService {
       topProducts: top.map((t) => ({
         productId: t.productId,
         name: t.name,
-        image: t.image,
+        image: toImgPath(t.image), // BE-28
         quantity: Number(t.quantity),
         revenue: Number(t.revenue),
       })),

@@ -49,7 +49,7 @@ import { Role, SHOP_MANAGER_ROLES } from 'src/users/enums/role.enum';
 import { AuthUser } from 'src/common/auth-user';
 import { money } from 'src/common/decimal.transformer';
 import { Paginated, pageParams, paginated } from 'src/common/pagination';
-import { ownAvatarUrl, staffAvatarUrl } from 'src/common/media';
+import { ownAvatarUrl, staffAvatarUrl, toImgPath } from 'src/common/media';
 import stripeConfig from 'src/subscription/config/stripe.config';
 import { ReviewsService } from 'src/reviews/reviews.service';
 
@@ -1259,7 +1259,8 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
       paymentMethod: order.paymentMethod,
       total: order.total,
       itemCount: items.reduce((n, i) => n + i.quantity, 0),
-      firstItemImage: items.find((i) => i.image)?.image ?? null,
+      // BE-28: /img/ paths; the stored snapshot keeps the full URL (Stripe)
+      firstItemImage: toImgPath(items.find((i) => i.image)?.image),
       createdAt: order.createdAt,
       items: items.map((i) => ({
         id: i.id,
@@ -1268,7 +1269,7 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
         slug: i.productId ? i.productSlug : null,
         productName: i.productName,
         variantLabel: i.variantLabel,
-        image: i.image,
+        image: toImgPath(i.image),
         unitPrice: i.unitPrice,
         quantity: i.quantity,
         lineTotal: i.lineTotal,
@@ -1360,7 +1361,7 @@ export class OrdersService implements OnApplicationBootstrap, OnModuleDestroy {
         paymentMethod: o.paymentMethod,
         total: o.total,
         itemCount: Number(a?.units ?? 0),
-        firstItemImage: a?.image ?? null,
+        firstItemImage: toImgPath(a?.image),
         createdAt: o.createdAt,
       };
       if (withPeople) {
