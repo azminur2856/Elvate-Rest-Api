@@ -11,7 +11,13 @@ import {
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { IsIn, IsOptional } from 'class-validator';
-import { AvatarImage, AvatarService, avatarEtag } from './avatar.service';
+import {
+  AvatarService,
+  NO_PICTURE,
+  PRIVATE_AVATAR_CACHE as PRIVATE_CACHE,
+  avatarEtag,
+  sendAvatar as send,
+} from './avatar.service';
 import { Public } from 'src/auth/decorators/public.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { Role } from 'src/users/enums/role.enum';
@@ -31,9 +37,7 @@ export class StaffAvatarQueryDto {
 }
 
 const PUBLIC_CACHE = 'public, max-age=31536000, immutable';
-const PRIVATE_CACHE = 'private, max-age=86400';
 const KEY_PATTERN = /^[A-Za-z0-9_-]{16,64}$/;
-const NO_PICTURE = 'No profile picture';
 
 /** BE-28: profile pictures, served by us (never an ImageKit address). */
 @ApiTags('Media')
@@ -97,15 +101,4 @@ function notModified(
   if (req.headers['if-none-match'] !== etag) return false;
   res.set({ ETag: etag, 'Cache-Control': PRIVATE_CACHE }).status(304).end();
   return true;
-}
-
-function send(res: Response, image: AvatarImage | null, cache: string) {
-  if (!image) throw new NotFoundException(NO_PICTURE);
-  res
-    .set({
-      'Content-Type': image.contentType,
-      'Cache-Control': cache,
-      ETag: image.etag,
-    })
-    .send(image.body);
 }

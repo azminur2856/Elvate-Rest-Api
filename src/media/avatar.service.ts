@@ -1,4 +1,5 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import type { Response } from 'express';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import axios from 'axios';
@@ -30,6 +31,25 @@ const AVATAR_COLUMNS: (keyof Users)[] = [
   'profileImagePath',
   'profileImageFileId',
 ];
+
+export const NO_PICTURE = 'No profile picture';
+export const PRIVATE_AVATAR_CACHE = 'private, max-age=86400';
+
+/** Writes the image, or 404 when there is none (the frontend shows initials). */
+export function sendAvatar(
+  res: Response,
+  image: AvatarImage | null,
+  cache: string,
+) {
+  if (!image) throw new NotFoundException(NO_PICTURE);
+  res
+    .set({
+      'Content-Type': image.contentType,
+      'Cache-Control': cache,
+      ETag: image.etag,
+    })
+    .send(image.body);
+}
 
 /** ETag of one avatar size: changes with every new upload (new key). */
 export const avatarEtag = (avatarKey: string, size: AvatarSize) =>
