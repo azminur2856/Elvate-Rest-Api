@@ -33,6 +33,17 @@ export class UserSession {
   @Column({ type: 'varchar', length: 255 })
   hashedRefreshToken: string;
 
+  /**
+   * SEC-21: the token replaced by the last refresh and when. Seen again
+   * within a few seconds = two tabs refreshing at once; later = a copied
+   * token being replayed, which ends the session.
+   */
+  @Column({ type: 'varchar', length: 255, nullable: true })
+  previousRefreshHash: string | null;
+
+  @Column({ type: 'timestamp', nullable: true })
+  rotatedAt: Date | null;
+
   /** 'localLogin' | 'googleOAuth' | 'faceLogin' */
   @Column({ type: 'varchar', length: 32 })
   loginMethod: string;

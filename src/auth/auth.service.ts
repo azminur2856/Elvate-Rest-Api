@@ -10,6 +10,7 @@ import { JwtService } from '@nestjs/jwt';
 import { compare } from 'bcrypt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from 'src/users/users.service';
+import { Users } from 'src/users/entities/users.entity';
 import { AuthJwtPayload } from './types/auth-jwtPayload';
 import refreshJwtConfig from './config/refresh-jwt.config';
 import { ConfigType } from '@nestjs/config';
@@ -52,6 +53,9 @@ export const INVALID_LOGIN = 'Invalid email or password';
 /** bcrypt hash of a random string: makes unknown-e-mail logins as slow as real ones. */
 const DUMMY_BCRYPT_HASH =
   '$2b$10$CwTycUXWue0Thq9StjUM0uJ8.1lbfHNiBo2YX0yz4d0SmKTAtvLlW';
+
+/** SEC-21: a refresh within this time of the last one may carry the old token. */
+const REFRESH_RACE_GRACE_MS = 30_000;
 
 /** Same text as the password-login check for a blocked account. */
 const ACCOUNT_BLOCKED =
@@ -216,12 +220,20 @@ export class AuthService {
       userId,
       sessionId,
     );
-    // Rotate the refresh token for THIS session only.
+    // Rotate the refresh token for THIS session only, remembering the one it
+    // replaces (SEC-21 reuse detection).
+    const current = await this.sessionRepository.findOne({
+      where: { id: sessionId, userId },
+      select: ['id', 'hashedRefreshToken'],
+    });
+    const now = new Date();
     await this.sessionRepository.update(
       { id: sessionId, userId },
       {
         hashedRefreshToken: await argon2.hash(refreshToken),
-        lastUsedAt: new Date(),
+        previousRefreshHash: current?.hashedRefreshToken ?? null,
+        rotatedAt: now,
+        lastUsedAt: now,
       },
     );
 
@@ -280,7 +292,28 @@ export class AuthService {
       refreshToken,
     );
     if (!refreshTokenMatches) {
-      throw new UnauthorizedException('Invalid refresh token');
+      // SEC-21: the token just replaced, seconds ago: another tab won the
+      // race; refuse without punishing the user (it retries with the cookie)
+      const justRotated =
+        session.previousRefreshHash &&
+        session.rotatedAt &&
+        Date.now() - session.rotatedAt.getTime() < REFRESH_RACE_GRACE_MS &&
+        (await argon2.verify(session.previousRefreshHash, refreshToken));
+      if (justRotated) {
+        throw new UnauthorizedException(
+          'Session was just refreshed, please retry',
+        );
+      }
+      // an older token replayed: someone holds a copy -> end the session
+      await this.sessionRepository.delete({ id: sessionId });
+      await this.activityLogsService.createActivityLog({
+        activity: ActivityType.REFRESH_TOKEN,
+        description: `Reused refresh token for session ${sessionId}: session revoked`,
+        user: { id: userId } as Users,
+      });
+      throw new UnauthorizedException(
+        'Session ended for security reasons, please log in again',
+      );
     }
     return { id: userId, sid: sessionId };
   }
