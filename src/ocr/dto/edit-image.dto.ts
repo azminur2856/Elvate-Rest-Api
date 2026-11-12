@@ -53,6 +53,9 @@ export class SizeDto {
   height: number;
 }
 
+/** Multipart text fields of POST /ocr/image/resize (sent as strings). */
+export class ResizeImageDto extends SizeDto {}
+
 /** The `options` JSON of POST /ocr/image/edit. Unknown keys are rejected. */
 export class EditOptionsDto {
   @IsOptional()

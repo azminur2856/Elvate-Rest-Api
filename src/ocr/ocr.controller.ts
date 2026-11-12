@@ -9,7 +9,7 @@ import {
   Body,
 } from '@nestjs/common';
 import { OcrService } from './ocr.service';
-import { parseEditOptions } from './dto/edit-image.dto';
+import { ResizeImageDto, parseEditOptions } from './dto/edit-image.dto';
 import { extname } from 'path';
 import type { AuthRequest } from 'src/common/auth-user';
 import { SingleFileUpload } from 'src/common/upload';
@@ -59,7 +59,7 @@ export class OcrController {
   async resizeImage(
     @UploadedFile() file: Express.Multer.File,
     @Req() req,
-    @Body() body: { width: string; height: string },
+    @Body() body: ResizeImageDto,
   ) {
     if (!file) throw new BadRequestException('No file uploaded.');
     const extension = extname(file.originalname).toLowerCase();
@@ -72,25 +72,10 @@ export class OcrController {
       throw new BadRequestException('Only image files are allowed.');
     }
 
-    // Parse/validate width/height
-    const width = Number(body.width);
-    const height = Number(body.height);
-
-    if (
-      !width ||
-      !height ||
-      width < 16 ||
-      width > 4096 ||
-      height < 16 ||
-      height > 4096
-    ) {
-      throw new BadRequestException('Invalid width or height');
-    }
-
     return this.ocrService.resizeImage(
       file.buffer,
-      width,
-      height,
+      body.width,
+      body.height,
       file.mimetype,
       req.user.id,
     );
