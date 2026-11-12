@@ -33,6 +33,7 @@ import {
   SingleFileUpload,
 } from 'src/common/upload';
 import { FaceReferenceService } from 'src/face/face-reference.service';
+import { FaceSetupDto } from 'src/face/face-setup.dto';
 import type { AuthRequest } from 'src/common/auth-user';
 
 @ApiTags('Users')
@@ -176,6 +177,7 @@ export class UsersController {
   @RateLimit(RATE_LIMITS.faceSetup)
   setFaceReference(
     @UploadedFile() file: Express.Multer.File,
+    @Body() dto: FaceSetupDto,
     @Req() req: AuthRequest,
   ) {
     if (!file) {
@@ -183,7 +185,10 @@ export class UsersController {
         'No photo uploaded (multipart field "photo").',
       );
     }
-    return this.faceReferences.enroll(req.user.id, file.buffer);
+    return this.faceReferences.enroll(req.user.id, file.buffer, {
+      password: dto.password,
+      sessionId: req.user.sid,
+    });
   }
 
   /** Turns face login off and deletes the private photo. */
@@ -201,10 +206,14 @@ export class UsersController {
   @RateLimit(RATE_LIMITS.faceSetup)
   async verifyFace(
     @UploadedFile() file: Express.Multer.File,
+    @Body() dto: FaceSetupDto,
     @Req() req: AuthRequest,
   ) {
     if (!file) throw new BadRequestException(NO_FACE_PHOTO);
-    const state = await this.faceReferences.enroll(req.user.id, file.buffer);
+    const state = await this.faceReferences.enroll(req.user.id, file.buffer, {
+      password: dto.password,
+      sessionId: req.user.sid,
+    });
     return { verified: true, ...state };
   }
 

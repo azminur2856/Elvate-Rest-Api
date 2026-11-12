@@ -4,6 +4,7 @@ import { imagekit } from 'src/auth/utility/imagekit';
 import { FaceReferenceService } from './face-reference.service';
 import { FaceCheckFailure } from 'src/users/services/face-check';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
+import * as bcrypt from 'bcrypt';
 
 // SEC-04: face setup stores a private photo and never uses the avatar.
 describe('FaceReferenceService', () => {
@@ -13,12 +14,18 @@ describe('FaceReferenceService', () => {
     delete: jest.fn(),
   };
   const users = { findOne: jest.fn(), update: jest.fn(), query: jest.fn() };
-  const face = { isConfigured: jest.fn(() => true), analyze: jest.fn() };
+  const sessions = { findOne: jest.fn() };
+  const face = {
+    isConfigured: jest.fn(() => true),
+    analyze: jest.fn(),
+    compare: jest.fn(),
+  };
   const activityLogs = { createActivityLog: jest.fn() };
   const mail = { sendNotificationEmail: jest.fn() };
   const service = new FaceReferenceService(
     refs as never,
     users as never,
+    sessions as never,
     face as never,
     activityLogs as never,
     mail as never,
@@ -27,8 +34,12 @@ describe('FaceReferenceService', () => {
   const deleteFile = jest.spyOn(imagekit, 'deleteFile') as unknown as jest.Mock;
   const url = jest.spyOn(imagekit, 'url') as unknown as jest.Mock;
   let photo: Buffer;
+  let passwordHash: string;
+  /** BE-26: the right password for the mocked account */
+  const AUTH = { password: 'Right#123', sessionId: 's1' };
 
   beforeAll(async () => {
+    passwordHash = await bcrypt.hash(AUTH.password, 4);
     photo = await sharp({
       create: { width: 1280, height: 960, channels: 3, background: '#ccc' },
     })
@@ -44,7 +55,14 @@ describe('FaceReferenceService', () => {
       email: 'b@e.test',
       firstName: '<b>Bo</b>',
       lastName: null,
+      profileImage: 'me.jpg',
+      password: passwordHash,
     });
+    face.compare.mockResolvedValue({
+      confidence: 90,
+      thresholds: { '1e-5': 74 },
+    });
+    url.mockReturnValue('https://ik/signed');
     face.analyze.mockResolvedValue({
       faceToken: 't',
       yaw: 3,
@@ -60,7 +78,7 @@ describe('FaceReferenceService', () => {
 
   it('enroll: private upload of a 640 px JPEG, flag on, old file deleted', async () => {
     refs.findOne.mockResolvedValueOnce({ userId: 'u1', fileId: 'old-file' });
-    await expect(service.enroll('u1', photo)).resolves.toEqual({
+    await expect(service.enroll('u1', photo, AUTH)).resolves.toEqual({
       faceLoginEnabled: true,
     });
     const args = upload.mock.calls[0][0] as {
@@ -114,7 +132,7 @@ describe('FaceReferenceService', () => {
     'enroll refuses a photo with %s (400, nothing stored)',
     async (_l, arrange) => {
       arrange();
-      await expect(service.enroll('u1', photo)).rejects.toBeInstanceOf(
+      await expect(service.enroll('u1', photo, AUTH)).rejects.toBeInstanceOf(
         BadRequestException,
       );
       expect(upload).not.toHaveBeenCalled();
@@ -124,7 +142,7 @@ describe('FaceReferenceService', () => {
 
   it('enroll refuses a file that is not an image', async () => {
     await expect(
-      service.enroll('u1', Buffer.from('not an image')),
+      service.enroll('u1', Buffer.from('not an image'), AUTH),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(face.analyze).not.toHaveBeenCalled();
   });

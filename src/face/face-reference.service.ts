@@ -5,18 +5,26 @@ import {
   NotFoundException,
   OnApplicationBootstrap,
   ServiceUnavailableException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { FaceReference } from './face-reference.entity';
 import { Users } from 'src/users/entities/users.entity';
 import { FaceVerificationService } from 'src/users/services/face-verification.service';
-import { FaceCheckFailure, LIVENESS } from 'src/users/services/face-check';
+import {
+  FaceCheckFailure,
+  LIVENESS,
+  isMatch,
+} from 'src/users/services/face-check';
 import { ActivityLogsService } from 'src/activity-logs/activity-logs.service';
 import { ActivityType } from 'src/activity-logs/enums/activity-type.enum';
 import { MailService } from 'src/auth/services/mail.services';
 import { imagekit } from 'src/auth/utility/imagekit';
 import { faceJpeg } from './face-photo';
+import { UserSession } from 'src/auth/entities/user-session.entity';
+import { hasUsablePassword } from 'src/common/password';
+import * as bcrypt from 'bcrypt';
 
 /** ImageKit folder of a user's private face reference. */
 export const faceReferenceFolder = (userId: string) =>
@@ -24,6 +32,28 @@ export const faceReferenceFolder = (userId: string) =>
 
 /** Signed reference URLs live just long enough for Face++ to fetch them. */
 const SIGNED_URL_SECONDS = 120;
+
+/** BE-26: Google-only accounts must have signed in this recently. */
+export const RECENT_LOGIN_MS = 10 * 60_000;
+
+export const NO_PROFILE_PICTURE =
+  'Add a profile picture that clearly shows your face before setting up face login.';
+export const PROFILE_PICTURE_MISMATCH =
+  "This photo doesn't match your profile picture. Make sure you're the person in your profile picture, or update your profile picture and try again.";
+const PROFILE_PICTURE_UNREADABLE =
+  "We couldn't check your profile picture. Try again, or upload a clearer profile picture.";
+
+/** What face setup needs to re-check the user (BE-26). */
+export interface FaceSetupAuth {
+  /** current password (password accounts) */
+  password?: string;
+  /** session id from the JWT (Google-only accounts) */
+  sessionId?: string;
+}
+
+/** A real profile picture, not the default placeholder. */
+export const hasProfilePicture = (user: Pick<Users, 'profileImage'>) =>
+  !!user.profileImage && user.profileImage !== 'profile.png';
 
 export interface FaceLoginState {
   faceLoginEnabled: boolean;
@@ -37,6 +67,8 @@ export class FaceReferenceService implements OnApplicationBootstrap {
     @InjectRepository(FaceReference)
     private readonly refs: Repository<FaceReference>,
     @InjectRepository(Users) private readonly users: Repository<Users>,
+    @InjectRepository(UserSession)
+    private readonly sessions: Repository<UserSession>,
     private readonly face: FaceVerificationService,
     private readonly activityLogs: ActivityLogsService,
     private readonly mail: MailService,
@@ -71,7 +103,11 @@ export class FaceReferenceService implements OnApplicationBootstrap {
    * open eyes), stores it as a private ImageKit file, replaces any earlier
    * reference and turns face login on.
    */
-  async enroll(userId: string, photo: Buffer): Promise<FaceLoginState> {
+  async enroll(
+    userId: string,
+    photo: Buffer,
+    auth: FaceSetupAuth = {},
+  ): Promise<FaceLoginState> {
     if (!this.face.isConfigured()) {
       throw new ServiceUnavailableException(
         'Face login is not available right now.',
@@ -79,6 +115,13 @@ export class FaceReferenceService implements OnApplicationBootstrap {
     }
     const user = await this.users.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('User not found');
+
+    // BE-26 "option A": a profile picture of the user to check against ...
+    if (!hasProfilePicture(user)) {
+      throw new BadRequestException(NO_PROFILE_PICTURE);
+    }
+    // ... and proof that the person at the keyboard owns the account
+    await this.reauthenticate(user, auth);
 
     let jpeg: Buffer;
     try {
@@ -89,6 +132,22 @@ export class FaceReferenceService implements OnApplicationBootstrap {
       }
       if (face.eyesOpen < LIVENESS.eyesOpenMin) {
         throw new FaceCheckFailure('EYES_CLOSED');
+      }
+      // the live photo must be the person in the profile picture (strict)
+      let match;
+      try {
+        match = await this.face.compare(
+          { imageUrl: this.profilePictureUrl(user) },
+          { faceToken: face.faceToken },
+        );
+      } catch (err) {
+        if (err instanceof FaceCheckFailure) {
+          throw new BadRequestException(PROFILE_PICTURE_UNREADABLE);
+        }
+        throw err;
+      }
+      if (!isMatch(match, '1e-5')) {
+        throw new BadRequestException(PROFILE_PICTURE_MISMATCH);
       }
     } catch (err) {
       if (err instanceof FaceCheckFailure) {
@@ -125,6 +184,42 @@ export class FaceReferenceService implements OnApplicationBootstrap {
       'Face login was just set up on your account. If this was not you, change your password and remove face login in Settings.',
     );
     return { faceLoginEnabled: true };
+  }
+
+  /**
+   * BE-26: a password account re-enters its password; a Google-only account
+   * must have signed in within the last 10 minutes.
+   */
+  private async reauthenticate(user: Users, auth: FaceSetupAuth) {
+    if (hasUsablePassword(user.password)) {
+      const ok =
+        !!auth.password && (await bcrypt.compare(auth.password, user.password));
+      if (!ok) throw new UnauthorizedException('Incorrect password.');
+      return;
+    }
+    const session = auth.sessionId
+      ? await this.sessions.findOne({
+          where: { id: auth.sessionId, userId: user.id },
+          select: ['id', 'createdAt'],
+        })
+      : null;
+    if (
+      !session ||
+      Date.now() - session.createdAt.getTime() > RECENT_LOGIN_MS
+    ) {
+      throw new UnauthorizedException(
+        'For your security, please sign in again before setting up face login.',
+      );
+    }
+  }
+
+  /** Short-lived signed URL Face++ fetches the profile picture from. */
+  private profilePictureUrl(user: Users): string {
+    return imagekit.url({
+      path: `/user_profile_image/user_${user.id}/${user.profileImage}`,
+      signed: true,
+      expireSeconds: SIGNED_URL_SECONDS,
+    });
   }
 
   /** Turns face login off and deletes the private photo. */
