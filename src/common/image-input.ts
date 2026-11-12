@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import sharp = require('sharp');
+import sharp, { type Metadata, type Sharp } from 'src/common/sharp';
 
 /**
  * SEC-03: user images are decoded in memory on a 512 MB box. Refuse anything
@@ -13,14 +13,14 @@ export type AllowedImageFormat = (typeof ALLOWED_IMAGE_FORMATS)[number];
 sharp.concurrency(1);
 
 export interface OpenedImage {
-  image: sharp.Sharp;
+  image: Sharp;
   width: number;
   height: number;
   format: AllowedImageFormat;
 }
 
 /** Same pixel limit for every sharp pipeline that reads user input. */
-export function sharpInput(buffer: Buffer): sharp.Sharp {
+export function sharpInput(buffer: Buffer): Sharp {
   return sharp(buffer, { limitInputPixels: MAX_INPUT_PIXELS });
 }
 
@@ -30,7 +30,7 @@ export function sharpInput(buffer: Buffer): sharp.Sharp {
  * or HEIC image, or is larger than `MAX_INPUT_PIXELS`.
  */
 export async function openImage(buffer: Buffer): Promise<OpenedImage> {
-  let meta: sharp.Metadata;
+  let meta: Metadata;
   try {
     // header only (no decoding), so no pixel limit here: we report size below
     meta = await sharp(buffer, { limitInputPixels: false }).metadata();

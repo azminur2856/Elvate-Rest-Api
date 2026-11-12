@@ -1,4 +1,4 @@
-import sharp = require('sharp');
+import sharp from 'src/common/sharp';
 import type { Garment } from './catalog-data';
 
 /**

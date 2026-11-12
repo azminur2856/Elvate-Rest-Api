@@ -2,7 +2,7 @@ import {
   ForbiddenException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import sharp = require('sharp');
+import sharp from 'src/common/sharp';
 import { OcrService } from './ocr.service';
 import { BackgroundRemover } from './background/background-remover';
 
