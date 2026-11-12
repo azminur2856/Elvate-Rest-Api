@@ -49,14 +49,14 @@ export class SettingsController {
     return this.shipping.view();
   }
 
-  // BE-30: declared before `:key` below, so "shipping" is never taken for a
-  // switch key (routes match in the order they are declared).
   /**
    * Change the delivery fees (whole BDT; freeThreshold 0 = free delivery off).
    * New quotes and orders use them; orders already placed keep their fee.
    * ADMIN only (not STAFF).
    */
   @Roles(Role.ADMIN)
+  // BE-30: declared before `:key` below, so "shipping" is never taken for a
+  // switch key (routes match in the order they are declared).
   @Patch('admin/settings/shipping')
   @ApiBody({ type: UpdateShippingDto })
   updateShipping(
