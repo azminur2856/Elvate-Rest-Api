@@ -179,12 +179,12 @@ export class AuthService {
       activity = ActivityType.USER_LOGIN;
     }
 
-    const userData = await this.usersService.getUserById(userId);
+    const userData = await this.usersService.getUserById(userId, 'own-xs');
 
     const activityLog = {
       activity,
       description: `User logged in with id ${userId}`,
-      user: userData,
+      user: { id: userId } as Users, // the relation only needs the id
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
@@ -194,7 +194,8 @@ export class AuthService {
         name: userData.firstName + ' ' + (userData.lastName || ''),
         role: userData.role,
         email: userData.email,
-        profileImage: userData.profileImage,
+        profileImage: userData.profileImage, // deprecated, use avatarUrl
+        avatarUrl: userData.avatarUrl,
       },
       accessToken,
       refreshToken,
@@ -237,12 +238,12 @@ export class AuthService {
       },
     );
 
-    const userData = await this.usersService.getUserById(userId);
+    const userData = await this.usersService.getUserById(userId, 'own-xs');
 
     const activityLog = {
       activity: ActivityType.REFRESH_TOKEN,
       description: `User refresh token's with id ${userId}`,
-      user: userData,
+      user: { id: userId } as Users, // the relation only needs the id
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
@@ -252,7 +253,8 @@ export class AuthService {
         name: userData.firstName + ' ' + (userData.lastName || ''),
         role: userData.role,
         email: userData.email,
-        profileImage: userData.profileImage,
+        profileImage: userData.profileImage, // deprecated, use avatarUrl
+        avatarUrl: userData.avatarUrl,
       },
       accessToken,
       refreshToken,
@@ -323,7 +325,7 @@ export class AuthService {
     const activityLog = {
       activity: ActivityType.USER_LOGOUT,
       description: `User logged out with id ${userId}`,
-      user: await this.usersService.getUserById(userId),
+      user: { id: userId } as Users,
     };
     await this.activityLogsService.createActivityLog(activityLog);
 
@@ -342,7 +344,7 @@ export class AuthService {
     const activityLog = {
       activity: ActivityType.USER_LOGOUT,
       description: `User logged out from all devices with id ${userId}`,
-      user: await this.usersService.getUserById(userId),
+      user: { id: userId } as Users,
     };
     await this.activityLogsService.createActivityLog(activityLog);
 

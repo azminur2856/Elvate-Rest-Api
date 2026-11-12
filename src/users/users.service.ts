@@ -24,10 +24,41 @@ import { UserSession } from 'src/auth/entities/user-session.entity';
 import { VerificationType } from 'src/auth/enums/verification-type.enum';
 import { maskEmail } from 'src/auth/utility/email-mask.util';
 import { imagekit } from 'src/auth/utility/imagekit';
-import { newAvatarKey, ownAvatarUrl } from 'src/common/media';
+import { newAvatarKey, ownAvatarUrl, staffAvatarUrl } from 'src/common/media';
 import type { FileObject } from 'imagekit/dist/libs/interfaces';
 import { Role } from './enums/role.enum';
 import axios from 'axios';
+
+export type AvatarView = 'own' | 'own-xs' | 'staff';
+
+/**
+ * BE-28: replaces the private picture fields with our own avatarUrl
+ * (/media/...), so no response carries the file path or the key.
+ */
+export function withAvatarUrl<
+  T extends {
+    id: string;
+    profileImagePath?: string | null;
+    avatarKey?: string | null;
+    profileImageFileId?: string | null;
+  },
+>(
+  user: T,
+  view: AvatarView,
+): Omit<T, 'profileImagePath' | 'avatarKey' | 'profileImageFileId'> & {
+  avatarUrl: string | null;
+} {
+  const { profileImagePath, avatarKey, profileImageFileId, ...rest } = user;
+  void profileImageFileId;
+  const owner = { id: user.id, profileImagePath, avatarKey };
+  return {
+    ...rest,
+    avatarUrl:
+      view === 'staff'
+        ? staffAvatarUrl(owner, 'sm')
+        : ownAvatarUrl(owner, view === 'own-xs' ? 'xs' : 'md'),
+  };
+}
 
 /** ImageKit folder of a user's profile pictures. */
 export const profileImageFolder = (userId: string) =>
@@ -242,6 +273,8 @@ export class UsersService {
         isEmailVerified: true,
         isPhoneVerified: true,
         profileImage: true,
+        profileImagePath: true,
+        avatarKey: true,
       },
     });
     if (!users) {
@@ -249,7 +282,7 @@ export class UsersService {
     }
     return {
       message: 'Users fetched successfully',
-      data: users,
+      data: users.map((u) => withAvatarUrl(u, 'staff')),
     };
   }
 
@@ -276,6 +309,8 @@ export class UsersService {
         'user.isEmailVerified',
         'user.isPhoneVerified',
         'user.profileImage',
+        'user.profileImagePath',
+        'user.avatarKey',
         'user.createdAt',
       ])
       .addSelect('COALESCE(SUM(payment.amount), 0)', 'totalPaid')
@@ -320,7 +355,7 @@ export class UsersService {
     ]);
 
     const userList = usersRaw.entities.map((user, idx) => ({
-      ...user,
+      ...withAvatarUrl(user, 'staff'),
       totalPaid: Number(usersRaw.raw[idx]?.totalPaid) || 0,
       createdAt: user.createdAt,
     }));
@@ -334,7 +369,11 @@ export class UsersService {
     };
   }
 
-  async getUserById(id: string) {
+  /**
+   * `avatar`: whose link to build (BE-28): 'own' (profile, md), 'own-xs'
+   * (session user) or 'staff' (someone else's picture, sm).
+   */
+  async getUserById(id: string, avatar: AvatarView = 'staff') {
     if (!id) throw new BadRequestException('User ID is required');
     const user = await this.userRepository.findOne({
       where: { id },
@@ -350,6 +389,8 @@ export class UsersService {
         'isEmailVerified',
         'isPhoneVerified',
         'profileImage',
+        'profileImagePath',
+        'avatarKey',
         'createdAt',
         'updatedAt',
         'lastLoginAt',
@@ -358,7 +399,7 @@ export class UsersService {
       ],
     });
     if (!user) throw new NotFoundException(`No data found for user ${id}`);
-    return user;
+    return withAvatarUrl(user, avatar);
   }
 
   async updateUser(id: string, updateUserDto: UpdateUserDto) {

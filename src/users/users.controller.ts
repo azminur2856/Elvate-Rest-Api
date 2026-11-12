@@ -80,7 +80,7 @@ export class UsersController {
   @Get('profile')
   async getUserProfile(@Req() req: any) {
     const [user, hasPassword] = await Promise.all([
-      this.usersService.getUserById(req.user.id),
+      this.usersService.getUserById(req.user.id, 'own'),
       this.account.hasPassword(req.user.id),
     ]);
     return { ...user, hasPassword };
