@@ -1,4 +1,9 @@
-import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
+import {
+  MiddlewareConsumer,
+  RequestMethod,
+  Module,
+  NestModule,
+} from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
@@ -10,6 +15,7 @@ import { ActivityLogsModule } from './activity-logs/activity-logs.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { OcrModule } from './ocr/ocr.module';
 import { DecryptSessionMiddleware } from './auth/middleware/decrypt-session.middleware';
+import { AuthCsrfMiddleware } from './auth/csrf/auth-csrf.middleware';
 import { SubscriptionModule } from './subscription/subscription.module';
 import { HealthModule } from './health/health.module';
 import { CategoriesModule } from './categories/categories.module';
@@ -64,5 +70,10 @@ import { throttlerTracker } from './auth/throttle/rate-limit';
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer.apply(DecryptSessionMiddleware).forRoutes('*'); // Or restrict as needed
+    // SEC-13: JSON-only bodies on the sign-in / account routes (login CSRF)
+    consumer.apply(AuthCsrfMiddleware).forRoutes('auth/*path', {
+      path: 'users/createUser',
+      method: RequestMethod.POST,
+    });
   }
 }
